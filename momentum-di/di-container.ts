@@ -4,17 +4,21 @@ type TypeIdentifier<T = unknown> = Type<T> | Token;
 
 type DefinitionKind = "type" | "factory" | "value";
 
+interface Parameter {
+  isOptional?: boolean;
+  identifier: TypeIdentifier;
+}
 interface BlueprintDefinition {
   kind: "type";
   type: Type;
-  params?: TypeIdentifier[];
-  props?: { [name: string]: TypeIdentifier };
+  params?: Parameter[];
+  props?: { [name: string]: Parameter };
 }
 type FactoryFunction = (...params: any[]) => unknown;
 interface FactoryDefinition {
   kind: "factory";
   factory: FactoryFunction;
-  params?: TypeIdentifier[];
+  params?: Parameter[];
 }
 interface ValueDefinition {
   kind: "value";
@@ -26,31 +30,38 @@ export interface TypeDependencyTreeNode {
   identifier: TypeIdentifier;
   kind: "type";
   ctor: Type;
-  params: DependencyTreeNode[];
-  props: { [name: string]: DependencyTreeNode };
+  params: NullableDependencyTreeNode[];
+  props: { [name: string]: NullableDependencyTreeNode };
 }
 export interface FactoryDependencyTreeNode {
   identifier: TypeIdentifier;
   kind: "factory";
   factory: FactoryFunction;
-  params: DependencyTreeNode[];
+  params: NullableDependencyTreeNode[];
 }
 export interface ValueDependencyTreeNode {
   identifier: TypeIdentifier;
   kind: "value";
   value: unknown;
 }
+export interface NullDependencyTreeNode {
+  identifier: TypeIdentifier;
+  kind: "null";
+}
 export type DependencyTreeNode =
   | TypeDependencyTreeNode
   | ValueDependencyTreeNode
   | FactoryDependencyTreeNode;
+export type NullableDependencyTreeNode =
+  | DependencyTreeNode
+  | NullDependencyTreeNode;
 
-type PartialDependencyTreeNode = Partial<DependencyTreeNode> & {
+type PartialDependencyTreeNode = Partial<NullableDependencyTreeNode> & {
   identifier: TypeIdentifier;
-  kind: DefinitionKind;
+  kind: DefinitionKind | "null";
 };
 
-export type DependencyGraph = Map<TypeIdentifier, DependencyTreeNode>;
+export type DependencyGraph = Map<TypeIdentifier, NullableDependencyTreeNode>;
 
 export class DiContainer {
   private definitions = new Map<TypeIdentifier, Definition>();
@@ -73,7 +84,7 @@ export class DiContainer {
 
   buildDependencyGraph() {
     const nodes: DependencyTreeNode[] = [];
-    const graph = new Map<TypeIdentifier, DependencyTreeNode>();
+    const graph = new Map<TypeIdentifier, NullableDependencyTreeNode>();
     for (const identifier of this.getDefinitionIdentifiers()) {
       graph.set(identifier, this.buildTree(identifier, nodes));
     }
@@ -91,7 +102,11 @@ export class DiContainer {
     if (!node) {
       const definition = this.getDefinition(identifier);
       if (!definition) {
-        throw Error(`Unknown type ${identifier}`);
+        throw Error(
+          `Unknown type ${
+            typeof identifier === "string" ? identifier : identifier.name
+          }`,
+        );
       }
       switch (definition.kind) {
         case "type":
@@ -130,9 +145,15 @@ export class DiContainer {
     if (!defintion.params) {
       return [];
     }
-    return defintion.params.map((identifier) =>
-      this.buildTree(identifier, nodes)
-    );
+    return defintion.params.map((parameter) => {
+      if (parameter.isOptional && !this.getDefinition(parameter.identifier)) {
+        return ({
+          identifier: parameter.identifier,
+          kind: "null",
+        }) as NullDependencyTreeNode;
+      }
+      return this.buildTree(parameter.identifier, nodes);
+    });
   }
 
   private buildPropSubtree(
@@ -143,15 +164,26 @@ export class DiContainer {
       return [];
     }
     return Object.entries(blueprint.props)
-      .map(([prop, identifier]) => ({
-        prop: prop,
-        node: this.buildTree(identifier, nodes),
-      }));
+      .map(([name, parameter]) => {
+        if (parameter.isOptional && !this.getDefinition(parameter.identifier)) {
+          return ({
+            prop: name,
+            node: {
+              identifier: parameter.identifier,
+              kind: "null",
+            } as NullDependencyTreeNode,
+          });
+        }
+        return ({
+          prop: name,
+          node: this.buildTree(parameter.identifier, nodes),
+        });
+      });
   }
 
   private detectCircularDependencies(
-    node: DependencyTreeNode,
-    ancestors: DependencyTreeNode[] = [],
+    node: NullableDependencyTreeNode,
+    ancestors: NullableDependencyTreeNode[] = [],
   ) {
     const circular = ancestors.includes(node);
     ancestors.push(node);
@@ -165,7 +197,7 @@ export class DiContainer {
         .join(" > ");
       throw new Error(`Circular dependency detected: ${path}`);
     }
-    if (node.kind === "value" || !node.params) {
+    if (node.kind === "value" || node.kind === "null" || !node.params) {
       return;
     }
     for (const child of node.params) {
@@ -245,34 +277,53 @@ export class DependencyResolver {
   }
 
   resolve<T = unknown>(identifier: TypeIdentifier) {
-    const node = this.dependencyGraph.get(identifier);
+    const rootNode = this.dependencyGraph.get(identifier);
+    return this.resolveDependency(identifier, rootNode) as T;
+  }
+
+  private resolveDependency(
+    identifier: TypeIdentifier,
+    node: NullableDependencyTreeNode | undefined,
+  ) {
     if (!node) {
-      throw Error(`Unknown type ${identifier}`);
+      throw Error(
+        `Unknown type ${
+          typeof identifier === "string" ? identifier : identifier.name
+        }`,
+      );
     }
     let obj = this.scope.get(identifier);
     if (!obj) {
       switch (node.kind) {
         case "type":
           obj = new node.ctor(
-            ...node.params.map((param) => this.resolve(param.identifier)),
+            ...node.params.map((paramNode) =>
+              this.resolveDependency(paramNode.identifier, paramNode)
+            ),
           );
           this.scope.set(identifier, obj);
           const propBag = obj as Record<string, unknown>;
           for (const [prop, propNode] of Object.entries(node.props)) {
-            propBag[prop] = this.resolve(
+            propBag[prop] = this.resolveDependency(
               propNode.identifier,
+              propNode,
             );
           }
           break;
         case "factory":
           obj = node.factory(
-            ...node.params.map((param) => this.resolve(param.identifier)),
+            ...node.params.map((paramNode) =>
+              this.resolveDependency(paramNode.identifier, paramNode)
+            ),
           );
           this.scope.set(identifier, obj);
           break;
         case "value":
           obj = node.value;
           this.scope.set(identifier, obj);
+        case "null":
+          obj = undefined;
+          this.scope.set(identifier, undefined);
       }
     }
     return obj;

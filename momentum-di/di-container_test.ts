@@ -62,14 +62,28 @@ test("DiContainer.buildDependencyGraph()", () => {
   const container = new DiContainer();
   container.register(
     Molecule,
-    { kind: "type", type: Molecule, params: [Atom] },
+    { kind: "type", type: Molecule, params: [{ identifier: Atom }] },
   );
   container.register(
     Atom,
-    { kind: "type", type: Atom, params: [Proton, Neutron, Electron] },
+    {
+      kind: "type",
+      type: Atom,
+      params: [
+        { identifier: Proton },
+        { identifier: Neutron },
+        { identifier: Electron },
+      ],
+    },
   );
-  container.register(Proton, { kind: "type", type: Proton, params: [Quark] });
-  container.register(Neutron, { kind: "type", type: Neutron, params: [Quark] });
+  container.register(
+    Proton,
+    { kind: "type", type: Proton, params: [{ identifier: Quark }] },
+  );
+  container.register(
+    Neutron,
+    { kind: "type", type: Neutron, params: [{ identifier: Quark }] },
+  );
   container.register(Electron, { kind: "type", type: Electron });
   container.register(Quark, { kind: "type", type: Quark });
 
@@ -148,7 +162,7 @@ test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
   const container = new DiContainer();
   container.register(
     Molecule,
-    { kind: "type", type: Molecule, params: [Atom] },
+    { kind: "type", type: Molecule, params: [{ identifier: Atom }] },
   );
 
   // assert
@@ -165,9 +179,18 @@ test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
 test("DiContainer.buildDependencyGraph() - fails on circular dependency", () => {
   // arrange
   const container = new DiContainer();
-  container.register(Money, { kind: "type", type: Money, params: [Job] });
-  container.register(Job, { kind: "type", type: Job, params: [College] });
-  container.register(College, { kind: "type", type: College, params: [Money] });
+  container.register(
+    Money,
+    { kind: "type", type: Money, params: [{ identifier: Job }] },
+  );
+  container.register(
+    Job,
+    { kind: "type", type: Job, params: [{ identifier: College }] },
+  );
+  container.register(
+    College,
+    { kind: "type", type: College, params: [{ identifier: Money }] },
+  );
 
   // assert
   assertThrows(
@@ -185,11 +208,19 @@ test("DiContainer.buildDependencyGraph() - allows circular property dependencies
   const container = new DiContainer();
   container.register(
     ThingOne,
-    { kind: "type", type: ThingOne, props: { otherThing: ThingTwo } },
+    {
+      kind: "type",
+      type: ThingOne,
+      props: { otherThing: { identifier: ThingTwo } },
+    },
   );
   container.register(
     ThingTwo,
-    { kind: "type", type: ThingTwo, props: { otherThing: ThingOne } },
+    {
+      kind: "type",
+      type: ThingTwo,
+      props: { otherThing: { identifier: ThingOne } },
+    },
   );
 
   // act
@@ -201,14 +232,28 @@ test("DependencyResolver.resolve()", () => {
   const container = new DiContainer();
   container.register(
     Molecule,
-    { kind: "type", type: Molecule, params: [Atom] },
+    { kind: "type", type: Molecule, params: [{ identifier: Atom }] },
   );
   container.register(
     Atom,
-    { kind: "type", type: Atom, params: [Proton, Neutron, Electron] },
+    {
+      kind: "type",
+      type: Atom,
+      params: [
+        { identifier: Proton },
+        { identifier: Neutron },
+        { identifier: Electron },
+      ],
+    },
   );
-  container.register(Proton, { kind: "type", type: Proton, params: [Quark] });
-  container.register(Neutron, { kind: "type", type: Neutron, params: [Quark] });
+  container.register(
+    Proton,
+    { kind: "type", type: Proton, params: [{ identifier: Quark }] },
+  );
+  container.register(
+    Neutron,
+    { kind: "type", type: Neutron, params: [{ identifier: Quark }] },
+  );
   container.register(Electron, { kind: "type", type: Electron });
   container.register(Quark, { kind: "type", type: Quark });
 
@@ -227,16 +272,58 @@ test("DependencyResolver.resolve()", () => {
   assert(molecule.atom.electron instanceof Electron);
 });
 
+test("DependencyResolver.resolve() with optional constructor params", () => {
+  // arrange
+  const container = new DiContainer();
+  container.register(
+    Molecule,
+    { kind: "type", type: Molecule, params: [{ identifier: Atom }] },
+  );
+  container.register(
+    Atom,
+    {
+      kind: "type",
+      type: Atom,
+      params: [
+        { identifier: Proton, isOptional: true },
+        { identifier: Neutron, isOptional: true },
+        { identifier: Electron },
+      ],
+    },
+  );
+  container.register(Electron, { kind: "type", type: Electron });
+
+  const resolver = container.compile(DependencyScope.beginScope());
+
+  // act
+  const molecule = resolver.resolve<Molecule>(Molecule);
+
+  // assert
+  assert(molecule instanceof Molecule);
+  assert(molecule.atom instanceof Atom);
+  assert(molecule.atom.electron instanceof Electron);
+  assert(molecule.atom.proton === undefined);
+  assert(molecule.atom.neutron === undefined);
+});
+
 test("DependencyResolver.resolve() property dependencies", () => {
   // arrange
   const container = new DiContainer();
   container.register(
     ThingOne,
-    { kind: "type", type: ThingOne, props: { otherThing: ThingTwo } },
+    {
+      kind: "type",
+      type: ThingOne,
+      props: { otherThing: { identifier: ThingTwo } },
+    },
   );
   container.register(
     ThingTwo,
-    { kind: "type", type: ThingTwo, props: { otherThing: ThingOne } },
+    {
+      kind: "type",
+      type: ThingTwo,
+      props: { otherThing: { identifier: ThingOne } },
+    },
   );
 
   const resolver = container.compile(DependencyScope.beginScope());
@@ -260,7 +347,7 @@ test("DependencyResolver.resolve() factory dependencies", () => {
     {
       kind: "factory",
       factory: (atom: Atom) => new Molecule(atom),
-      params: ["ATOM"],
+      params: [{ identifier: "ATOM" }],
     },
   );
   container.register(
