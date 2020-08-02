@@ -18,9 +18,9 @@ class Molecule {
 }
 class Atom {
   constructor(
-    public proton: Proton,
-    public neutron: Neutron,
-    public electron: Electron,
+    public proton?: Proton,
+    public neutron?: Neutron,
+    public electron?: Electron,
   ) {
   }
 }
@@ -227,7 +227,7 @@ test("DependencyResolver.resolve()", () => {
   assert(molecule.atom.electron instanceof Electron);
 });
 
-test("DependencyResolver.resolve() properties", () => {
+test("DependencyResolver.resolve() property dependencies", () => {
   // arrange
   const container = new DiContainer();
   container.register(
@@ -250,4 +250,30 @@ test("DependencyResolver.resolve() properties", () => {
   assert(thing2 instanceof ThingTwo);
   assertEquals(thing1.otherThing, thing2);
   assertEquals(thing2.otherThing, thing1);
+});
+
+test("DependencyResolver.resolve() factory dependencies", () => {
+  // arrange
+  const container = new DiContainer();
+  container.register(
+    "MOLECULE",
+    {
+      kind: "factory",
+      factory: (atom: Atom) => new Molecule(atom),
+      params: ["ATOM"],
+    },
+  );
+  container.register(
+    "ATOM",
+    { kind: "factory", factory: () => new Atom() },
+  );
+
+  const resolver = container.compile(DependencyScope.beginScope());
+
+  // act
+  const molecule = resolver.resolve<Molecule>("MOLECULE");
+
+  // assert
+  assert(molecule instanceof Molecule);
+  assert(molecule.atom instanceof Atom);
 });
