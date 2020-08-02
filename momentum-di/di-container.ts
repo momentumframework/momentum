@@ -8,7 +8,7 @@ interface BlueprintDefinition {
   kind: "type";
   type: Type;
   params?: TypeIdentifier[];
-  properties?: { [name: string]: TypeIdentifier };
+  props?: { [name: string]: TypeIdentifier };
 }
 type FactoryFunction = (...params: any[]) => unknown;
 interface FactoryDefinition {
@@ -25,9 +25,9 @@ type Definition = BlueprintDefinition | FactoryDefinition | ValueDefinition;
 export interface TypeDependencyTreeNode {
   identifier: TypeIdentifier;
   kind: "type";
-  type: Type;
+  ctor: Type;
   params: DependencyTreeNode[];
-  properties: { [name: string]: DependencyTreeNode };
+  props: { [name: string]: DependencyTreeNode };
 }
 export interface FactoryDependencyTreeNode {
   identifier: TypeIdentifier;
@@ -67,8 +67,8 @@ export class DiContainer {
     this.definitions.set(identifier, definition);
   }
 
-  compile() {
-    return new DependencyResolver(this.buildDependencyGraph());
+  compile(scope: DependencyScope) {
+    return new DependencyResolver(this.buildDependencyGraph(), scope);
   }
 
   buildDependencyGraph() {
@@ -97,13 +97,13 @@ export class DiContainer {
         case "type":
           node = { identifier, kind: definition.kind };
           nodes.push(node);
-          node.type = definition.type;
+          node.ctor = definition.type;
           node.params = this.buildSubtree(definition, nodes);
-          node.properties = this.buildPropertySubtree(definition, nodes)
+          node.props = this.buildPropSubtree(definition, nodes)
             .reduce(
               (previous, current) => ({
                 ...previous,
-                [current.property]: current.node,
+                [current.prop]: current.node,
               }),
               {},
             );
@@ -135,16 +135,16 @@ export class DiContainer {
     );
   }
 
-  private buildPropertySubtree(
+  private buildPropSubtree(
     blueprint: BlueprintDefinition,
     nodes: PartialDependencyTreeNode[],
   ) {
-    if (!blueprint.properties) {
+    if (!blueprint.props) {
       return [];
     }
-    return Object.entries(blueprint.properties)
-      .map(([property, identifier]) => ({
-        property,
+    return Object.entries(blueprint.props)
+      .map(([prop, identifier]) => ({
+        prop: prop,
         node: this.buildTree(identifier, nodes),
       }));
   }
@@ -200,19 +200,38 @@ export class DiContainer {
 }
 
 export class DependencyScope {
+  private isEnded = false;
   private cache = new Map<TypeIdentifier, unknown>();
 
   constructor(private parent?: DependencyScope) {
   }
 
-  cacheObject(identifier: TypeIdentifier, obj: unknown) {
+  static beginScope() {
+    return new DependencyScope();
+  }
+
+  beginSubScope() {
+    return new DependencyScope(this);
+  }
+
+  endScope() {
+    this.cache.clear();
+  }
+
+  set(identifier: TypeIdentifier, obj: unknown) {
+    if (this.isEnded) {
+      throw Error("Scope is ended");
+    }
     this.cache.set(identifier, obj);
   }
 
-  getObject(identifier: TypeIdentifier) {
+  get(identifier: TypeIdentifier) {
+    if (this.isEnded) {
+      throw Error("Scope is ended");
+    }
     let obj = this.cache.get(identifier);
     if (!obj && this.parent) {
-      obj = this.parent.getObject(identifier);
+      obj = this.parent.get(identifier);
     }
     return obj;
   }
@@ -221,21 +240,41 @@ export class DependencyScope {
 export class DependencyResolver {
   constructor(
     private dependencyGraph: DependencyGraph,
-    private scope: DependencyScope = new DependencyScope(),
+    private scope: DependencyScope,
   ) {
   }
 
   resolve<T = unknown>(identifier: TypeIdentifier) {
-    // const type = this.dependencyGraph.get(identifier);
-    // if (!type) {
-    //   throw Error(`Unknown type ${identifier}`);
-    // }
-    // let obj = this.scope.getObject(identifier);
-    // if (!obj) {
-    //   const params = type.constructorParams.map((tree) =>
-    //     this.resolve(tree.type)
-    //   );
-    // }
-    // return obj;
+    const node = this.dependencyGraph.get(identifier);
+    if (!node) {
+      throw Error(`Unknown type ${identifier}`);
+    }
+    let obj = this.scope.get(identifier);
+    if (!obj) {
+      switch (node.kind) {
+        case "type":
+          obj = new node.ctor(
+            ...node.params.map((param) => this.resolve(param.identifier)),
+          );
+          this.scope.set(identifier, obj);
+          const propBag = obj as Record<string, unknown>;
+          for (const [prop, propNode] of Object.entries(node.props)) {
+            propBag[prop] = this.resolve(
+              propNode.identifier,
+            );
+          }
+          break;
+        case "factory":
+          obj = node.factory(
+            ...node.params.map((param) => this.resolve(param.identifier)),
+          );
+          this.scope.set(identifier, obj);
+          break;
+        case "value":
+          obj = node.value;
+          this.scope.set(identifier, obj);
+      }
+    }
+    return obj;
   }
 }

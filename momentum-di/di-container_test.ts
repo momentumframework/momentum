@@ -1,11 +1,16 @@
 import {
+  assert,
   assertArrayContains,
   assertEquals,
   assertThrows,
   test,
 } from "./test_deps.ts";
 
-import { DiContainer, TypeDependencyTreeNode } from "./di-container.ts";
+import {
+  DependencyScope,
+  DiContainer,
+  TypeDependencyTreeNode,
+} from "./di-container.ts";
 
 class Molecule {
   constructor(public atom: Atom) {
@@ -75,65 +80,65 @@ test("DiContainer.buildDependencyGraph()", () => {
   assertArrayContains(
     Array
       .from(graph.values())
-      .map((node) => (node as TypeDependencyTreeNode).type),
+      .map((node) => (node as TypeDependencyTreeNode).ctor),
     [Molecule, Atom, Proton, Neutron, Electron, Quark],
   );
   assertArrayContains(
     Array.from(graph.values())
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Molecule)?.params
+      .find((node) => node.ctor === Molecule)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Atom)?.params
+      .find((node) => node.ctor === Atom)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Proton)?.params
+      .find((node) => node.ctor === Proton)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .map((node) => node.type) ?? [],
+      .map((node) => node.ctor) ?? [],
     [Quark],
   );
   assertArrayContains(
     Array.from(graph.values())
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Molecule)?.params
+      .find((node) => node.ctor === Molecule)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Atom)?.params
+      .find((node) => node.ctor === Atom)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Neutron)?.params
+      .find((node) => node.ctor === Neutron)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .map((node) => node.type) ?? [],
+      .map((node) => node.ctor) ?? [],
     [Quark],
   );
   assertEquals(
     Array.from(graph.values())
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Molecule)?.params
+      .find((node) => node.ctor === Molecule)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Atom)?.params
+      .find((node) => node.ctor === Atom)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Electron)?.params ?? [],
+      .find((node) => node.ctor === Electron)?.params ?? [],
     [],
   );
   assertEquals(
     Array.from(graph.values())
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Molecule)?.params
+      .find((node) => node.ctor === Molecule)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Atom)?.params
+      .find((node) => node.ctor === Atom)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Proton)?.params
+      .find((node) => node.ctor === Proton)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Quark)?.params ?? [],
+      .find((node) => node.ctor === Quark)?.params ?? [],
     [],
   );
   assertEquals(
     Array.from(graph.values())
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Molecule)?.params
+      .find((node) => node.ctor === Molecule)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Atom)?.params
+      .find((node) => node.ctor === Atom)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Neutron)?.params
+      .find((node) => node.ctor === Neutron)?.params
       .map((node) => node as TypeDependencyTreeNode)
-      .find((node) => node.type === Quark)?.params ?? [],
+      .find((node) => node.ctor === Quark)?.params ?? [],
     [],
   );
 });
@@ -180,13 +185,69 @@ test("DiContainer.buildDependencyGraph() - allows circular property dependencies
   const container = new DiContainer();
   container.register(
     ThingOne,
-    { kind: "type", type: ThingOne, properties: { otherThing: ThingTwo } },
+    { kind: "type", type: ThingOne, props: { otherThing: ThingTwo } },
   );
   container.register(
     ThingTwo,
-    { kind: "type", type: ThingTwo, properties: { otherThing: ThingOne } },
+    { kind: "type", type: ThingTwo, props: { otherThing: ThingOne } },
   );
 
   // act
   container.buildDependencyGraph();
+});
+
+test("DependencyResolver.resolve()", () => {
+  // arrange
+  const container = new DiContainer();
+  container.register(
+    Molecule,
+    { kind: "type", type: Molecule, params: [Atom] },
+  );
+  container.register(
+    Atom,
+    { kind: "type", type: Atom, params: [Proton, Neutron, Electron] },
+  );
+  container.register(Proton, { kind: "type", type: Proton, params: [Quark] });
+  container.register(Neutron, { kind: "type", type: Neutron, params: [Quark] });
+  container.register(Electron, { kind: "type", type: Electron });
+  container.register(Quark, { kind: "type", type: Quark });
+
+  const resolver = container.compile(DependencyScope.beginScope());
+
+  // act
+  const molecule = resolver.resolve<Molecule>(Molecule);
+
+  // assert
+  assert(molecule instanceof Molecule);
+  assert(molecule.atom instanceof Atom);
+  assert(molecule.atom.proton instanceof Proton);
+  assert(molecule.atom.proton.quark instanceof Quark);
+  assert(molecule.atom.neutron instanceof Neutron);
+  assert(molecule.atom.neutron.quark instanceof Quark);
+  assert(molecule.atom.electron instanceof Electron);
+});
+
+test("DependencyResolver.resolve() properties", () => {
+  // arrange
+  const container = new DiContainer();
+  container.register(
+    ThingOne,
+    { kind: "type", type: ThingOne, props: { otherThing: ThingTwo } },
+  );
+  container.register(
+    ThingTwo,
+    { kind: "type", type: ThingTwo, props: { otherThing: ThingOne } },
+  );
+
+  const resolver = container.compile(DependencyScope.beginScope());
+
+  // act
+  const thing1 = resolver.resolve<ThingOne>(ThingOne);
+  const thing2 = resolver.resolve<ThingTwo>(ThingTwo);
+
+  // assert
+  assert(thing1 instanceof ThingOne);
+  assert(thing2 instanceof ThingTwo);
+  assertEquals(thing1.otherThing, thing2);
+  assertEquals(thing2.otherThing, thing1);
 });
