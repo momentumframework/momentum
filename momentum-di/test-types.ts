@@ -1,7 +1,26 @@
-export class Molecule {
-  constructor(public atom: Atom) {
+import { Injectable } from "./decorators/injectable.ts";
+
+@Injectable()
+export class Quark {
+}
+
+@Injectable()
+export class Electron {
+}
+
+@Injectable()
+export class Neutron {
+  constructor(public quark: Quark) {
   }
 }
+
+@Injectable()
+export class Proton {
+  constructor(public quark: Quark) {
+  }
+}
+
+@Injectable()
 export class Atom {
   constructor(
     public proton?: Proton,
@@ -10,17 +29,11 @@ export class Atom {
   ) {
   }
 }
-export class Proton {
-  constructor(public quark: Quark) {
+
+@Injectable()
+export class Molecule {
+  constructor(public atom: Atom) {
   }
-}
-export class Neutron {
-  constructor(public quark: Quark) {
-  }
-}
-export class Electron {
-}
-export class Quark {
 }
 
 export class Money {

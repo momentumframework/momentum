@@ -51,11 +51,6 @@ interface ValueDependencyTreeNode {
   kind: "value";
   value: unknown;
 }
-interface ArrayLikeDependencyTreeNode {
-  identifier: TypeIdentifier;
-  kind: "arraylike";
-  elements: DependencyTreeNode[];
-}
 interface NullDependencyTreeNode {
   identifier: TypeIdentifier;
   kind: "null";
@@ -68,7 +63,7 @@ export type NullableDependencyTreeNode =
   | DependencyTreeNode
   | NullDependencyTreeNode;
 
-type DependencyNodeKind = DefinitionKind | "arraylike" | "null";
+type DependencyNodeKind = DefinitionKind | "null";
 
 type PartialDependencyTreeNode = Partial<NullableDependencyTreeNode> & {
   identifier: TypeIdentifier;
@@ -76,6 +71,8 @@ type PartialDependencyTreeNode = Partial<NullableDependencyTreeNode> & {
 };
 
 export class DiContainer {
+  private static globalContainer?: DiContainer;
+
   #definitions = new Map<TypeIdentifier, Definition>();
   #dependencyGraph?: DependencyGraph;
 
@@ -87,6 +84,17 @@ export class DiContainer {
       this.#dependencyGraph = this.compileDependencyGraph();
     }
     return this.#dependencyGraph;
+  }
+
+  static global() {
+    if (!DiContainer.globalContainer) {
+      DiContainer.globalContainer = new DiContainer();
+    }
+    return DiContainer.globalContainer;
+  }
+
+  createChild() {
+    return new DiContainer(this);
   }
 
   register(identifier: TypeIdentifier, definition: Definition) {

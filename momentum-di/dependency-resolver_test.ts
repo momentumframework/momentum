@@ -18,40 +18,12 @@ import {
   Quark,
   ThingOne,
   ThingTwo,
-} from "./test-data.ts";
+} from "./test-types.ts";
 
 test("DependencyResolver.resolve() - resolves dependency", () => {
   // arrange
-  const container = new DiContainer();
-  container.register(
-    Molecule,
-    { kind: "type", type: Molecule, params: [{ identifier: Atom }] },
-  );
-  container.register(
-    Atom,
-    {
-      kind: "type",
-      type: Atom,
-      params: [
-        { identifier: Proton },
-        { identifier: Neutron },
-        { identifier: Electron },
-      ],
-    },
-  );
-  container.register(
-    Proton,
-    { kind: "type", type: Proton, params: [{ identifier: Quark }] },
-  );
-  container.register(
-    Neutron,
-    { kind: "type", type: Neutron, params: [{ identifier: Quark }] },
-  );
-  container.register(Electron, { kind: "type", type: Electron });
-  container.register(Quark, { kind: "type", type: Quark });
-
   const resolver = new DependencyResolver(
-    container,
+    DiContainer.global(),
     DependencyScope.beginScope(),
   );
 
