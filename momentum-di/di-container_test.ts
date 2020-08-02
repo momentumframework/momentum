@@ -57,7 +57,7 @@ class ThingTwo {
   otherThing?: ThingOne;
 }
 
-test("DiContainer.buildDependencyGraph()", () => {
+test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
   // arrange
   const container = new DiContainer();
   container.register(
@@ -176,6 +176,22 @@ test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
   );
 });
 
+test("DiContainer.buildDependencyGraph() - allows optional dependency", () => {
+  // arrange
+  const container = new DiContainer();
+  container.register(
+    Molecule,
+    {
+      kind: "type",
+      type: Molecule,
+      params: [{ identifier: Atom, isOptional: true }],
+    },
+  );
+
+  // act
+  container.buildDependencyGraph();
+});
+
 test("DiContainer.buildDependencyGraph() - fails on circular dependency", () => {
   // arrange
   const container = new DiContainer();
@@ -227,7 +243,7 @@ test("DiContainer.buildDependencyGraph() - allows circular property dependencies
   container.buildDependencyGraph();
 });
 
-test("DependencyResolver.resolve()", () => {
+test("DependencyResolver.resolve() - resolves dependency", () => {
   // arrange
   const container = new DiContainer();
   container.register(
@@ -272,7 +288,7 @@ test("DependencyResolver.resolve()", () => {
   assert(molecule.atom.electron instanceof Electron);
 });
 
-test("DependencyResolver.resolve() with optional constructor params", () => {
+test("DependencyResolver.resolve() - allows optional dependencies", () => {
   // arrange
   const container = new DiContainer();
   container.register(
@@ -306,7 +322,7 @@ test("DependencyResolver.resolve() with optional constructor params", () => {
   assert(molecule.atom.neutron === undefined);
 });
 
-test("DependencyResolver.resolve() property dependencies", () => {
+test("DependencyResolver.resolve() - resolves property dependencies", () => {
   // arrange
   const container = new DiContainer();
   container.register(
@@ -339,7 +355,7 @@ test("DependencyResolver.resolve() property dependencies", () => {
   assertEquals(thing2.otherThing, thing1);
 });
 
-test("DependencyResolver.resolve() factory dependencies", () => {
+test("DependencyResolver.resolve() - resolves factory dependencies", () => {
   // arrange
   const container = new DiContainer();
   container.register(
@@ -363,4 +379,31 @@ test("DependencyResolver.resolve() factory dependencies", () => {
   // assert
   assert(molecule instanceof Molecule);
   assert(molecule.atom instanceof Atom);
+});
+
+test("DependencyResolver.resolve() - resolves value dependencies", () => {
+  // arrange
+  const atom = new Atom();
+  const container = new DiContainer();
+  container.register(
+    Molecule,
+    {
+      kind: "type",
+      type: Molecule,
+      params: [{ identifier: "ATOM" }],
+    },
+  );
+  container.register(
+    "ATOM",
+    { kind: "value", value: atom },
+  );
+
+  const resolver = container.compile(DependencyScope.beginScope());
+
+  // act
+  const molecule = resolver.resolve<Molecule>(Molecule);
+
+  // assert
+  assert(molecule instanceof Molecule);
+  assertEquals(molecule.atom, atom);
 });

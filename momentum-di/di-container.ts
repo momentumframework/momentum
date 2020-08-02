@@ -1,6 +1,8 @@
-type Type<T = unknown> = new (...params: any[]) => T;
 type Token = string;
-type TypeIdentifier<T = unknown> = Type<T> | Token;
+// deno-lint-ignore no-explicit-any
+type Type<T = unknown> = new (...params: any[]) => T;
+// deno-lint-ignore no-explicit-any
+type TypeIdentifier<T = any> = Type<T> | Token;
 
 type DefinitionKind = "type" | "factory" | "value";
 
@@ -14,6 +16,7 @@ interface BlueprintDefinition {
   params?: Parameter[];
   props?: { [name: string]: Parameter };
 }
+// deno-lint-ignore no-explicit-any
 type FactoryFunction = (...params: any[]) => unknown;
 interface FactoryDefinition {
   kind: "factory";
@@ -302,9 +305,8 @@ export class DependencyResolver {
             ),
           );
           this.scope.set(identifier, obj);
-          const propBag = obj as Record<string, unknown>;
           for (const [prop, propNode] of Object.entries(node.props)) {
-            propBag[prop] = this.resolveDependency(
+            (obj as Record<string, unknown>)[prop] = this.resolveDependency(
               propNode.identifier,
               propNode,
             );
@@ -321,6 +323,7 @@ export class DependencyResolver {
         case "value":
           obj = node.value;
           this.scope.set(identifier, obj);
+          break;
         case "null":
           obj = undefined;
           this.scope.set(identifier, undefined);
