@@ -2,37 +2,69 @@ type Type<T = unknown> = new (...params: any[]) => T;
 type Token = string;
 type TypeIdentifier<T = unknown> = Type<T> | Token;
 
-interface ObjectBlueprint {
+type DefinitionKind = "type" | "factory" | "value";
+
+interface BlueprintDefinition {
+  kind: "type";
   type: Type;
-  constructorParams?: TypeIdentifier[];
+  params?: TypeIdentifier[];
   properties?: { [name: string]: TypeIdentifier };
 }
+type FactoryFunction = (...params: any[]) => unknown;
+interface FactoryDefinition {
+  kind: "factory";
+  factory: FactoryFunction;
+  params?: TypeIdentifier[];
+}
+interface ValueDefinition {
+  kind: "value";
+  value: unknown;
+}
+type Definition = BlueprintDefinition | FactoryDefinition | ValueDefinition;
 
-interface DependencyTreeNode {
+export interface TypeDependencyTreeNode {
+  identifier: TypeIdentifier;
+  kind: "type";
   type: Type;
-  constructorParams: DependencyTreeNode[];
+  params: DependencyTreeNode[];
   properties: { [name: string]: DependencyTreeNode };
 }
+export interface FactoryDependencyTreeNode {
+  identifier: TypeIdentifier;
+  kind: "factory";
+  factory: FactoryFunction;
+  params: DependencyTreeNode[];
+}
+export interface ValueDependencyTreeNode {
+  identifier: TypeIdentifier;
+  kind: "value";
+  value: unknown;
+}
+export type DependencyTreeNode =
+  | TypeDependencyTreeNode
+  | ValueDependencyTreeNode
+  | FactoryDependencyTreeNode;
 
 type PartialDependencyTreeNode = Partial<DependencyTreeNode> & {
-  type: Type;
+  identifier: TypeIdentifier;
+  kind: DefinitionKind;
 };
 
-type DependencyGraph = Map<TypeIdentifier, DependencyTreeNode>;
+export type DependencyGraph = Map<TypeIdentifier, DependencyTreeNode>;
 
 export class DiContainer {
-  private blueprints = new Map<TypeIdentifier, ObjectBlueprint>();
+  private definitions = new Map<TypeIdentifier, Definition>();
 
   constructor(private parent?: DiContainer) {
   }
 
-  register(identifier: TypeIdentifier, blueprint: ObjectBlueprint) {
-    if (this.getBlueprint(identifier)) {
+  register(identifier: TypeIdentifier, definition: Definition) {
+    if (this.definitions.get(identifier)) {
       throw Error(
         `Unable to register ${identifier} because it is already registered.`,
       );
     }
-    this.blueprints.set(identifier, blueprint);
+    this.definitions.set(identifier, definition);
   }
 
   compile() {
@@ -41,17 +73,12 @@ export class DiContainer {
 
   buildDependencyGraph() {
     const nodes: DependencyTreeNode[] = [];
-    const mergedBlueprintKeys = [
-      ...new Set(
-        [...this.blueprints.keys(), ...(this.parent?.blueprints.keys() ?? [])],
-      ),
-    ];
     const graph = new Map<TypeIdentifier, DependencyTreeNode>();
-    for (const identifier of mergedBlueprintKeys) {
+    for (const identifier of this.getDefinitionIdentifiers()) {
       graph.set(identifier, this.buildTree(identifier, nodes));
     }
     for (const tree of graph.values()) {
-      this.detectConstructorCycle(tree);
+      this.detectCircularDependencies(tree);
     }
     return graph;
   }
@@ -60,29 +87,56 @@ export class DiContainer {
     identifier: TypeIdentifier,
     nodes: PartialDependencyTreeNode[],
   ) {
-    const blueprint = this.getBlueprint(identifier);
-    if (!blueprint) {
-      throw Error(
-        `Unable to resolve type ${identifier} because it is not registred.`,
-      );
+    let node = nodes.find((node) => node.identifier === identifier);
+    if (!node) {
+      const definition = this.getDefinition(identifier);
+      if (!definition) {
+        throw Error(`Unknown type ${identifier}`);
+      }
+      switch (definition.kind) {
+        case "type":
+          node = { identifier, kind: definition.kind };
+          nodes.push(node);
+          node.type = definition.type;
+          node.params = this.buildSubtree(definition, nodes);
+          node.properties = this.buildPropertySubtree(definition, nodes)
+            .reduce(
+              (previous, current) => ({
+                ...previous,
+                [current.property]: current.node,
+              }),
+              {},
+            );
+          break;
+        case "factory":
+          node = { identifier, kind: definition.kind };
+          nodes.push(node);
+          node.factory = definition.factory;
+          node.params = this.buildSubtree(definition, nodes);
+          break;
+        case "value":
+          node = { identifier, kind: definition.kind };
+          nodes.push(node);
+          node.value = definition.value;
+      }
     }
-    return this.loadNode({ type: blueprint.type }, blueprint, nodes);
+    return node as DependencyTreeNode;
   }
 
-  private buildConstructorSubtree(
-    blueprint: ObjectBlueprint,
+  private buildSubtree(
+    defintion: BlueprintDefinition | FactoryDefinition,
     nodes: PartialDependencyTreeNode[],
   ) {
-    if (!blueprint.constructorParams) {
+    if (!defintion.params) {
       return [];
     }
-    return blueprint.constructorParams.map((identifier) =>
-      this.getNode(identifier, nodes)
+    return defintion.params.map((identifier) =>
+      this.buildTree(identifier, nodes)
     );
   }
 
   private buildPropertySubtree(
-    blueprint: ObjectBlueprint,
+    blueprint: BlueprintDefinition,
     nodes: PartialDependencyTreeNode[],
   ) {
     if (!blueprint.properties) {
@@ -91,77 +145,97 @@ export class DiContainer {
     return Object.entries(blueprint.properties)
       .map(([property, identifier]) => ({
         property,
-        node: this.getNode(identifier, nodes),
+        node: this.buildTree(identifier, nodes),
       }));
   }
 
-  private getNode(
-    identifier: TypeIdentifier,
-    nodes: PartialDependencyTreeNode[],
-  ) {
-    const blueprint = this.getBlueprint(identifier);
-    if (!blueprint) {
-      throw Error(`Unknown type ${identifier}`);
-    }
-    let node = nodes.find((node) => node.type === blueprint.type);
-    if (!node) {
-      node = { type: blueprint.type };
-      nodes.push(node);
-      this.loadNode(node, blueprint, nodes);
-    }
-    return node as DependencyTreeNode;
-  }
-
-  private loadNode(
-    node: PartialDependencyTreeNode,
-    blueprint: ObjectBlueprint,
-    nodes: PartialDependencyTreeNode[],
-  ) {
-    node.constructorParams = this.buildConstructorSubtree(blueprint, nodes);
-    node.properties = this.buildPropertySubtree(blueprint, nodes)
-      .reduce(
-        (previous, current) => ({
-          ...previous,
-          [current.property]: current.node,
-        }),
-        {},
-      );
-    return node as DependencyTreeNode;
-  }
-
-  private detectConstructorCycle(
+  private detectCircularDependencies(
     node: DependencyTreeNode,
     ancestors: DependencyTreeNode[] = [],
   ) {
-    if (ancestors.includes(node)) {
-      const path = ancestors.map((ancestor) => ancestor.type.name).join(" > ");
-      throw new Error(`Circular constructor dependency detected: ${path}`);
+    const circular = ancestors.includes(node);
+    ancestors.push(node);
+    if (circular) {
+      const path = ancestors
+        .map((ancestor) =>
+          typeof ancestor.identifier === "string"
+            ? ancestor.identifier
+            : ancestor.identifier.name
+        )
+        .join(" > ");
+      throw new Error(`Circular dependency detected: ${path}`);
     }
-    if (!node.constructorParams) {
+    if (node.kind === "value" || !node.params) {
       return;
     }
-    ancestors.push(node);
-    for (const child of node.constructorParams) {
-      this.detectConstructorCycle(child, [...ancestors]);
+    for (const child of node.params) {
+      this.detectCircularDependencies(child, [...ancestors]);
     }
   }
 
-  private getBlueprint(
+  private getDefinition(
     identifier: TypeIdentifier,
-  ): ObjectBlueprint | undefined {
-    let blueprint = this.blueprints.get(identifier);
-    if (!blueprint && this.parent) {
-      blueprint = this.parent.getBlueprint(identifier);
+  ):
+    | BlueprintDefinition
+    | FactoryDefinition
+    | ValueDefinition
+    | undefined {
+    let definiton = this.definitions.get(identifier);
+    if (!definiton && this.parent) {
+      definiton = this.parent.getDefinition(identifier);
     }
-    return blueprint;
+    return definiton;
+  }
+
+  private getDefinitionIdentifiers(): TypeIdentifier[] {
+    return [
+      ...new Set(
+        [
+          ...this.definitions.keys(),
+          ...(this.parent?.getDefinitionIdentifiers() ?? []),
+        ],
+      ),
+    ];
+  }
+}
+
+export class DependencyScope {
+  private cache = new Map<TypeIdentifier, unknown>();
+
+  constructor(private parent?: DependencyScope) {
+  }
+
+  cacheObject(identifier: TypeIdentifier, obj: unknown) {
+    this.cache.set(identifier, obj);
+  }
+
+  getObject(identifier: TypeIdentifier) {
+    let obj = this.cache.get(identifier);
+    if (!obj && this.parent) {
+      obj = this.parent.getObject(identifier);
+    }
+    return obj;
   }
 }
 
 export class DependencyResolver {
-  constructor(private dependencyGraph: DependencyGraph) {
+  constructor(
+    private dependencyGraph: DependencyGraph,
+    private scope: DependencyScope = new DependencyScope(),
+  ) {
   }
 
   resolve<T = unknown>(identifier: TypeIdentifier) {
-    const type = this.dependencyGraph;
+    // const type = this.dependencyGraph.get(identifier);
+    // if (!type) {
+    //   throw Error(`Unknown type ${identifier}`);
+    // }
+    // let obj = this.scope.getObject(identifier);
+    // if (!obj) {
+    //   const params = type.constructorParams.map((tree) =>
+    //     this.resolve(tree.type)
+    //   );
+    // }
+    // return obj;
   }
 }

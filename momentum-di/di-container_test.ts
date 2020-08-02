@@ -5,7 +5,7 @@ import {
   test,
 } from "./test_deps.ts";
 
-import { DiContainer } from "./di-container.ts";
+import { DiContainer, TypeDependencyTreeNode } from "./di-container.ts";
 
 class Molecule {
   constructor(public atom: Atom) {
@@ -55,61 +55,85 @@ class ThingTwo {
 test("DiContainer.buildDependencyGraph()", () => {
   // arrange
   const container = new DiContainer();
-  container.register(Molecule, { type: Molecule, constructorParams: [Atom] });
+  container.register(
+    Molecule,
+    { kind: "type", type: Molecule, params: [Atom] },
+  );
   container.register(
     Atom,
-    { type: Atom, constructorParams: [Proton, Neutron, Electron] },
+    { kind: "type", type: Atom, params: [Proton, Neutron, Electron] },
   );
-  container.register(Proton, { type: Proton, constructorParams: [Quark] });
-  container.register(Neutron, { type: Neutron, constructorParams: [Quark] });
-  container.register(Electron, { type: Electron });
-  container.register(Quark, { type: Quark });
+  container.register(Proton, { kind: "type", type: Proton, params: [Quark] });
+  container.register(Neutron, { kind: "type", type: Neutron, params: [Quark] });
+  container.register(Electron, { kind: "type", type: Electron });
+  container.register(Quark, { kind: "type", type: Quark });
 
   // act
   const graph = container.buildDependencyGraph();
 
   // assert
   assertArrayContains(
-    Array.from(graph.values()).map((g) => g.type),
+    Array
+      .from(graph.values())
+      .map((node) => (node as TypeDependencyTreeNode).type),
     [Molecule, Atom, Proton, Neutron, Electron, Quark],
   );
   assertArrayContains(
     Array.from(graph.values())
-      .find((f) => f.type === Molecule)?.constructorParams
-      .find((f) => f.type === Atom)?.constructorParams
-      .find((p) => p.type === Proton)?.constructorParams
-      .map((p) => p.type) ?? [],
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Molecule)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Atom)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Proton)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .map((node) => node.type) ?? [],
     [Quark],
   );
   assertArrayContains(
     Array.from(graph.values())
-      .find((f) => f.type === Molecule)?.constructorParams
-      .find((f) => f.type === Atom)?.constructorParams
-      .find((p) => p.type === Neutron)?.constructorParams
-      .map((p) => p.type) ?? [],
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Molecule)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Atom)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Neutron)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .map((node) => node.type) ?? [],
     [Quark],
   );
   assertEquals(
     Array.from(graph.values())
-      .find((f) => f.type === Molecule)?.constructorParams
-      .find((f) => f.type === Atom)?.constructorParams
-      .find((p) => p.type === Electron)?.constructorParams ?? [],
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Molecule)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Atom)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Electron)?.params ?? [],
     [],
   );
   assertEquals(
     Array.from(graph.values())
-      .find((f) => f.type === Molecule)?.constructorParams
-      .find((f) => f.type === Atom)?.constructorParams
-      .find((p) => p.type === Proton)?.constructorParams
-      .find((p) => p.type === Quark)?.constructorParams ?? [],
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Molecule)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Atom)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Proton)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Quark)?.params ?? [],
     [],
   );
   assertEquals(
     Array.from(graph.values())
-      .find((f) => f.type === Molecule)?.constructorParams
-      .find((f) => f.type === Atom)?.constructorParams
-      .find((p) => p.type === Neutron)?.constructorParams
-      .find((p) => p.type === Quark)?.constructorParams ?? [],
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Molecule)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Atom)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Neutron)?.params
+      .map((node) => node as TypeDependencyTreeNode)
+      .find((node) => node.type === Quark)?.params ?? [],
     [],
   );
 });
@@ -117,7 +141,10 @@ test("DiContainer.buildDependencyGraph()", () => {
 test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
   // arrange
   const container = new DiContainer();
-  container.register(Molecule, { type: Molecule, constructorParams: [Atom] });
+  container.register(
+    Molecule,
+    { kind: "type", type: Molecule, params: [Atom] },
+  );
 
   // assert
   assertThrows(
@@ -130,12 +157,12 @@ test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
   );
 });
 
-test("DiContainer.buildDependencyGraph() - fails on circular constructor dependency", () => {
+test("DiContainer.buildDependencyGraph() - fails on circular dependency", () => {
   // arrange
   const container = new DiContainer();
-  container.register(Money, { type: Money, constructorParams: [Job] });
-  container.register(Job, { type: Job, constructorParams: [College] });
-  container.register(College, { type: College, constructorParams: [Money] });
+  container.register(Money, { kind: "type", type: Money, params: [Job] });
+  container.register(Job, { kind: "type", type: Job, params: [College] });
+  container.register(College, { kind: "type", type: College, params: [Money] });
 
   // assert
   assertThrows(
@@ -144,7 +171,7 @@ test("DiContainer.buildDependencyGraph() - fails on circular constructor depende
       container.buildDependencyGraph();
     },
     undefined,
-    "Circular constructor dependency detected: Money > Job > College > Money",
+    "Circular dependency detected: Money > Job > College > Money",
   );
 });
 
@@ -153,11 +180,11 @@ test("DiContainer.buildDependencyGraph() - allows circular property dependencies
   const container = new DiContainer();
   container.register(
     ThingOne,
-    { type: ThingOne, properties: { otherThing: ThingTwo } },
+    { kind: "type", type: ThingOne, properties: { otherThing: ThingTwo } },
   );
   container.register(
     ThingTwo,
-    { type: ThingTwo, properties: { otherThing: ThingOne } },
+    { kind: "type", type: ThingTwo, properties: { otherThing: ThingOne } },
   );
 
   // act
