@@ -112,12 +112,13 @@ test("DependencyResolver.resolve() - resolves value dependencies", () => {
     constructor(@Inject("TOPPINGS") public toppings: string[]) {
     }
   }
-  DiContainer.global().register(
+  const container = DiContainer.global().createChild();
+  container.register(
     "TOPPINGS",
     { kind: "value", value: ["anchovies", "pineapple"] },
   );
   const resolver = new DependencyResolver(
-    DiContainer.global(),
+    container,
     DependencyScope.beginScope(),
   );
 

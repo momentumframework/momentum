@@ -187,9 +187,9 @@ export class DiContainer {
               ? pathIdentifier
               : pathIdentifier.name
           )
-          .join(" > ");
+          .join(" < ");
         throw Error(
-          `Error composing type ${pathString} > ${typeName}. ${typeName} is not registered`,
+          `Error composing ${pathString} < ${typeName}. ${typeName} is not registered`,
         );
       }
       path.push(identifier);
@@ -229,8 +229,8 @@ export class DiContainer {
     path: TypeIdentifier[],
     nodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
   ) {
-    const ctorParms = this.#ctorDefinitions.get(definition.type)?.entries();
-    if (!definition.params && !ctorParms) {
+    const ctorParms = this.getCtorDefinition(definition.type);
+    if (!definition.params && !ctorParms.size) {
       return [];
     }
     return Array.from(ctorParms ?? []).reduce(
@@ -255,12 +255,12 @@ export class DiContainer {
     path: TypeIdentifier[],
     nodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
   ) {
-    const props = this.#propDefinitions.get(definition.type)?.entries();
-    if (!definition.props && !props) {
+    const props = this.getPropDefinition(definition.type);
+    if (!definition.props && !props.size) {
       return [];
     }
     return Object.entries(
-      Array.from(props ?? []).reduce(
+      Array.from(props).reduce(
         (props, [propName, parameter]) => {
           props[propName] = { ...props[propName], ...parameter };
           return props;
@@ -344,5 +344,23 @@ export class DiContainer {
         ],
       ),
     ];
+  }
+
+  private getCtorDefinition(type: Type): Map<number, PartialParameter> {
+    return new Map<number, PartialParameter>(
+      [
+        ...this.parent?.getCtorDefinition(type).entries() ?? [],
+        ...this.#ctorDefinitions.get(type)?.entries() ?? [],
+      ],
+    );
+  }
+
+  private getPropDefinition(type: Type): Map<string, PartialParameter> {
+    return new Map<string, PartialParameter>(
+      [
+        ...this.parent?.getPropDefinition(type).entries() ?? [],
+        ...this.#propDefinitions.get(type)?.entries() ?? [],
+      ],
+    );
   }
 }

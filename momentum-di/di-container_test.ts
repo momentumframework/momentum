@@ -96,7 +96,7 @@ test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
       DiContainer.global().getDependencyGraph(Car);
     },
     undefined,
-    "Error composing type Car > Engine > Piston. Piston is not registered",
+    "Error composing Car < Engine < Piston. Piston is not registered",
   );
 });
 
