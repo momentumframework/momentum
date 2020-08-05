@@ -17,6 +17,7 @@ export class DependencyScope {
   }
 
   endScope() {
+    this.#isEnded = true;
     this.#cache.clear();
   }
 
