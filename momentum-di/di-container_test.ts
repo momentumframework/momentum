@@ -8,11 +8,12 @@ import {
 import { TypeDependencyGraphNode } from "./di-container.ts";
 import { DiContainer, Injectable, Inject } from "./mod.ts";
 import {
-  Molecule,
   Atom,
-  Proton,
-  Neutron,
   Electron,
+  Molecule,
+  Neutron,
+  Person,
+  Proton,
   Quark,
   ThingOne,
 } from "./shared-test-types.ts";
@@ -97,18 +98,10 @@ test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
 
 test("DiContainer.buildDependencyGraph() - allows optional dependency", () => {
   // arrange
-  const container = new DiContainer();
-  container.register(
-    Molecule,
-    {
-      kind: "type",
-      type: Molecule,
-      params: [{ identifier: Atom, isOptional: true }],
-    },
-  );
+  const container = DiContainer.global();
 
   // act
-  container.getDependencyGraph(Molecule);
+  container.getDependencyGraph(Person);
 });
 
 test("DiContainer.buildDependencyGraph() - fails on circular dependency", () => {

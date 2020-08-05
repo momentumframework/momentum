@@ -20,6 +20,8 @@ import {
   ThingOne,
   ThingTwo,
 } from "./shared-test-types.ts";
+import { Injectable } from "./decorators/injectable.ts";
+import { Inject } from "./decorators/inject.ts";
 
 test("DependencyResolver.resolve() - resolves dependency", () => {
   // arrange
@@ -105,30 +107,24 @@ test("DependencyResolver.resolve() - resolves factory dependencies", () => {
 
 test("DependencyResolver.resolve() - resolves value dependencies", () => {
   // arrange
-  const atom = new Atom();
-  const container = new DiContainer();
-  container.register(
-    Molecule,
-    {
-      kind: "type",
-      type: Molecule,
-      params: [{ identifier: "ATOM" }],
-    },
+  @Injectable()
+  class Pizza {
+    constructor(@Inject("TOPPINGS") public toppings: string[]) {
+    }
+  }
+  DiContainer.global().register(
+    "TOPPINGS",
+    { kind: "value", value: ["anchovies", "pineapple"] },
   );
-  container.register(
-    "ATOM",
-    { kind: "value", value: atom },
-  );
-
   const resolver = new DependencyResolver(
-    container,
+    DiContainer.global(),
     DependencyScope.beginScope(),
   );
 
   // act
-  const molecule = resolver.resolve<Molecule>(Molecule);
+  const molecule = resolver.resolve<Pizza>(Pizza);
 
   // assert
-  assert(molecule instanceof Molecule);
-  assertEquals(molecule.atom, atom);
+  assert(molecule instanceof Pizza);
+  assertEquals(molecule.toppings, ["anchovies", "pineapple"]);
 });
