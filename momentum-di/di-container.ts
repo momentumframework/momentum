@@ -1,3 +1,4 @@
+import { EventEmitter } from "./deps.ts";
 import { Reflect } from "./shims/reflect.ts";
 
 export type Token = string;
@@ -74,12 +75,16 @@ type PartialDependencyGraphNode = Partial<NullableDependencyGraphNode> & {
 export class DiContainer {
   private static globalContainer?: DiContainer;
 
+  #events = new EventEmitter<{ change(): void }>();
   #definitions = new Map<TypeIdentifier, Definition>();
-  #ctorDefinitions = new Map<Type, Map<number, PartialParameter>>();
-  #propDefinitions = new Map<Type, Map<string, PartialParameter>>();
+  #ctorDefinitions = new Map<Type, Map<number, PartialParameter[]>>();
+  #propDefinitions = new Map<Type, Map<string, PartialParameter[]>>();
   #dependencyGraph = new Map<TypeIdentifier, NullableDependencyGraphNode>();
 
   constructor(private parent?: DiContainer) {
+    if (parent) {
+      parent.#events.on("change", () => this.invalidateDependencyGraph());
+    }
   }
 
   getDependencyGraph(identifier: TypeIdentifier) {
@@ -128,12 +133,17 @@ export class DiContainer {
     paramIndex: number,
     param: PartialParameter,
   ) {
-    let params = this.#ctorDefinitions.get(type);
-    if (!params) {
-      params = new Map<number, Parameter>();
-      this.#ctorDefinitions.set(type, params);
+    let ctorParams = this.#ctorDefinitions.get(type);
+    if (!ctorParams) {
+      ctorParams = new Map();
+      this.#ctorDefinitions.set(type, ctorParams);
     }
-    params.set(paramIndex, param);
+    let ctorParam = ctorParams.get(paramIndex);
+    if (!ctorParam) {
+      ctorParam = [];
+      ctorParams.set(paramIndex, ctorParam);
+    }
+    ctorParam.push(param);
     this.invalidateDependencyGraph();
   }
 
@@ -144,10 +154,15 @@ export class DiContainer {
   ) {
     let props = this.#propDefinitions.get(type);
     if (!props) {
-      props = new Map<string, PartialParameter>();
+      props = new Map();
       this.#propDefinitions.set(type, props);
     }
-    props.set(propName, param);
+    let prop = props.get(propName);
+    if (!prop) {
+      prop = [];
+      props.set(propName, prop);
+    }
+    prop.push(param);
     this.invalidateDependencyGraph();
   }
 
@@ -167,6 +182,7 @@ export class DiContainer {
 
   private invalidateDependencyGraph() {
     this.#dependencyGraph.clear();
+    this.#events.emit("change");
   }
 
   private buildDependencyGraph(
@@ -234,8 +250,11 @@ export class DiContainer {
       return [];
     }
     return Array.from(ctorParms ?? []).reduce(
-      (params, [index, parameter]) => {
-        params[index] = { ...params[index], ...parameter };
+      (params, [index, param]) => {
+        params[index] = {
+          ...params[index],
+          ...param.reduce((prev, curr) => ({ ...prev, ...curr }), {}),
+        };
         return params;
       },
       definition.params ?? [],
@@ -261,8 +280,11 @@ export class DiContainer {
     }
     return Object.entries(
       Array.from(props).reduce(
-        (props, [propName, parameter]) => {
-          props[propName] = { ...props[propName], ...parameter };
+        (props, [propName, param]) => {
+          props[propName] = {
+            ...props[propName],
+            ...param.reduce((prev, curr) => ({ ...prev, ...curr }), {}),
+          };
           return props;
         },
         definition.props ?? {},
@@ -346,8 +368,8 @@ export class DiContainer {
     ];
   }
 
-  private getCtorDefinition(type: Type): Map<number, PartialParameter> {
-    return new Map<number, PartialParameter>(
+  private getCtorDefinition(type: Type): Map<number, PartialParameter[]> {
+    return new Map(
       [
         ...this.parent?.getCtorDefinition(type).entries() ?? [],
         ...this.#ctorDefinitions.get(type)?.entries() ?? [],
@@ -355,8 +377,8 @@ export class DiContainer {
     );
   }
 
-  private getPropDefinition(type: Type): Map<string, PartialParameter> {
-    return new Map<string, PartialParameter>(
+  private getPropDefinition(type: Type): Map<string, PartialParameter[]> {
+    return new Map(
       [
         ...this.parent?.getPropDefinition(type).entries() ?? [],
         ...this.#propDefinitions.get(type)?.entries() ?? [],

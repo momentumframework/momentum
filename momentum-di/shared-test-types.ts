@@ -38,7 +38,11 @@ export class Molecule {
 
 @Injectable()
 export class Person {
-  constructor(@Optional() public pants?: string) {
+  constructor(
+    @Inject("PANTS")
+    @Optional()
+    public pants?: string,
+  ) {
   }
 }
 
