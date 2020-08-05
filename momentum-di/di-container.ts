@@ -251,10 +251,7 @@ export class DiContainer {
     }
     return Array.from(ctorParms ?? []).reduce(
       (params, [index, param]) => {
-        params[index] = {
-          ...params[index],
-          ...param.reduce((prev, curr) => ({ ...prev, ...curr }), {}),
-        };
+        params[index] = { ...params[index], ...param };
         return params;
       },
       definition.params ?? [],
@@ -281,10 +278,7 @@ export class DiContainer {
     return Object.entries(
       Array.from(props).reduce(
         (props, [propName, param]) => {
-          props[propName] = {
-            ...props[propName],
-            ...param.reduce((prev, curr) => ({ ...prev, ...curr }), {}),
-          };
+          props[propName] = { ...props[propName], ...param };
           return props;
         },
         definition.props ?? {},
@@ -368,21 +362,31 @@ export class DiContainer {
     ];
   }
 
-  private getCtorDefinition(type: Type): Map<number, PartialParameter[]> {
-    return new Map(
-      [
-        ...this.parent?.getCtorDefinition(type).entries() ?? [],
-        ...this.#ctorDefinitions.get(type)?.entries() ?? [],
-      ],
+  private getCtorDefinition(type: Type): Map<number, PartialParameter> {
+    const definition = new Map(
+      this.parent?.getCtorDefinition(type) ?? new Map(),
     );
+    this.#ctorDefinitions.get(type)?.forEach((paramDefs, paranName) => {
+      const mergedParam = paramDefs.reduce(
+        (param, definition) => ({ ...param, ...definition }),
+        {},
+      );
+      definition.set(paranName, mergedParam);
+    });
+    return definition;
   }
 
-  private getPropDefinition(type: Type): Map<string, PartialParameter[]> {
-    return new Map(
-      [
-        ...this.parent?.getPropDefinition(type).entries() ?? [],
-        ...this.#propDefinitions.get(type)?.entries() ?? [],
-      ],
+  private getPropDefinition(type: Type): Map<string, PartialParameter> {
+    const definition = new Map(
+      this.parent?.getPropDefinition(type) ?? new Map(),
     );
+    this.#propDefinitions.get(type)?.forEach((paramDefs, paranName) => {
+      const mergedProp = paramDefs.reduce(
+        (param, definition) => ({ ...param, ...definition }),
+        {},
+      );
+      definition.set(paranName, mergedProp);
+    });
+    return definition;
   }
 }
