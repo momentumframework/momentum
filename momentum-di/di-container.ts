@@ -339,11 +339,7 @@ export class DiContainer {
 
   private getDefinition(
     identifier: TypeIdentifier,
-  ):
-    | TypeDefinition
-    | FactoryDefinition
-    | ValueDefinition
-    | undefined {
+  ): Definition | undefined {
     let definiton = this.#definitions.get(identifier);
     if (!definiton && this.parent) {
       definiton = this.parent.getDefinition(identifier);
