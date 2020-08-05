@@ -154,3 +154,25 @@ test("DiContainer.buildDependencyGraph() - allows circular property dependencies
     ThingOne,
   );
 });
+
+test("DiContainer.buildDependencyGraph() - child container can override parent", () => {
+  // arrange
+  const global = DiContainer.global();
+  const child = global.createChild();
+
+  child.register("PANTS", { kind: "value", value: "Jeans" });
+
+  // act
+  const globalPersonGraph = global.getDependencyGraph(Person);
+  const childPersonGraph = child.getDependencyGraph(Person);
+
+  // assert
+  assertEquals(
+    (childPersonGraph as TypeDependencyGraphNode).params[0].kind,
+    "value",
+  );
+  assertEquals(
+    (globalPersonGraph as TypeDependencyGraphNode).params[0].kind,
+    "null",
+  );
+});
