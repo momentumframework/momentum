@@ -1,4 +1,4 @@
-import { Injectable } from "./decorators/injectable.ts";
+import { Inject, Injectable, Optional } from "./mod.ts";
 
 @Injectable()
 export class Quark {
@@ -36,22 +36,23 @@ export class Molecule {
   }
 }
 
-export class Money {
-  constructor(job: Job) {
-  }
-}
-export class Job {
-  constructor(college: College) {
-  }
-}
-export class College {
-  constructor(money: Money) {
+@Injectable()
+export class Person {
+  constructor(@Optional() public pants?: string) {
   }
 }
 
-export class ThingOne {
-  otherThing?: ThingTwo;
+class Thing {
 }
-export class ThingTwo {
-  otherThing?: ThingOne;
+
+@Injectable()
+export class ThingOne extends Thing {
+  @Inject("THING_TWO")
+  otherThing?: Thing;
+}
+
+@Injectable("THING_TWO")
+export class ThingTwo extends Thing {
+  @Inject(ThingOne)
+  otherThing?: Thing;
 }

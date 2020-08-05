@@ -5,7 +5,8 @@ import {
   test,
 } from "./test_deps.ts";
 
-import { DiContainer } from "./mod.ts";
+import { TypeDependencyGraphNode } from "./di-container.ts";
+import { DiContainer, Injectable, Inject } from "./mod.ts";
 import {
   Molecule,
   Atom,
@@ -13,31 +14,19 @@ import {
   Neutron,
   Electron,
   Quark,
-  Money,
-  Job,
-  College,
   ThingOne,
-  ThingTwo,
-} from "./test-types.ts";
+} from "./shared-test-types.ts";
 
 test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
   // arrange
   const container = DiContainer.global();
 
   // act
-  const graph = container.dependencyGraph;
+  const root = container.getDependencyGraph(Molecule);
 
   // assert
   assertArrayContains(
-    Array
-      .from(graph.values())
-      .map((node) => (node.kind === "type" && node.ctor)),
-    [Molecule, Atom, Proton, Neutron, Electron, Quark],
-  );
-  assertArrayContains(
-    Array.from(graph.values())
-      .map((node) => node.kind === "type" ? node : undefined)
-      .find((node) => node?.ctor === Molecule)?.params
+    (root as TypeDependencyGraphNode).params
       .map((node) => node.kind === "type" ? node : undefined)
       .find((node) => node?.ctor === Atom)?.params
       .map((node) => node.kind === "type" ? node : undefined)
@@ -47,9 +36,7 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
     [Quark],
   );
   assertArrayContains(
-    Array.from(graph.values())
-      .map((node) => node.kind === "type" ? node : undefined)
-      .find((node) => node?.ctor === Molecule)?.params
+    (root as TypeDependencyGraphNode).params
       .map((node) => node.kind === "type" ? node : undefined)
       .find((node) => node?.ctor === Atom)?.params
       .map((node) => node.kind === "type" ? node : undefined)
@@ -59,9 +46,7 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
     [Quark],
   );
   assertEquals(
-    Array.from(graph.values())
-      .map((node) => node.kind === "type" ? node : undefined)
-      .find((node) => node?.ctor === Molecule)?.params
+    (root as TypeDependencyGraphNode).params
       .map((node) => node.kind === "type" ? node : undefined)
       .find((node) => node?.ctor === Atom)?.params
       .map((node) => node.kind === "type" ? node : undefined)
@@ -69,9 +54,7 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
     [],
   );
   assertEquals(
-    Array.from(graph.values())
-      .map((node) => node.kind === "type" ? node : undefined)
-      .find((node) => node?.ctor === Molecule)?.params
+    (root as TypeDependencyGraphNode).params
       .map((node) => node.kind === "type" ? node : undefined)
       .find((node) => node?.ctor === Atom)?.params
       .map((node) => node.kind === "type" ? node : undefined)
@@ -81,9 +64,7 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
     [],
   );
   assertEquals(
-    Array.from(graph.values())
-      .map((node) => node.kind === "type" ? node : undefined)
-      .find((node) => node?.ctor === Molecule)?.params
+    (root as TypeDependencyGraphNode).params
       .map((node) => node.kind === "type" ? node : undefined)
       .find((node) => node?.ctor === Atom)?.params
       .map((node) => node.kind === "type" ? node : undefined)
@@ -96,20 +77,21 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
 
 test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
   // arrange
-  const container = new DiContainer();
-  container.register(
-    Molecule,
-    { kind: "type", type: Molecule, params: [{ identifier: Atom }] },
-  );
+  class Unknown {
+  }
+  @Injectable()
+  class Known {
+    constructor(public unknown: Unknown) {}
+  }
 
   // assert
   assertThrows(
     () => {
       // act
-      container.dependencyGraph;
+      DiContainer.global().getDependencyGraph(Known);
     },
     undefined,
-    "Unknown type",
+    "Unable to inject unregisterd type Unknown into Known",
   );
 });
 
@@ -126,56 +108,52 @@ test("DiContainer.buildDependencyGraph() - allows optional dependency", () => {
   );
 
   // act
-  container.dependencyGraph;
+  container.getDependencyGraph(Molecule);
 });
 
 test("DiContainer.buildDependencyGraph() - fails on circular dependency", () => {
   // arrange
-  const container = new DiContainer();
-  container.register(
-    Money,
-    { kind: "type", type: Money, params: [{ identifier: Job }] },
-  );
-  container.register(
-    Job,
-    { kind: "type", type: Job, params: [{ identifier: College }] },
-  );
-  container.register(
-    College,
-    { kind: "type", type: College, params: [{ identifier: Money }] },
-  );
+  @Injectable()
+  class Money {
+    constructor(@Inject("JOB") job: unknown) {
+    }
+  }
+
+  @Injectable()
+  class College {
+    constructor(money: Money) {
+    }
+  }
+
+  @Injectable("JOB")
+  class Job {
+    constructor(college: College) {
+    }
+  }
 
   // assert
   assertThrows(
     () => {
       // act
-      container.dependencyGraph;
+      DiContainer.global().getDependencyGraph(Money);
     },
     undefined,
-    "Circular dependency detected: Money > Job > College > Money",
+    "Circular dependency detected: Money > JOB > College > Money",
   );
 });
 
 test("DiContainer.buildDependencyGraph() - allows circular property dependencies", () => {
-  // arrange
-  const container = new DiContainer();
-  container.register(
-    ThingOne,
-    {
-      kind: "type",
-      type: ThingOne,
-      props: { otherThing: { identifier: ThingTwo } },
-    },
-  );
-  container.register(
-    ThingTwo,
-    {
-      kind: "type",
-      type: ThingTwo,
-      props: { otherThing: { identifier: ThingOne } },
-    },
-  );
-
   // act
-  container.dependencyGraph;
+  const thingOneGraph = DiContainer.global().getDependencyGraph(ThingOne);
+  const thingTwoGraph = DiContainer.global().getDependencyGraph("THING_TWO");
+
+  // assert
+  assertEquals(
+    (thingOneGraph as TypeDependencyGraphNode).props["otherThing"].identifier,
+    "THING_TWO",
+  );
+  assertEquals(
+    (thingTwoGraph as TypeDependencyGraphNode).props["otherThing"].identifier,
+    ThingOne,
+  );
 });

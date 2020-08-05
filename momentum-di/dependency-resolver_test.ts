@@ -10,15 +10,16 @@ import {
   DiContainer,
 } from "./mod.ts";
 import {
-  Molecule,
   Atom,
-  Proton,
-  Neutron,
   Electron,
+  Molecule,
+  Neutron,
+  Person,
+  Proton,
   Quark,
   ThingOne,
   ThingTwo,
-} from "./test-types.ts";
+} from "./shared-test-types.ts";
 
 test("DependencyResolver.resolve() - resolves dependency", () => {
   // arrange
@@ -42,69 +43,29 @@ test("DependencyResolver.resolve() - resolves dependency", () => {
 
 test("DependencyResolver.resolve() - allows optional dependencies", () => {
   // arrange
-  const container = new DiContainer();
-  container.register(
-    Molecule,
-    { kind: "type", type: Molecule, params: [{ identifier: Atom }] },
-  );
-  container.register(
-    Atom,
-    {
-      kind: "type",
-      type: Atom,
-      params: [
-        { identifier: Proton, isOptional: true },
-        { identifier: Neutron, isOptional: true },
-        { identifier: Electron },
-      ],
-    },
-  );
-  container.register(Electron, { kind: "type", type: Electron });
-
   const resolver = new DependencyResolver(
-    container,
+    DiContainer.global(),
     DependencyScope.beginScope(),
   );
 
   // act
-  const molecule = resolver.resolve<Molecule>(Molecule);
+  const person = resolver.resolve<Person>(Person);
 
   // assert
-  assert(molecule instanceof Molecule);
-  assert(molecule.atom instanceof Atom);
-  assert(molecule.atom.electron instanceof Electron);
-  assert(molecule.atom.proton === undefined);
-  assert(molecule.atom.neutron === undefined);
+  assert(person instanceof Person);
+  assertEquals(person.pants, undefined);
 });
 
 test("DependencyResolver.resolve() - resolves property dependencies", () => {
   // arrange
-  const container = new DiContainer();
-  container.register(
-    ThingOne,
-    {
-      kind: "type",
-      type: ThingOne,
-      props: { otherThing: { identifier: ThingTwo } },
-    },
-  );
-  container.register(
-    ThingTwo,
-    {
-      kind: "type",
-      type: ThingTwo,
-      props: { otherThing: { identifier: ThingOne } },
-    },
-  );
-
   const resolver = new DependencyResolver(
-    container,
+    DiContainer.global(),
     DependencyScope.beginScope(),
   );
 
   // act
   const thing1 = resolver.resolve<ThingOne>(ThingOne);
-  const thing2 = resolver.resolve<ThingTwo>(ThingTwo);
+  const thing2 = resolver.resolve<ThingTwo>("THING_TWO");
 
   // assert
   assert(thing1 instanceof ThingOne);
@@ -121,7 +82,7 @@ test("DependencyResolver.resolve() - resolves factory dependencies", () => {
     {
       kind: "factory",
       factory: (atom: Atom) => new Molecule(atom),
-      params: [{ identifier: "ATOM" }],
+      params: ["ATOM"],
     },
   );
   container.register(

@@ -1,8 +1,9 @@
 import { TypeIdentifier } from "./di-container.ts";
 
 export class DependencyScope {
-  private isEnded = false;
-  private cache = new Map<TypeIdentifier, unknown>();
+  #isEnded = false;
+  // deno-lint-ignore no-explicit-any
+  #cache = new Map<TypeIdentifier, any>();
 
   constructor(private parent?: DependencyScope) {
   }
@@ -16,21 +17,21 @@ export class DependencyScope {
   }
 
   endScope() {
-    this.cache.clear();
+    this.#cache.clear();
   }
 
   set(identifier: TypeIdentifier, obj: unknown) {
-    if (this.isEnded) {
+    if (this.#isEnded) {
       throw Error("Scope is ended");
     }
-    this.cache.set(identifier, obj);
+    this.#cache.set(identifier, obj);
   }
 
   get(identifier: TypeIdentifier) {
-    if (this.isEnded) {
+    if (this.#isEnded) {
       throw Error("Scope is ended");
     }
-    let obj = this.cache.get(identifier);
+    let obj = this.#cache.get(identifier);
     if (!obj && this.parent) {
       obj = this.parent.get(identifier);
     }

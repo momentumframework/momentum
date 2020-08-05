@@ -1,7 +1,7 @@
 import { DependencyScope } from "./dependency-scope.ts";
 import {
   DiContainer,
-  NullableDependencyTreeNode,
+  NullableDependencyGraphNode,
   TypeIdentifier,
 } from "./di-container.ts";
 
@@ -13,13 +13,13 @@ export class DependencyResolver {
   }
 
   resolve<T = unknown>(identifier: TypeIdentifier) {
-    const rootNode = this.container.dependencyGraph.get(identifier);
+    const rootNode = this.container.getDependencyGraph(identifier);
     return this.resolveDependency(identifier, rootNode) as T;
   }
 
   private resolveDependency(
     identifier: TypeIdentifier,
-    node: NullableDependencyTreeNode | undefined,
+    node: NullableDependencyGraphNode | undefined,
   ) {
     if (!node) {
       throw Error(
@@ -38,12 +38,12 @@ export class DependencyResolver {
             ),
           );
           this.scope.set(identifier, obj);
-          for (const [prop, propNode] of Object.entries(node.props)) {
-            (obj as Record<string, unknown>)[prop] = this.resolveDependency(
+          Object.entries(node.props).forEach(([prop, propNode]) => {
+            obj[prop] = this.resolveDependency(
               propNode.identifier,
               propNode,
             );
-          }
+          });
           break;
         case "factory":
           obj = node.factory(
