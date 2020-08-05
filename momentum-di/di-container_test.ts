@@ -78,21 +78,25 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
 
 test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
   // arrange
-  class Unknown {
+  class Piston {
   }
   @Injectable()
-  class Known {
-    constructor(public unknown: Unknown) {}
+  class Engine {
+    constructor(public pistons: Piston) {}
+  }
+  @Injectable()
+  class Car {
+    constructor(public engine: Engine) {}
   }
 
   // assert
   assertThrows(
     () => {
       // act
-      DiContainer.global().getDependencyGraph(Known);
+      DiContainer.global().getDependencyGraph(Car);
     },
     undefined,
-    "Unable to inject unregisterd type Unknown into Known",
+    "Error composing type Car > Engine > Piston. Piston is not registered",
   );
 });
 

@@ -178,6 +178,9 @@ export class DiContainer {
     if (!node) {
       const definition = this.getDefinition(identifier);
       if (!definition) {
+        const typeName = typeof identifier === "string"
+          ? identifier
+          : identifier.name;
         const pathString = path
           .map((pathIdentifier) =>
             typeof pathIdentifier === "string"
@@ -186,9 +189,7 @@ export class DiContainer {
           )
           .join(" > ");
         throw Error(
-          `Unable to inject unregisterd type ${
-            typeof identifier === "string" ? identifier : identifier.name
-          } into ${pathString}`,
+          `Error composing type ${pathString} > ${typeName}. ${typeName} is not registered`,
         );
       }
       path.push(identifier);
