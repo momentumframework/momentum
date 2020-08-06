@@ -79,18 +79,12 @@ test("DependencyResolver.resolve() - resolves property dependencies", () => {
 test("DependencyResolver.resolve() - resolves factory dependencies", () => {
   // arrange
   const container = new DiContainer();
-  container.register(
+  container.registerFactory(
     "MOLECULE",
-    {
-      kind: "factory",
-      factory: (atom: Atom) => new Molecule(atom),
-      params: ["ATOM"],
-    },
+    (atom: Atom) => new Molecule(atom),
+    ["ATOM"],
   );
-  container.register(
-    "ATOM",
-    { kind: "factory", factory: () => new Atom() },
-  );
+  container.registerFactory("ATOM", () => new Atom());
 
   const resolver = new DependencyResolver(
     container,
@@ -113,19 +107,18 @@ test("DependencyResolver.resolve() - resolves value dependencies", () => {
     }
   }
   const container = DiContainer.global().createChild();
-  container.register(
-    "TOPPINGS",
-    { kind: "value", value: ["anchovies", "pineapple"] },
-  );
+  const toppings = ["anchovies", "pineapple"];
+  container.registerValue("TOPPINGS", toppings);
+
   const resolver = new DependencyResolver(
     container,
     DependencyScope.beginScope(),
   );
 
   // act
-  const molecule = resolver.resolve<Pizza>(Pizza);
+  const pizza = resolver.resolve<Pizza>(Pizza);
 
   // assert
-  assert(molecule instanceof Pizza);
-  assertEquals(molecule.toppings, ["anchovies", "pineapple"]);
+  assert(pizza instanceof Pizza);
+  assertEquals(pizza.toppings, toppings);
 });

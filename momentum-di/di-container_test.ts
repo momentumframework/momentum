@@ -160,7 +160,7 @@ test("DiContainer.buildDependencyGraph() - child container can override parent",
   const global = DiContainer.global();
   const child = global.createChild();
 
-  child.register("PANTS", { kind: "value", value: "Jeans" });
+  child.registerValue("PANTS", "Jeans");
 
   // act
   const globalPersonGraph = global.getDependencyGraph(Person);

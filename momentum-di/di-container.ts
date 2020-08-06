@@ -23,7 +23,7 @@ interface TypeDefinition {
   props?: { [name: string]: Parameter };
 }
 // deno-lint-ignore no-explicit-any
-type FactoryFunction = (...params: any[]) => unknown;
+export type FactoryFunction = (...params: any[]) => unknown;
 interface FactoryDefinition {
   kind: "factory";
   factory: FactoryFunction;
@@ -117,6 +117,42 @@ export class DiContainer {
     }
     this.#definitions.set(identifier, definition);
     this.invalidateDependencyGraph();
+  }
+
+  registerType(
+    identifier: TypeIdentifier,
+    type: Type,
+    params?: Parameter[],
+    props?: Record<string, Parameter>,
+  ) {
+    this.register(identifier, {
+      kind: "type",
+      type,
+      params,
+      props,
+    });
+  }
+
+  registerFactory(
+    identifier: TypeIdentifier,
+    factory: FactoryFunction,
+    params?: TypeIdentifier[],
+  ) {
+    this.register(identifier, {
+      kind: "factory",
+      factory,
+      params,
+    });
+  }
+
+  registerValue(
+    identifier: TypeIdentifier,
+    value: unknown,
+  ) {
+    this.register(identifier, {
+      kind: "value",
+      value,
+    });
   }
 
   registerFromMetadata(target: Type, identifier?: TypeIdentifier) {
