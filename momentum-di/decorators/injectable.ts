@@ -4,6 +4,6 @@ export function Injectable(): ClassDecorator;
 export function Injectable(identifier: TypeIdentifier): ClassDecorator;
 export function Injectable(identifier?: TypeIdentifier): ClassDecorator {
   return function (target: Function) {
-    DiContainer.global().registerFromMetadata(target as Type, identifier);
+    DiContainer.root().registerFromMetadata(target as Type, identifier);
   };
 }

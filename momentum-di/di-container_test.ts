@@ -20,7 +20,7 @@ import {
 
 test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
   // arrange
-  const container = DiContainer.global();
+  const container = DiContainer.root();
 
   // act
   const root = container.getDependencyGraph(Molecule);
@@ -93,7 +93,7 @@ test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
   assertThrows(
     () => {
       // act
-      DiContainer.global().getDependencyGraph(Car);
+      DiContainer.root().getDependencyGraph(Car);
     },
     undefined,
     "Error composing Car < Engine < Piston. Piston is not registered",
@@ -102,7 +102,7 @@ test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
 
 test("DiContainer.buildDependencyGraph() - allows optional dependency", () => {
   // arrange
-  const container = DiContainer.global();
+  const container = DiContainer.root();
 
   // act
   container.getDependencyGraph(Person);
@@ -132,7 +132,7 @@ test("DiContainer.buildDependencyGraph() - fails on circular dependency", () => 
   assertThrows(
     () => {
       // act
-      DiContainer.global().getDependencyGraph(Money);
+      DiContainer.root().getDependencyGraph(Money);
     },
     undefined,
     "Circular dependency detected: Money > JOB > College > Money",
@@ -141,8 +141,8 @@ test("DiContainer.buildDependencyGraph() - fails on circular dependency", () => 
 
 test("DiContainer.buildDependencyGraph() - allows circular property dependencies", () => {
   // act
-  const thingOneGraph = DiContainer.global().getDependencyGraph(ThingOne);
-  const thingTwoGraph = DiContainer.global().getDependencyGraph("THING_TWO");
+  const thingOneGraph = DiContainer.root().getDependencyGraph(ThingOne);
+  const thingTwoGraph = DiContainer.root().getDependencyGraph("THING_TWO");
 
   // assert
   assertEquals(
@@ -157,7 +157,7 @@ test("DiContainer.buildDependencyGraph() - allows circular property dependencies
 
 test("DiContainer.buildDependencyGraph() - child container can override parent", () => {
   // arrange
-  const global = DiContainer.global();
+  const global = DiContainer.root();
   const child = global.createChild();
 
   child.registerValue("PANTS", "Jeans");

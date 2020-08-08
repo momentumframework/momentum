@@ -26,7 +26,7 @@ import { Inject } from "./decorators/inject.ts";
 test("DependencyResolver.resolve() - resolves dependency", () => {
   // arrange
   const resolver = new DependencyResolver(
-    DiContainer.global(),
+    DiContainer.root(),
     DependencyScope.beginScope(),
   );
 
@@ -46,7 +46,7 @@ test("DependencyResolver.resolve() - resolves dependency", () => {
 test("DependencyResolver.resolve() - allows optional dependencies", () => {
   // arrange
   const resolver = new DependencyResolver(
-    DiContainer.global(),
+    DiContainer.root(),
     DependencyScope.beginScope(),
   );
 
@@ -61,7 +61,7 @@ test("DependencyResolver.resolve() - allows optional dependencies", () => {
 test("DependencyResolver.resolve() - resolves property dependencies", () => {
   // arrange
   const resolver = new DependencyResolver(
-    DiContainer.global(),
+    DiContainer.root(),
     DependencyScope.beginScope(),
   );
 
@@ -106,7 +106,7 @@ test("DependencyResolver.resolve() - resolves value dependencies", () => {
     constructor(@Inject("TOPPINGS") public toppings: string[]) {
     }
   }
-  const container = DiContainer.global().createChild();
+  const container = DiContainer.root().createChild();
   const toppings = ["anchovies", "pineapple"];
   container.registerValue("TOPPINGS", toppings);
 

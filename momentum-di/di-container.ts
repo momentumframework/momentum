@@ -89,7 +89,7 @@ export class DiContainer {
     }
   }
 
-  static global() {
+  static root() {
     if (!DiContainer.globalContainer) {
       DiContainer.globalContainer = new DiContainer();
     }

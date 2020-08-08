@@ -12,7 +12,7 @@ export class DependencyResolver {
   ) {
   }
 
-  resolve<T = unknown>(identifier: TypeIdentifier) {
+  resolve<T>(identifier: TypeIdentifier) {
     const rootNode = this.container.getDependencyGraph(identifier);
     return this.resolveDependency(identifier, rootNode) as T;
   }

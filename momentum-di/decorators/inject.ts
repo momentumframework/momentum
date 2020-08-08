@@ -13,14 +13,14 @@ export function Inject<T = unknown>(
     paramIndex?: number,
   ) {
     if (propName) {
-      DiContainer.global().registerProperty(
+      DiContainer.root().registerProperty(
         target.constructor as Type,
         propName.toString(),
         { identifier },
       );
     }
     if (paramIndex || paramIndex === 0) {
-      DiContainer.global().registerCtorParam(
+      DiContainer.root().registerCtorParam(
         target as Type,
         paramIndex,
         { identifier },
