@@ -176,3 +176,87 @@ test("DiContainer.buildDependencyGraph() - child container can override parent",
     "null",
   );
 });
+
+test("DiContainer.import() - imports from another container", () => {
+  // arrange
+  const container1 = new DiContainer();
+  const container2 = new DiContainer();
+  const container3 = new DiContainer();
+
+  container1.registerType(Quark, Quark);
+  container1.registerType(Electron, Electron);
+  container2.registerType(Proton, Proton, [{ identifier: Quark }]);
+  container2.registerType(Neutron, Neutron, [{ identifier: Quark }]);
+  container2.registerType(
+    Atom,
+    Atom,
+    [{ identifier: Proton }, { identifier: Neutron }, { identifier: Electron }],
+  );
+
+  container2.import(Quark, container1);
+  container2.import(Electron, container1);
+  container3.import(Atom, container2);
+
+  // act
+  const atomGraph = container3.getDependencyGraph(Atom);
+
+  // assert
+  assertArrayContains(
+    (atomGraph as TypeDependencyGraphNode).params
+      .map((node) => node.kind === "type" ? node : undefined)
+      .find((node) => node?.ctor === Proton)?.params
+      .map((node) => node.kind === "type" ? node : undefined)
+      .map((node) => node?.ctor) ?? [],
+    [Quark],
+  );
+  assertArrayContains(
+    (atomGraph as TypeDependencyGraphNode).params
+      .map((node) => node.kind === "type" ? node : undefined)
+      .find((node) => node?.ctor === Neutron)?.params
+      .map((node) => node.kind === "type" ? node : undefined)
+      .map((node) => node?.ctor) ?? [],
+    [Quark],
+  );
+  assertArrayContains(
+    (atomGraph as TypeDependencyGraphNode).params
+      .map((node) => node.kind === "type" ? node : undefined)
+      .map((node) => node?.ctor) ?? [],
+    [Electron],
+  );
+  assertThrows(
+    () => container3.getDependencyGraph(Neutron),
+    undefined,
+    "Error composing Neutron. Neutron is not registered",
+  );
+});
+
+test("DiContainer.import() - does not import non-imported definitions", () => {
+  // arrange
+  const container1 = new DiContainer();
+  const container2 = new DiContainer();
+  const container3 = new DiContainer();
+
+  container1.registerType(Quark, Quark);
+  container1.registerType(Electron, Electron);
+  container2.registerType(Proton, Proton, [{ identifier: Quark }]);
+  container2.registerType(Neutron, Neutron, [{ identifier: Quark }]);
+  container2.registerType(
+    Atom,
+    Atom,
+    [{ identifier: Proton }, { identifier: Neutron }, { identifier: Electron }],
+  );
+
+  container2.import(Quark, container1);
+  container2.import(Electron, container1);
+  container3.import(Atom, container2);
+
+  // assert
+  assertThrows(
+    () => {
+      // act
+      container3.getDependencyGraph(Neutron);
+    },
+    undefined,
+    "Error composing Neutron. Neutron is not registered",
+  );
+});
