@@ -55,6 +55,7 @@ export class ModuleRef {
   public static createModuleRef(
     rootContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
+    scope: DependencyScope,
   ): ModuleRef {
     const diContainer = ModuleRef.buildModuleDiContainer(
       rootContainer,
@@ -63,6 +64,7 @@ export class ModuleRef {
         ModuleRef.createModuleRef(
           rootContainer,
           ModuleCatalog.getMetadata(importedModule),
+          scope,
         )
       ),
     );
@@ -74,7 +76,7 @@ export class ModuleRef {
     );
     const moduleResolver = new DependencyResolver(
       diContainer,
-      DependencyScope.beginScope(),
+      scope,
     );
     const instance = moduleResolver.resolve(metadata.type);
     return new ModuleRef(metadata, diContainer, instance);
