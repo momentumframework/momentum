@@ -7,8 +7,8 @@ import {
 
 export class DependencyResolver {
   constructor(
-    private container: DiContainer,
-    private scope: DependencyScope,
+    private readonly container: DiContainer,
+    private readonly scope: DependencyScope,
   ) {
   }
 

@@ -7,7 +7,7 @@ export class DependencyScope {
   #events = new EventEmitter<{ end(): void }>();
   #isEnded = false;
 
-  constructor(private parent?: DependencyScope) {
+  constructor(private readonly parent?: DependencyScope) {
     if (parent) {
       parent.#events.on("end", () => this.endScope());
     }

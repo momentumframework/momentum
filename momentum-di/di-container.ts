@@ -77,6 +77,7 @@ export class DiContainer {
 
   #events = new EventEmitter<{ change(): void }>();
   #imports = new Map<TypeIdentifier, DiContainer>();
+  #aliases = new Map<TypeIdentifier, TypeIdentifier>();
   #definitions = new Map<TypeIdentifier, Definition>();
   #ctorOverrides = new Map<Type, Map<number, PartialParameter[]>>();
   #propOverrides = new Map<Type, Map<string, PartialParameter[]>>();
@@ -141,6 +142,13 @@ export class DiContainer {
     }
     this.#definitions.set(identifier, definition);
     this.invalidateDependencyGraph();
+  }
+
+  registerAlias(
+    identifier: TypeIdentifier,
+    alias: TypeIdentifier,
+  ) {
+    this.#aliases.set(alias, identifier);
   }
 
   registerType(
@@ -391,11 +399,25 @@ export class DiContainer {
   private getDefinition(
     identifier: TypeIdentifier,
   ): Definition | undefined {
+    let alias = this.getAlias(identifier);
+    if (alias) {
+      identifier = alias;
+    }
     let definiton = this.#definitions.get(identifier);
     if (!definiton && this.parent) {
       definiton = this.parent.getDefinition(identifier);
     }
     return definiton;
+  }
+
+  private getAlias(
+    identifier: TypeIdentifier,
+  ): TypeIdentifier | undefined {
+    let alias = this.#aliases.get(identifier);
+    if (!alias) {
+      alias = this.parent?.getAlias(identifier);
+    }
+    return alias;
   }
 
   private getDefinitionIdentifiers(): TypeIdentifier[] {

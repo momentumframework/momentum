@@ -187,11 +187,11 @@ test("DiContainer.import() - imports from another container", () => {
   container1.registerType(Electron, Electron);
   container2.registerType(Proton, Proton, [{ identifier: Quark }]);
   container2.registerType(Neutron, Neutron, [{ identifier: Quark }]);
-  container2.registerType(
-    Atom,
-    Atom,
-    [{ identifier: Proton }, { identifier: Neutron }, { identifier: Electron }],
-  );
+  container2.registerType(Atom, Atom, [
+    { identifier: Proton },
+    { identifier: Neutron },
+    { identifier: Electron },
+  ]);
 
   container2.import(Quark, container1);
   container2.import(Electron, container1);
