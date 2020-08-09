@@ -6,7 +6,7 @@ import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleRef } from "./module-ref.ts";
 import { DependencyScope } from "../momentum-di/mod.ts";
 
-test("ModuleRef.createModuleRef()", () => {
+test("ModuleRef.createModuleRef() creates module ref", () => {
   // arrange
   class TestService {
   }
