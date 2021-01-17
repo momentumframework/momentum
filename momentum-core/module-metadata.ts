@@ -1,8 +1,4 @@
-import {
-  FactoryFunction,
-  Type,
-  TypeIdentifier,
-} from "../momentum-di/mod.ts";
+import { FactoryFunction, Type, TypeIdentifier } from "../momentum-di/mod.ts";
 
 type ConstructorProvider = { provide: Type; deps?: TypeIdentifier[] };
 type ClassProvider = {
@@ -27,6 +23,7 @@ export type ModuleClass = Type;
 export interface ModuleMetadata {
   imports?: ModuleClass[];
   providers?: (Type | Provider)[];
+  controllers?: Type[];
   exports?: (TypeIdentifier | ModuleClass)[];
 }
 
@@ -57,10 +54,12 @@ export function isClassProvider(arg: Provider): arg is ClassProvider {
   return !!arg.useFactory;
 }
 export function isConstructorProvider(
-  arg: Provider,
+  arg: Provider
 ): arg is ConstructorProvider {
-  return isProvider(arg) &&
+  return (
+    isProvider(arg) &&
     !isClassProvider(arg) &&
     !isFactoryProvider(arg) &&
-    !isValueProvider(arg);
+    !isValueProvider(arg)
+  );
 }

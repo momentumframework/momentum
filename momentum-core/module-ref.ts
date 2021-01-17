@@ -23,7 +23,7 @@ export class ModuleRef {
   constructor(
     metadata: ExtendedModuleMetadata,
     diContainer: DiContainer,
-    instance: unknown,
+    instance: unknown
   ) {
     this.#metadata = metadata;
     this.#diContainer = diContainer;
@@ -46,7 +46,7 @@ export class ModuleRef {
   resolve<T = unknown>(identifier: TypeIdentifier, scope: DependencyScope): T;
   resolve<T = unknown>(
     identifier: TypeIdentifier,
-    scope = DependencyScope.beginScope(),
+    scope = DependencyScope.beginScope()
   ) {
     const resolver = new DependencyResolver(this.diContainer, scope);
     return resolver.resolve(identifier) as T;
@@ -55,7 +55,7 @@ export class ModuleRef {
   public static createModuleRef(
     rootContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
-    scope: DependencyScope,
+    scope: DependencyScope
   ): ModuleRef {
     const diContainer = ModuleRef.buildModuleDiContainer(
       rootContainer,
@@ -64,20 +64,17 @@ export class ModuleRef {
         ModuleRef.createModuleRef(
           rootContainer,
           ModuleCatalog.getMetadata(importedModule),
-          scope,
+          scope
         )
-      ),
+      )
     );
     diContainer.registerType(
       metadata.type,
       metadata.type,
       metadata.params?.map((param) => ({ identifier: param })),
-      {},
+      {}
     );
-    const moduleResolver = new DependencyResolver(
-      diContainer,
-      scope,
-    );
+    const moduleResolver = new DependencyResolver(diContainer, scope);
     const instance = moduleResolver.resolve(metadata.type);
     return new ModuleRef(metadata, diContainer, instance);
   }
@@ -85,7 +82,7 @@ export class ModuleRef {
   private static buildModuleDiContainer(
     rootContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
-    importedModules: ModuleRef[],
+    importedModules: ModuleRef[]
   ) {
     const diContainer = rootContainer.createChild();
     if (metadata.providers) {
@@ -96,7 +93,7 @@ export class ModuleRef {
           diContainer.registerType(
             provider.provide,
             provider.provide,
-            provider.deps?.map((dep) => ({ identifier: dep })),
+            provider.deps?.map((dep) => ({ identifier: dep }))
           );
         } else if (isClassProvider(provider)) {
           diContainer.registerAlias(provider.provide, provider.useClass);
@@ -104,7 +101,7 @@ export class ModuleRef {
           diContainer.registerFactory(
             provider.provide,
             provider.useFactory,
-            provider.deps,
+            provider.deps
           );
         } else if (isValueProvider(provider)) {
           diContainer.registerValue(provider.provide, provider.useValue);

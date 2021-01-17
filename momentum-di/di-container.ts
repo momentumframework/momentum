@@ -2,7 +2,7 @@ import { EventEmitter } from "./deps.ts";
 import { Reflect } from "./shims/reflect.ts";
 
 export type Token = string;
-// deno-lint-ignore no-explicit-any
+// deno-lint-ignore no-explicit-any ban-types
 export type Type<T = any> = Function & (new (...params: any[]) => T);
 // deno-lint-ignore no-explicit-any
 export type TypeIdentifier<T = any> = Type<T> | Token;
@@ -117,7 +117,7 @@ export class DiContainer {
     for (const identifier of this.getDefinitionIdentifiers()) {
       this.#dependencyGraph.set(
         identifier,
-        this.buildDependencyGraph(identifier, [], partialNodes),
+        this.buildDependencyGraph(identifier, [], partialNodes)
       );
     }
     for (const graph of this.#dependencyGraph.values()) {
@@ -137,17 +137,14 @@ export class DiContainer {
   register(identifier: TypeIdentifier, definition: Definition) {
     if (this.#definitions.get(identifier)) {
       throw Error(
-        `Unable to register ${identifier} because it is already registered.`,
+        `Unable to register ${identifier} because it is already registered.`
       );
     }
     this.#definitions.set(identifier, definition);
     this.invalidateDependencyGraph();
   }
 
-  registerAlias(
-    identifier: TypeIdentifier,
-    alias: TypeIdentifier,
-  ) {
+  registerAlias(identifier: TypeIdentifier, alias: TypeIdentifier) {
     this.#aliases.set(alias, identifier);
   }
 
@@ -155,7 +152,7 @@ export class DiContainer {
     identifier: TypeIdentifier,
     type: Type,
     params?: Parameter[],
-    props?: Record<string, Parameter>,
+    props?: Record<string, Parameter>
   ) {
     this.register(identifier, {
       kind: "type",
@@ -168,7 +165,7 @@ export class DiContainer {
   registerFactory(
     identifier: TypeIdentifier,
     factory: FactoryFunction,
-    params?: TypeIdentifier[],
+    params?: TypeIdentifier[]
   ) {
     this.register(identifier, {
       kind: "factory",
@@ -177,10 +174,7 @@ export class DiContainer {
     });
   }
 
-  registerValue(
-    identifier: TypeIdentifier,
-    value: unknown,
-  ) {
+  registerValue(identifier: TypeIdentifier, value: unknown) {
     this.register(identifier, {
       kind: "value",
       value,
@@ -196,11 +190,7 @@ export class DiContainer {
     });
   }
 
-  registerCtorParam(
-    type: Type,
-    paramIndex: number,
-    param: PartialParameter,
-  ) {
+  registerCtorParam(type: Type, paramIndex: number, param: PartialParameter) {
     let ctorOverrides = this.#ctorOverrides.get(type);
     if (!ctorOverrides) {
       ctorOverrides = new Map();
@@ -215,11 +205,7 @@ export class DiContainer {
     this.invalidateDependencyGraph();
   }
 
-  registerProperty(
-    type: Type,
-    propName: string,
-    param: PartialParameter,
-  ) {
+  registerProperty(type: Type, propName: string, param: PartialParameter) {
     let props = this.#propOverrides.get(type);
     if (!props) {
       props = new Map();
@@ -242,7 +228,7 @@ export class DiContainer {
   private buildDependencyGraph(
     identifier: TypeIdentifier,
     path: TypeIdentifier[],
-    partialNodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
+    partialNodes: Map<TypeIdentifier, PartialDependencyGraphNode>
   ): DependencyGraphNode {
     let node = partialNodes.get(identifier);
     if (!node) {
@@ -252,19 +238,20 @@ export class DiContainer {
         if (exporter) {
           return exporter.buildDependencyGraph(identifier, path, partialNodes);
         }
-        const typeName = typeof identifier === "string"
-          ? identifier
-          : identifier.name;
+        const typeName =
+          typeof identifier === "string" ? identifier : identifier.name;
         const pathString = path
-          .map((pathIdentifier) =>
-            `${
-              typeof pathIdentifier === "string"
-                ? pathIdentifier
-                : pathIdentifier.name
-            } < `
-          ).join("");
+          .map(
+            (pathIdentifier) =>
+              `${
+                typeof pathIdentifier === "string"
+                  ? pathIdentifier
+                  : pathIdentifier.name
+              } < `
+          )
+          .join("");
         throw Error(
-          `Error composing ${pathString}${typeName}. ${typeName} is not registered`,
+          `Error composing ${pathString}${typeName}. ${typeName} is not registered`
         );
       }
       path.push(identifier);
@@ -274,11 +261,17 @@ export class DiContainer {
           partialNodes.set(identifier, node);
           node.ctor = definition.type;
           node.params = this.buildCtorSubtree(definition, path, partialNodes);
-          node.props = this.buildPropSubtree(definition, path, partialNodes)
-            .reduce((previous, current) => ({
+          node.props = this.buildPropSubtree(
+            definition,
+            path,
+            partialNodes
+          ).reduce(
+            (previous, current) => ({
               ...previous,
               [current.prop]: current.node,
-            }), {});
+            }),
+            {}
+          );
           break;
         case "factory":
           node = { identifier, kind: definition.kind };
@@ -287,7 +280,7 @@ export class DiContainer {
           node.params = this.buildFactorySubtree(
             definition,
             path,
-            partialNodes,
+            partialNodes
           );
           break;
         case "value":
@@ -302,67 +295,63 @@ export class DiContainer {
   private buildCtorSubtree(
     definition: TypeDefinition,
     path: TypeIdentifier[],
-    nodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
+    nodes: Map<TypeIdentifier, PartialDependencyGraphNode>
   ) {
     const ctorParms = this.getCtorOverrides(definition.type);
     if (!definition.params && !ctorParms.size) {
       return [];
     }
-    return Array.from(ctorParms ?? []).reduce(
-      (params, [index, param]) => {
+    return Array.from(ctorParms ?? [])
+      .reduce((params, [index, param]) => {
         params[index] = { ...params[index], ...param };
         return params;
-      },
-      definition.params ?? [],
-    ).map((parameter) => {
-      if (parameter.isOptional && !this.getDefinition(parameter.identifier)) {
-        return ({
-          identifier: parameter.identifier,
-          kind: "null",
-        }) as NullDependencyGraphNode;
-      }
-      return this.buildDependencyGraph(parameter.identifier, path, nodes);
-    });
+      }, definition.params ?? [])
+      .map((parameter) => {
+        if (parameter.isOptional && !this.getDefinition(parameter.identifier)) {
+          return {
+            identifier: parameter.identifier,
+            kind: "null",
+          } as NullDependencyGraphNode;
+        }
+        return this.buildDependencyGraph(parameter.identifier, path, nodes);
+      });
   }
 
   private buildPropSubtree(
     definition: TypeDefinition,
     path: TypeIdentifier[],
-    nodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
+    nodes: Map<TypeIdentifier, PartialDependencyGraphNode>
   ) {
     const props = this.getPropOverrides(definition.type);
     if (!definition.props && !props.size) {
       return [];
     }
     return Object.entries(
-      Array.from(props).reduce(
-        (props, [propName, param]) => {
-          props[propName] = { ...props[propName], ...param };
-          return props;
-        },
-        definition.props ?? {},
-      ),
+      Array.from(props).reduce((props, [propName, param]) => {
+        props[propName] = { ...props[propName], ...param };
+        return props;
+      }, definition.props ?? {})
     ).map(([name, parameter]) => {
       if (parameter.isOptional && !this.getDefinition(parameter.identifier)) {
-        return ({
+        return {
           prop: name,
           node: {
             identifier: parameter.identifier,
             kind: "null",
           },
-        });
+        };
       }
-      return ({
+      return {
         prop: name,
         node: this.buildDependencyGraph(parameter.identifier, path, nodes),
-      });
+      };
     });
   }
 
   private buildFactorySubtree(
     defintion: FactoryDefinition,
     path: TypeIdentifier[],
-    nodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
+    nodes: Map<TypeIdentifier, PartialDependencyGraphNode>
   ) {
     if (!defintion.params) {
       return [];
@@ -374,7 +363,7 @@ export class DiContainer {
 
   private detectCircularDependencies(
     node: NullableDependencyGraphNode,
-    ancestors: NullableDependencyGraphNode[] = [],
+    ancestors: NullableDependencyGraphNode[] = []
   ) {
     const circular = ancestors.includes(node);
     ancestors.push(node);
@@ -396,10 +385,8 @@ export class DiContainer {
     }
   }
 
-  private getDefinition(
-    identifier: TypeIdentifier,
-  ): Definition | undefined {
-    let alias = this.getAlias(identifier);
+  private getDefinition(identifier: TypeIdentifier): Definition | undefined {
+    const alias = this.getAlias(identifier);
     if (alias) {
       identifier = alias;
     }
@@ -410,9 +397,7 @@ export class DiContainer {
     return definiton;
   }
 
-  private getAlias(
-    identifier: TypeIdentifier,
-  ): TypeIdentifier | undefined {
+  private getAlias(identifier: TypeIdentifier): TypeIdentifier | undefined {
     let alias = this.#aliases.get(identifier);
     if (!alias) {
       alias = this.parent?.getAlias(identifier);
@@ -422,18 +407,14 @@ export class DiContainer {
 
   private getDefinitionIdentifiers(): TypeIdentifier[] {
     return [
-      ...new Set(
-        [
-          ...this.#definitions.keys(),
-          ...(this.parent?.getDefinitionIdentifiers() ?? []),
-        ],
-      ),
+      ...new Set([
+        ...this.#definitions.keys(),
+        ...(this.parent?.getDefinitionIdentifiers() ?? []),
+      ]),
     ];
   }
 
-  private getExporter(
-    identifier: TypeIdentifier,
-  ): DiContainer | undefined {
+  private getExporter(identifier: TypeIdentifier): DiContainer | undefined {
     let exporter = this.#imports.get(identifier);
     if (!exporter && this.parent) {
       exporter = this.parent.getExporter(identifier);
@@ -442,13 +423,11 @@ export class DiContainer {
   }
 
   private getCtorOverrides(type: Type): Map<number, PartialParameter> {
-    const definition = new Map(
-      this.parent?.getCtorOverrides(type) || [],
-    );
+    const definition = new Map(this.parent?.getCtorOverrides(type) || []);
     this.#ctorOverrides.get(type)?.forEach((ctorOverrides, paramIndex) => {
       const merged = ctorOverrides.reduce(
         (ctorOverride, definition) => ({ ...ctorOverride, ...definition }),
-        {},
+        {}
       );
       definition.set(paramIndex, merged);
     });
@@ -456,13 +435,11 @@ export class DiContainer {
   }
 
   private getPropOverrides(type: Type): Map<string, PartialParameter> {
-    const definition = new Map(
-      this.parent?.getPropOverrides(type) || [],
-    );
+    const definition = new Map(this.parent?.getPropOverrides(type) || []);
     this.#propOverrides.get(type)?.forEach((propOverrides, paramName) => {
       const merged = propOverrides.reduce(
         (propOverride, definition) => ({ ...propOverride, ...definition }),
-        {},
+        {}
       );
       definition.set(paramName, merged);
     });

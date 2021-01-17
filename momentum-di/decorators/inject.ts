@@ -1,30 +1,25 @@
-import {
-  DiContainer,
-  Type,
-  TypeIdentifier,
-} from "../di-container.ts";
+import { DiContainer, Type, TypeIdentifier } from "../di-container.ts";
 
 export function Inject<T = unknown>(
-  identifier: TypeIdentifier<T>,
+  identifier: TypeIdentifier<T>
 ): PropertyDecorator & ParameterDecorator {
   return function (
+    // deno-lint-ignore ban-types
     target: Object,
     propName?: string | symbol,
-    paramIndex?: number,
+    paramIndex?: number
   ) {
     if (propName) {
       DiContainer.root().registerProperty(
         target.constructor as Type,
         propName.toString(),
-        { identifier },
+        { identifier }
       );
     }
     if (paramIndex || paramIndex === 0) {
-      DiContainer.root().registerCtorParam(
-        target as Type,
-        paramIndex,
-        { identifier },
-      );
+      DiContainer.root().registerCtorParam(target as Type, paramIndex, {
+        identifier,
+      });
     }
   };
 }

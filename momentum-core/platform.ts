@@ -5,7 +5,14 @@ import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
 
 export function platformMomentum() {
-  return new Platform(DiContainer.root(), DependencyScope.beginScope());
+  return boostrapPlatform(
+    new Platform(DiContainer.root(), DependencyScope.beginScope())
+  );
+}
+
+export function boostrapPlatform(platform: Platform) {
+  platform.initialize();
+  return platform;
 }
 
 export class Platform {
@@ -42,7 +49,7 @@ export class Platform {
         this.#module = ModuleRef.createModuleRef(
           this.#container,
           ModuleCatalog.getMetadata(moduleType),
-          this.#scope,
+          this.#scope
         );
         resolve(this);
       } catch (err) {
@@ -50,6 +57,8 @@ export class Platform {
       }
     });
   }
+
+  initialize() {}
 
   private ensureInitalized() {
     if (!this.#module) {
