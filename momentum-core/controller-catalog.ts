@@ -3,6 +3,7 @@ import {
   ActionMetadata,
   ControllerClass,
   ControllerMetadata,
+  ParameterMetadata,
 } from "./controller-metadata.ts";
 
 export class ControllerCatalog {
@@ -10,7 +11,12 @@ export class ControllerCatalog {
     Type,
     {
       metadata?: ControllerMetadata;
-      actions: { [name: string]: ActionMetadata };
+      actions: {
+        [action: string]: {
+          metadata?: ActionMetadata;
+          parameters: ParameterMetadata[];
+        };
+      };
     }
   >();
 
@@ -29,14 +35,28 @@ export class ControllerCatalog {
 
   static registerActionMetadata(
     type: ControllerClass,
-    method: string,
+    action: string,
     metadata: ActionMetadata
   ) {
     let registration = ControllerCatalog.catalog.get(type);
     if (!registration) {
-      registration = { actions: { [method]: metadata } };
+      registration = { actions: { [action]: { metadata, parameters: [] } } };
     } else {
-      registration.actions[method] = metadata;
+      registration.actions[action].metadata = metadata;
+    }
+    ControllerCatalog.catalog.set(type, registration);
+  }
+
+  static registerParameterMetadata(
+    type: ControllerClass,
+    action: string,
+    metadata: ParameterMetadata
+  ) {
+    let registration = ControllerCatalog.catalog.get(type);
+    if (!registration) {
+      registration = { actions: { [action]: { parameters: [metadata] } } };
+    } else {
+      registration.actions[action].parameters.push(metadata);
     }
     ControllerCatalog.catalog.set(type, registration);
   }
@@ -46,21 +66,29 @@ export class ControllerCatalog {
       type,
       { metadata, actions },
     ] of ControllerCatalog.catalog.entries()) {
-      for (const [method, actionMetadata] of Object.entries(actions)) {
+      for (const [method, actionRegistration] of Object.entries(actions)) {
         yield {
           controller: type,
           action: method,
-          route: ControllerCatalog.constructRoute(metadata, actionMetadata),
+          route: ControllerCatalog.constructRoute(
+            metadata,
+            actionRegistration.metadata
+          ),
           controllerMetadata: metadata,
-          actionMetadata,
+          actionMetadata: actionRegistration.metadata,
+          parameterMetadata: actionRegistration.parameters,
         };
       }
     }
   }
 
+  static getParameterMetadat(controller: ControllerClass, action: string) {
+    return this.catalog.get(controller)?.actions[action].parameters;
+  }
+
   private static constructRoute(
     controllerMetadata: ControllerMetadata | undefined,
-    actionMetadata: ActionMetadata
+    actionMetadata: ActionMetadata | undefined
   ) {
     const parts = [];
     const controllerRoute = this.trimSlashes(controllerMetadata?.route);

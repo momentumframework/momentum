@@ -1,20 +1,25 @@
-import { Application, Context, Router } from "./deps.ts";
-import { boostrapPlatform, Platform } from "../momentum-core/mod.ts";
+import { Application, Router, RouterContext } from "./deps.ts";
+import { ModuleClass, Platform } from "../momentum-core/mod.ts";
 import { DependencyScope, DiContainer } from "../momentum-di/mod.ts";
-import { ControllerCatalog } from "../momentum-core/controller-catalog.ts";
+import {
+  ActionMetadata,
+  ControllerClass,
+  ControllerMetadata,
+} from "../momentum-core/controller-metadata.ts";
 
 export function platformOak(
+  module: ModuleClass,
   app: Application = new Application(),
   router: Router = new Router()
 ) {
-  return boostrapPlatform(
-    new OakPlatform(
-      DiContainer.root(),
-      DependencyScope.beginScope(),
-      app,
-      router
-    )
+  const platform = new OakPlatform(
+    DiContainer.root(),
+    DependencyScope.beginScope(),
+    app,
+    router
   );
+  platform.bootstrapModule(module);
+  return platform;
 }
 
 export class OakPlatform extends Platform {
@@ -30,51 +35,77 @@ export class OakPlatform extends Platform {
     this.#app = application;
     this.#router = router;
   }
-  initialize() {
-    for (const {
-      controller,
-      action,
-      route,
-      controllerMetadata,
-      actionMetadata,
-    } of ControllerCatalog.getMetadataByRoute()) {
-      console.log(
-        controller,
-        action,
-        route,
-        controllerMetadata,
-        actionMetadata
-      );
-      const handler = async (context: Context) => {
-        // deno-lint-ignore no-explicit-any
-        const instance = this.resolve(controller) as any;
-        const result = await instance[action](
-          context.request,
-          context.response
-        );
-        context.response.body = result;
-      };
-      switch (actionMetadata.method) {
-        case "get":
-          this.#router.get(route, handler);
-          break;
-        case "post":
-          this.#router.post(route, handler);
-          break;
-        case "put":
-          this.#router.put(route, handler);
-          break;
-        case "delete":
-          this.#router.delete(route, handler);
-          break;
-        case "head":
-          this.#router.head(route, handler);
-          break;
-        case "patch":
-          this.#router.patch(route, handler);
-          break;
-      }
-    }
+
+  // deno-lint-ignore require-await
+  async postInit() {
     this.#app.use(this.#router.routes());
+  }
+
+  // deno-lint-ignore require-await
+  async addRouteHandler(
+    _controller: ControllerClass,
+    _action: string,
+    route: string,
+    _controllerMetadata: ControllerMetadata,
+    actionMetadata: ActionMetadata,
+    // deno-lint-ignore no-explicit-any
+    handler: (context: RouterContext) => any
+  ) {
+    switch (actionMetadata.method) {
+      case "get":
+        this.#router.get(route, async (context) => {
+          context.response.body = await handler(context);
+        });
+        break;
+      case "post":
+        this.#router.post(route, async (context) => {
+          context.response.body = await handler(context);
+        });
+        break;
+      case "put":
+        this.#router.put(route, async (context) => {
+          context.response.body = await handler(context);
+        });
+        break;
+      case "delete":
+        this.#router.delete(route, async (context) => {
+          context.response.body = await handler(context);
+        });
+        break;
+      case "head":
+        this.#router.head(route, async (context) => {
+          context.response.body = await handler(context);
+        });
+        break;
+      case "patch":
+        this.#router.patch(route, async (context) => {
+          context.response.body = await handler(context);
+        });
+        break;
+    }
+  }
+
+  async extractFromContext(
+    kind: string,
+    identifier: string,
+    context: RouterContext
+  ) {
+    switch (kind) {
+      case "parameter":
+        return context.params[identifier];
+      case "body":
+        if (context.request.hasBody) {
+          const body = await context.request.body().value;
+          if (identifier) {
+            return await body[identifier];
+          } else {
+            return body;
+          }
+        }
+    }
+  }
+
+  async listen(port: number) {
+    return await this.#app.listen({ port });
   }
 }

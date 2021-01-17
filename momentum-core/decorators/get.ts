@@ -12,9 +12,12 @@ export function Get(
     ControllerCatalog.registerActionMetadata(
       target.constructor as ControllerClass,
       propertyKey.toString(),
-      typeof metadataOrRoute === "string"
-        ? { route: metadataOrRoute }
-        : metadataOrRoute
+      {
+        ...(typeof metadataOrRoute === "string"
+          ? { route: metadataOrRoute }
+          : { ...metadataOrRoute }),
+        method: "get",
+      }
     );
   };
 }
