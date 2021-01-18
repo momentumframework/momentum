@@ -1,6 +1,6 @@
-import { Platform } from "../../deps.ts";
 import { ControllerCatalog } from "../controller-catalog.ts";
 import { ControllerClass } from "../controller-metadata.ts";
+import { Platform } from "../platform.ts";
 
 export function createParameterDecorator(
   callback: (
