@@ -3,7 +3,10 @@ import { ControllerCatalog } from "../controller-catalog.ts";
 import { ControllerClass } from "../controller-metadata.ts";
 
 export function createParameterDecorator(
-  callback: (context: unknown, platform: Platform) => Promise<unknown>,
+  callback: (
+    context: unknown,
+    platform: Platform
+  ) => unknown | Promise<unknown>,
   valueProvider = true
 ): ParameterDecorator {
   return function (

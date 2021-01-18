@@ -9,13 +9,8 @@ import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
 
-export function platformMomentum(moduleType: ModuleClass) {
-  const platform = new MomentumPlatform(
-    DiContainer.root(),
-    DependencyScope.beginScope()
-  );
-  platform.bootstrapModule(moduleType);
-  return platform;
+export function platformMomentum() {
+  return new MomentumPlatform(DiContainer.root(), DependencyScope.beginScope());
 }
 
 export abstract class Platform {
@@ -48,7 +43,7 @@ export abstract class Platform {
     return this.module.resolve<T>(identifier, this.scope);
   }
 
-  async bootstrapModule(moduleType: ModuleClass): Promise<void> {
+  async bootstrapModule(moduleType: ModuleClass) {
     try {
       this.#module = ModuleRef.createModuleRef(
         this.#container,
@@ -58,13 +53,14 @@ export abstract class Platform {
       await this.preInit();
       await this.#httpController.initialize();
       await this.postInit();
+      return this;
     } catch (err) {
       throw err;
     }
   }
 
-  abstract preInit(): Promise<void>;
-  abstract postInit(): Promise<void>;
+  abstract preInit(): void | Promise<void>;
+  abstract postInit(): void | Promise<void>;
   abstract addRouteHandler(
     controller: ControllerClass,
     action: string,
@@ -72,7 +68,7 @@ export abstract class Platform {
     controllerMetadata: ControllerMetadata,
     actionMetadata: ActionMetadata,
     handler: (context: unknown) => unknown
-  ): Promise<void>;
+  ): void | Promise<void>;
   abstract extractFromContext(
     kind:
       | "parameter"
@@ -84,8 +80,8 @@ export abstract class Platform {
       | "response",
     context: unknown,
     identifier?: unknown
-  ): Promise<unknown>;
-  abstract listen(port: number): Promise<void>;
+  ): unknown | Promise<unknown>;
+  abstract listen(port: number): void | Promise<void>;
 
   private ensureInitalized() {
     if (!this.#module) {
@@ -95,24 +91,15 @@ export abstract class Platform {
 }
 
 class MomentumPlatform extends Platform {
-  // deno-lint-ignore require-await
-  async preInit() {
+  preInit() {}
+  postInit() {}
+  addRouteHandler() {
     throw new Error("Method not implemented.");
   }
-  // deno-lint-ignore require-await
-  async postInit() {
-    throw new Error("Method not implemented.");
-  }
-  // deno-lint-ignore require-await
-  async addRouteHandler() {
-    throw new Error("Method not implemented.");
-  }
-  // deno-lint-ignore require-await
-  async extractFromContext() {
+  extractFromContext() {
     return undefined;
   }
-  // deno-lint-ignore require-await
-  async listen() {
+  listen() {
     throw new Error("Method not implemented.");
   }
 }

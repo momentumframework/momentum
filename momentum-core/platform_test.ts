@@ -10,13 +10,14 @@ class Service {
 }
 
 @MvModule({
-  providers: [{
-    provide: "MESSAGE",
-    useValue: "Hello, Momentum!",
-  }],
+  providers: [
+    {
+      provide: "MESSAGE",
+      useValue: "Hello, Momentum!",
+    },
+  ],
 })
-class AppModule {
-}
+class AppModule {}
 
 test("Platform.bootstrapModule() - bootstraps module", async () => {
   // arrange

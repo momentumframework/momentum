@@ -96,7 +96,6 @@ class AppController {
 })
 class AppModule {}
 
-const platform = platformOak(AppModule);
-
-await platform.bootstrapModule(AppModule);
-await platform.listen(3000);
+await platformOak()
+  .bootstrapModule(AppModule)
+  .then((platform) => platform.listen(3000));

@@ -4,7 +4,7 @@ import {
   Router,
   RouterContext,
 } from "./deps.ts";
-import { ModuleClass, Platform } from "../momentum-core/mod.ts";
+import { Platform } from "../momentum-core/mod.ts";
 import { DependencyScope, DiContainer } from "../momentum-di/mod.ts";
 import {
   ActionMetadata,
@@ -13,18 +13,15 @@ import {
 } from "../momentum-core/controller-metadata.ts";
 
 export function platformOak(
-  module: ModuleClass,
   app: Application = new Application(),
   router: Router = new Router()
 ) {
-  const platform = new OakPlatform(
+  return new OakPlatform(
     DiContainer.root(),
     DependencyScope.beginScope(),
     app,
     router
   );
-  platform.bootstrapModule(module);
-  return platform;
 }
 
 export class OakPlatform extends Platform {
@@ -41,15 +38,12 @@ export class OakPlatform extends Platform {
     this.#router = router;
   }
 
-  async preInit() {}
-
-  // deno-lint-ignore require-await
-  async postInit() {
+  preInit() {}
+  postInit() {
     this.#app.use(this.#router.routes());
   }
 
-  // deno-lint-ignore require-await
-  async addRouteHandler(
+  addRouteHandler(
     _controller: ControllerClass,
     _action: string,
     route: string,
