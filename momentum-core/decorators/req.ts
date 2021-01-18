@@ -1,6 +1,6 @@
 import { createParameterDecorator } from "./create-parameter-decorator.ts";
 
-export function Request() {
+export function Req() {
   return createParameterDecorator(
     async (context, platform) =>
       await platform.extractFromContext("request", context)

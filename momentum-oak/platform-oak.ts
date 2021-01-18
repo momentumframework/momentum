@@ -58,36 +58,30 @@ export class OakPlatform extends Platform {
     // deno-lint-ignore no-explicit-any
     handler: (context: RouterContext) => any
   ) {
+    const routeHandler = async (context: RouterContext) => {
+      const result = await handler(context);
+      if (result) {
+        context.response.body = result;
+      }
+    };
     switch (actionMetadata.method) {
       case "get":
-        this.#router.get(route, async (context) => {
-          context.response.body = await handler(context);
-        });
+        this.#router.get(route, routeHandler);
         break;
       case "post":
-        this.#router.post(route, async (context) => {
-          context.response.body = await handler(context);
-        });
+        this.#router.post(route, routeHandler);
         break;
       case "put":
-        this.#router.put(route, async (context) => {
-          context.response.body = await handler(context);
-        });
+        this.#router.put(route, routeHandler);
         break;
       case "delete":
-        this.#router.delete(route, async (context) => {
-          context.response.body = await handler(context);
-        });
+        this.#router.delete(route, routeHandler);
         break;
       case "head":
-        this.#router.head(route, async (context) => {
-          context.response.body = await handler(context);
-        });
+        this.#router.head(route, routeHandler);
         break;
       case "patch":
-        this.#router.patch(route, async (context) => {
-          context.response.body = await handler(context);
-        });
+        this.#router.patch(route, routeHandler);
         break;
     }
   }
@@ -119,6 +113,14 @@ export class OakPlatform extends Platform {
           }
         }
         return;
+      case "cookie":
+        return context.cookies.get(identifier);
+      case "header":
+        return context.request.headers.get(identifier);
+      case "request":
+        return context.request;
+      case "response":
+        return context.response;
       default:
         throw new Error(`Unsupported context data ${kind}`);
     }
