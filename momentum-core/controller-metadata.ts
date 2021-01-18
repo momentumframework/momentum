@@ -1,5 +1,5 @@
-import { Platform } from "../deps.ts";
 import { Type } from "../momentum-di/mod.ts";
+import { Platform } from "./platform.ts";
 
 export type ControllerClass = Type;
 
