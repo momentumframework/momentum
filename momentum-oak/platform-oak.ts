@@ -1,4 +1,9 @@
-import { Application, Router, RouterContext } from "./deps.ts";
+import {
+  Application,
+  helpers as oakHelpers,
+  Router,
+  RouterContext,
+} from "./deps.ts";
 import { ModuleClass, Platform } from "../momentum-core/mod.ts";
 import { DependencyScope, DiContainer } from "../momentum-di/mod.ts";
 import {
@@ -102,6 +107,8 @@ export class OakPlatform extends Platform {
     switch (kind) {
       case "parameter":
         return context.params[identifier];
+      case "query":
+        return oakHelpers.getQuery(context, { mergeParams: true })[identifier];
       case "body":
         if (context.request.hasBody) {
           const body = await context.request.body().value;

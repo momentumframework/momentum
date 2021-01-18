@@ -6,7 +6,7 @@ import {
   MvModule,
   platformOak,
 } from "./deps.ts";
-import { Body, Param, Post } from "./momentum-core/mod.ts";
+import { Body, Param, Post, Query } from "./momentum-core/mod.ts";
 
 @Injectable()
 class AppService {
@@ -20,8 +20,12 @@ class AppService {
 @Controller("/")
 class AppController {
   constructor(private readonly service: AppService) {}
+  @Get()
+  get(@Query("name") name: string) {
+    return this.service.getGreeting(name ?? "Momentum");
+  }
   @Get(":name")
-  get(@Param("name") name: string) {
+  getName(@Param("name") name: string) {
     return this.service.getGreeting(name ?? "Momentum");
   }
   @Post()
