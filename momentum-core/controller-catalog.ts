@@ -56,7 +56,15 @@ export class ControllerCatalog {
     if (!registration) {
       registration = { actions: { [action]: { parameters: [metadata] } } };
     } else {
-      registration.actions[action].parameters.push(metadata);
+      registration.actions = {
+        ...registration.actions,
+        [action]: {
+          parameters: [
+            ...(registration.actions[action]?.parameters ?? []),
+            metadata,
+          ],
+        },
+      };
     }
     ControllerCatalog.catalog.set(type, registration);
   }

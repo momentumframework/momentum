@@ -63,10 +63,8 @@ export abstract class Platform {
     }
   }
 
-  async preInit(): Promise<void> {}
-  async postInit(): Promise<void> {}
-  async listen(port: number) {}
-
+  abstract preInit(): Promise<void>;
+  abstract postInit(): Promise<void>;
   abstract addRouteHandler(
     controller: ControllerClass,
     action: string,
@@ -75,12 +73,19 @@ export abstract class Platform {
     actionMetadata: ActionMetadata,
     handler: (context: unknown) => unknown
   ): Promise<void>;
-
   abstract extractFromContext(
-    kind: string,
-    identifier: unknown,
-    context: unknown
+    kind:
+      | "parameter"
+      | "query"
+      | "body"
+      | "cookie"
+      | "header"
+      | "request"
+      | "response",
+    context: unknown,
+    identifier?: unknown
   ): Promise<unknown>;
+  abstract listen(port: number): Promise<void>;
 
   private ensureInitalized() {
     if (!this.#module) {
@@ -91,11 +96,23 @@ export abstract class Platform {
 
 class MomentumPlatform extends Platform {
   // deno-lint-ignore require-await
+  async preInit() {
+    throw new Error("Method not implemented.");
+  }
+  // deno-lint-ignore require-await
+  async postInit() {
+    throw new Error("Method not implemented.");
+  }
+  // deno-lint-ignore require-await
   async addRouteHandler() {
     throw new Error("Method not implemented.");
   }
   // deno-lint-ignore require-await
   async extractFromContext() {
     return undefined;
+  }
+  // deno-lint-ignore require-await
+  async listen() {
+    throw new Error("Method not implemented.");
   }
 }

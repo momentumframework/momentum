@@ -1,28 +1,32 @@
-import { platformOak } from "./momentum-oak/platform-oak.ts";
-import { Get, Inject, Injectable, MvController, MvModule } from "./deps.ts";
-import { Param } from "./momentum-core/mod.ts";
+import {
+  Get,
+  Inject,
+  Injectable,
+  Controller,
+  MvModule,
+  platformOak,
+} from "./deps.ts";
+import { Body, Param, Post } from "./momentum-core/mod.ts";
 
 @Injectable()
 class AppService {
   @Inject("MESSAGE")
   message?: string;
-  getMessage(...args: string[]) {
-    let message = this.message;
-    for (let i = 0; i < args.length; i++) {
-      message = message?.replace(`{${i}}`, args[i]);
-    }
-    return message;
+  getGreeting(name: string) {
+    return this.message + name;
   }
 }
 
-@MvController("/")
+@Controller("/")
 class AppController {
   constructor(private readonly service: AppService) {}
   @Get(":name")
   get(@Param("name") name: string) {
-    const message = this.service.getMessage(name ?? "Momentum");
-    console.log(message);
-    return message;
+    return this.service.getGreeting(name ?? "Momentum");
+  }
+  @Post()
+  post(@Body() name: string) {
+    return this.service.getGreeting(name ?? "Momentum");
   }
 }
 
@@ -30,7 +34,7 @@ class AppController {
   providers: [
     {
       provide: "MESSAGE",
-      useValue: "Hello, {0}!",
+      useValue: "Hello, ",
     },
   ],
   controllers: [AppController],

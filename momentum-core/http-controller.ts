@@ -57,10 +57,10 @@ export class HttpController {
   ) {
     const parameters: unknown[] = [];
     for (const metadata of parameterMetadata) {
-      parameters[metadata.index] = await metadata.callback(
-        context,
-        this.#platform
-      );
+      const result = await metadata.callback(context, this.#platform);
+      if (metadata.isValueProvider) {
+        parameters[metadata.index] = result;
+      }
     }
     return parameters;
   }

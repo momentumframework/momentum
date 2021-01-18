@@ -36,6 +36,8 @@ export class OakPlatform extends Platform {
     this.#router = router;
   }
 
+  async preInit() {}
+
   // deno-lint-ignore require-await
   async postInit() {
     this.#app.use(this.#router.routes());
@@ -86,9 +88,16 @@ export class OakPlatform extends Platform {
   }
 
   async extractFromContext(
-    kind: string,
-    identifier: string,
-    context: RouterContext
+    kind:
+      | "parameter"
+      | "query"
+      | "body"
+      | "cookie"
+      | "header"
+      | "request"
+      | "response",
+    context: RouterContext,
+    identifier: string
   ) {
     switch (kind) {
       case "parameter":
@@ -102,6 +111,9 @@ export class OakPlatform extends Platform {
             return body;
           }
         }
+        return;
+      default:
+        throw new Error(`Unsupported context data ${kind}`);
     }
   }
 
