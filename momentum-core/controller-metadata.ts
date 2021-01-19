@@ -1,5 +1,5 @@
 import { Type } from "../momentum-di/mod.ts";
-import { Platform } from "./platform.ts";
+import { ServerPlatform } from "./platform.ts";
 
 export type ControllerClass = Type;
 
@@ -18,6 +18,6 @@ export interface ParameterMetadata {
   isValueProvider: boolean;
   callback: (
     context: unknown,
-    platform: Platform
+    platform: ServerPlatform
   ) => unknown | Promise<unknown>;
 }

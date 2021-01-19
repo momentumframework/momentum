@@ -1,11 +1,11 @@
 import { Type } from "../momentum-di/mod.ts";
 import { ControllerCatalog } from "./controller-catalog.ts";
 import { ParameterMetadata } from "./controller-metadata.ts";
-import { Platform } from "./platform.ts";
+import { ServerPlatform, Platform } from "./platform.ts";
 
 export class HttpController {
-  #platform: Platform;
-  constructor(platform: Platform) {
+  #platform: ServerPlatform;
+  constructor(platform: ServerPlatform) {
     this.#platform = platform;
   }
   async initialize() {

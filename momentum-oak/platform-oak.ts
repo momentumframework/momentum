@@ -4,7 +4,7 @@ import {
   Router,
   RouterContext,
 } from "./deps.ts";
-import { Platform } from "../momentum-core/mod.ts";
+import { ServerListenOptions, ServerPlatform } from "../momentum-core/mod.ts";
 import { DependencyScope, DiContainer } from "../momentum-di/mod.ts";
 import {
   ActionMetadata,
@@ -24,7 +24,7 @@ export function platformOak(
   );
 }
 
-export class OakPlatform extends Platform {
+export class OakPlatform extends ServerPlatform {
   #app: Application;
   #router: Router;
   constructor(
@@ -38,9 +38,9 @@ export class OakPlatform extends Platform {
     this.#router = router;
   }
 
-  preInit() {}
-  postInit() {
+  async postInit() {
     this.#app.use(this.#router.routes());
+    await super.postInit();
   }
 
   addRouteHandler(
@@ -120,7 +120,7 @@ export class OakPlatform extends Platform {
     }
   }
 
-  async listen(port: number) {
-    return await this.#app.listen({ port });
+  async listen(options: ServerListenOptions) {
+    return await this.#app.listen(options);
   }
 }

@@ -1,11 +1,11 @@
 import { ControllerCatalog } from "../controller-catalog.ts";
 import { ControllerClass } from "../controller-metadata.ts";
-import { Platform } from "../platform.ts";
+import { ServerPlatform } from "../platform.ts";
 
 export function createParameterDecorator(
   callback: (
     context: unknown,
-    platform: Platform
+    platform: ServerPlatform
   ) => unknown | Promise<unknown>,
   valueProvider = true
 ): ParameterDecorator {

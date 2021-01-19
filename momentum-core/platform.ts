@@ -17,12 +17,10 @@ export abstract class Platform {
   #module?: ModuleRef;
   #container: DiContainer;
   #scope: DependencyScope;
-  #httpController: HttpController;
 
   constructor(container: DiContainer, scope: DependencyScope) {
     this.#container = container;
     this.#scope = scope;
-    this.#httpController = new HttpController(this);
   }
 
   get module() {
@@ -45,13 +43,12 @@ export abstract class Platform {
 
   async bootstrapModule(moduleType: ModuleClass) {
     try {
+      await this.preInit();
       this.#module = ModuleRef.createModuleRef(
         this.#container,
         ModuleCatalog.getMetadata(moduleType),
         this.#scope
       );
-      await this.preInit();
-      await this.#httpController.initialize();
       await this.postInit();
       return this;
     } catch (err) {
@@ -59,8 +56,33 @@ export abstract class Platform {
     }
   }
 
-  abstract preInit(): void | Promise<void>;
-  abstract postInit(): void | Promise<void>;
+  async preInit(): Promise<void> {}
+  async postInit(): Promise<void> {}
+
+  private ensureInitalized() {
+    if (!this.#module) {
+      throw new Error("Platform has not been bootstrapped");
+    }
+  }
+}
+
+export interface ServerListenOptions {
+  port: number;
+}
+
+export abstract class ServerPlatform extends Platform {
+  #httpController: HttpController;
+
+  constructor(container: DiContainer, scope: DependencyScope) {
+    super(container, scope);
+    this.#httpController = new HttpController(this);
+  }
+
+  async preInit() {
+    await this.#httpController.initialize();
+    await super.preInit();
+  }
+
   abstract addRouteHandler(
     controller: ControllerClass,
     action: string,
@@ -81,18 +103,11 @@ export abstract class Platform {
     context: unknown,
     identifier?: unknown
   ): unknown | Promise<unknown>;
-  abstract listen(port: number): void | Promise<void>;
 
-  private ensureInitalized() {
-    if (!this.#module) {
-      throw new Error("Platform has not been bootstrapped");
-    }
-  }
+  abstract listen(options: ServerListenOptions): void | Promise<void>;
 }
 
 class MomentumPlatform extends Platform {
-  preInit() {}
-  postInit() {}
   addRouteHandler() {
     throw new Error("Method not implemented.");
   }
