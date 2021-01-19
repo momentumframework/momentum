@@ -1,9 +1,9 @@
 import { Type } from "../momentum-di/mod.ts";
 import { ControllerCatalog } from "./controller-catalog.ts";
 import { ParameterMetadata } from "./controller-metadata.ts";
-import { ServerPlatform, Platform } from "./platform.ts";
+import { ServerPlatform } from "./platform.ts";
 
-export class HttpController {
+export class ServerController {
   #platform: ServerPlatform;
   constructor(platform: ServerPlatform) {
     this.#platform = platform;
@@ -57,7 +57,7 @@ export class HttpController {
   ) {
     const parameters: unknown[] = [];
     for (const metadata of parameterMetadata) {
-      const result = await metadata.callback(context, this.#platform);
+      const result = await metadata.callback(context, this.#platform, metadata);
       if (metadata.isValueProvider) {
         parameters[metadata.index] = result;
       }

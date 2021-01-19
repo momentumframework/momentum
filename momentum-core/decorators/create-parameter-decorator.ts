@@ -1,5 +1,6 @@
 import { ControllerCatalog } from "../controller-catalog.ts";
 import { ControllerClass } from "../controller-metadata.ts";
+import { Reflect, Type } from "../deps.ts";
 import { ServerPlatform } from "../platform.ts";
 
 export function createParameterDecorator(
@@ -21,6 +22,9 @@ export function createParameterDecorator(
       {
         index: parameterIndex,
         name: propertyKey.toString(),
+        type: Reflect.getMetadata("design:paramtypes", target, propertyKey)?.[
+          parameterIndex
+        ] as Type,
         isValueProvider: valueProvider,
         callback,
       }

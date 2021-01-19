@@ -15,9 +15,12 @@ export interface ActionMetadata {
 export interface ParameterMetadata {
   index: number;
   name: string;
+  type: Type;
+  priority?: boolean;
   isValueProvider: boolean;
   callback: (
     context: unknown,
-    platform: ServerPlatform
+    platform: ServerPlatform,
+    metadata: Omit<ParameterMetadata, "callback">
   ) => unknown | Promise<unknown>;
 }

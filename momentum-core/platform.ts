@@ -4,10 +4,10 @@ import {
   ControllerMetadata,
 } from "./controller-metadata.ts";
 import { DependencyScope, DiContainer, TypeIdentifier } from "./deps.ts";
-import { HttpController } from "./http-controller.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
+import { ServerController } from "./server-controller.ts";
 
 export function platformMomentum() {
   return new MomentumPlatform(DiContainer.root(), DependencyScope.beginScope());
@@ -71,15 +71,15 @@ export interface ServerListenOptions {
 }
 
 export abstract class ServerPlatform extends Platform {
-  #httpController: HttpController;
+  #serverController: ServerController;
 
   constructor(container: DiContainer, scope: DependencyScope) {
     super(container, scope);
-    this.#httpController = new HttpController(this);
+    this.#serverController = new ServerController(this);
   }
 
   async preInit() {
-    await this.#httpController.initialize();
+    await this.#serverController.initialize();
     await super.preInit();
   }
 
@@ -91,6 +91,7 @@ export abstract class ServerPlatform extends Platform {
     actionMetadata: ActionMetadata,
     handler: (context: unknown) => unknown
   ): void | Promise<void>;
+
   abstract extractFromContext(
     kind:
       | "parameter"
