@@ -1,12 +1,20 @@
 import { Type } from "../momentum-di/mod.ts";
 import { ControllerCatalog } from "./controller-catalog.ts";
 import { ParameterMetadata } from "./controller-metadata.ts";
+import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerPlatform } from "./platform.ts";
 
 export class ServerController {
   #platform: ServerPlatform;
-  constructor(platform: ServerPlatform) {
+  #middlewareGetter: () => MvMiddleware[];
+  #middlewares?: MvMiddleware[];
+
+  constructor(
+    platform: ServerPlatform,
+    middlewareGetter: () => MvMiddleware[]
+  ) {
     this.#platform = platform;
+    this.#middlewareGetter = middlewareGetter;
   }
   async initialize() {
     for (const {
@@ -41,14 +49,30 @@ export class ServerController {
     parameterMetadata: ParameterMetadata[]
   ): (context: unknown) => unknown {
     return async (context) => {
-      const controllerInstance = this.#platform.resolve(controller) as Record<
-        string,
-        (...args: unknown[]) => unknown
-      >;
-      return await controllerInstance[action](
-        ...(await this.buildParameters(context, parameterMetadata))
-      );
+      try {
+        const controllerInstance = this.#platform.resolve(controller) as Record<
+          string,
+          (...args: unknown[]) => unknown
+        >;
+        const result = await controllerInstance[action](
+          ...(await this.buildParameters(context, parameterMetadata))
+        );
+        return await this.executeMiddleware(context, result);
+      } catch (err) {
+        throw err;
+      }
     };
+  }
+
+  private async executeMiddleware(context: unknown, data: unknown) {
+    if (!this.#middlewares) {
+      this.#middlewares = this.#middlewareGetter();
+    }
+    let result = Promise.resolve(data);
+    for (const middleware of this.#middlewares ?? []) {
+      result = middleware.execute(context, () => result);
+    }
+    return result;
   }
 
   private async buildParameters(

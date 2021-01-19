@@ -3,10 +3,11 @@ import {
   ControllerClass,
   ControllerMetadata,
 } from "./controller-metadata.ts";
-import { DependencyScope, DiContainer, TypeIdentifier } from "./deps.ts";
+import { DependencyScope, DiContainer, Type, TypeIdentifier } from "./deps.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
+import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerController } from "./server-controller.ts";
 
 export function platformMomentum() {
@@ -72,10 +73,13 @@ export interface ServerListenOptions {
 
 export abstract class ServerPlatform extends Platform {
   #serverController: ServerController;
+  #middlewareRegistrations: (MvMiddleware | Type<MvMiddleware>)[] = [];
 
   constructor(container: DiContainer, scope: DependencyScope) {
     super(container, scope);
-    this.#serverController = new ServerController(this);
+    this.#serverController = new ServerController(this, () =>
+      this.getMiddleware()
+    );
   }
 
   async preInit() {
@@ -106,6 +110,19 @@ export abstract class ServerPlatform extends Platform {
   ): unknown | Promise<unknown>;
 
   abstract listen(options: ServerListenOptions): void | Promise<void>;
+
+  use(middleware: MvMiddleware | Type<MvMiddleware>) {
+    this.#middlewareRegistrations.push(middleware);
+    return this;
+  }
+
+  private getMiddleware() {
+    return this.#middlewareRegistrations.map((registration) =>
+      typeof registration === "function"
+        ? this.resolve<MvMiddleware>(registration)
+        : registration
+    );
+  }
 }
 
 class MomentumPlatform extends Platform {
