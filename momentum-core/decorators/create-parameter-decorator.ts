@@ -12,15 +12,18 @@ export function createParameterDecorator(
     propertyKey: string | symbol,
     parameterIndex: number
   ) {
+    const parameterType = Reflect.getMetadata(
+      "design:paramtypes",
+      target,
+      propertyKey
+    )?.[parameterIndex] as Type;
     ControllerCatalog.registerParameterMetadata(
       target.constructor as ControllerClass,
       propertyKey.toString(),
       {
         index: parameterIndex,
         name: propertyKey.toString(),
-        type: Reflect.getMetadata("design:paramtypes", target, propertyKey)?.[
-          parameterIndex
-        ] as Type,
+        type: parameterType,
       }
     );
     if (valueProvider) {

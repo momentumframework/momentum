@@ -70,7 +70,7 @@ export class ControllerCatalog {
     }
     const parameters = registration.actions[action]
       .parameters as ExtendedParameterMetadata[];
-    parameters[metadata.index] = metadata;
+    parameters[metadata.index] = { ...parameters[metadata.index], ...metadata };
     ControllerCatalog.catalog.set(type, registration);
   }
 
@@ -92,12 +92,8 @@ export class ControllerCatalog {
     }
     const parameters = registration.actions[action]
       .parameters as ExtendedParameterMetadata[];
-    if (parameters[parameterIndex]) {
-      parameters[parameterIndex] = {
-        type,
-        name: action,
-        index: parameterIndex,
-      };
+    if (!parameters[parameterIndex]) {
+      parameters[parameterIndex] = { index: parameterIndex };
     }
     parameters[parameterIndex].valueProvider = valueProvider;
     ControllerCatalog.catalog.set(type, registration);

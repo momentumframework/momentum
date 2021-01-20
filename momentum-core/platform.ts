@@ -73,13 +73,10 @@ export interface ServerListenOptions {
 
 export abstract class ServerPlatform extends Platform {
   #serverController: ServerController;
-  #middlewareRegistrations: (MvMiddleware | Type<MvMiddleware>)[] = [];
 
   constructor(container: DiContainer, scope: DependencyScope) {
     super(container, scope);
-    this.#serverController = new ServerController(this, () =>
-      this.getMiddleware()
-    );
+    this.#serverController = new ServerController(this);
   }
 
   async preInit() {
@@ -112,16 +109,8 @@ export abstract class ServerPlatform extends Platform {
   abstract listen(options: ServerListenOptions): void | Promise<void>;
 
   use(middleware: MvMiddleware | Type<MvMiddleware>) {
-    this.#middlewareRegistrations.push(middleware);
+    this.#serverController.registerMiddleware(middleware);
     return this;
-  }
-
-  private getMiddleware() {
-    return this.#middlewareRegistrations.map((registration) =>
-      typeof registration === "function"
-        ? this.resolve<MvMiddleware>(registration)
-        : registration
-    );
   }
 }
 
