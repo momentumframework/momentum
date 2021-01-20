@@ -13,7 +13,7 @@ export function Controller(
     ControllerCatalog.registerControllerMetadata(
       target as ControllerClass,
       typeof metadataOrRoute === "string"
-        ? { route: metadataOrRoute }
+        ? { type: target as Type, route: metadataOrRoute }
         : metadataOrRoute
     );
   };

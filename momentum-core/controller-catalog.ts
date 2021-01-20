@@ -1,5 +1,11 @@
 import { Type } from "../momentum-di/mod.ts";
 import {
+  ExtendedActionMetadata,
+  ExtendedControllerMetadata,
+  ExtendedParameterMetadata,
+  ValueProvider,
+} from "./controller-metadata-internal.ts";
+import {
   ActionMetadata,
   ControllerClass,
   ControllerMetadata,
@@ -10,11 +16,11 @@ export class ControllerCatalog {
   private static readonly catalog = new Map<
     Type,
     {
-      metadata?: ControllerMetadata;
+      metadata?: ExtendedControllerMetadata;
       actions: {
         [action: string]: {
-          metadata?: ActionMetadata;
-          parameters: ParameterMetadata[];
+          metadata?: ExtendedActionMetadata;
+          parameters: ExtendedParameterMetadata[];
         };
       };
     }
@@ -54,18 +60,35 @@ export class ControllerCatalog {
   ) {
     let registration = ControllerCatalog.catalog.get(type);
     if (!registration) {
-      registration = { actions: { [action]: { parameters: [metadata] } } };
-    } else {
-      registration.actions = {
-        ...registration.actions,
-        [action]: {
-          parameters: [
-            ...(registration.actions[action]?.parameters ?? []),
-            metadata,
-          ],
-        },
+      registration = { actions: { [action]: { parameters: [] } } };
+    }
+    if (!registration.actions[action]) {
+      registration.actions[action] = {
+        parameters: [],
       };
     }
+    registration.actions[action].parameters[metadata.index] = metadata;
+    ControllerCatalog.catalog.set(type, registration);
+  }
+
+  static registerValueProvider(
+    type: ControllerClass,
+    action: string,
+    parameterIndex: number,
+    valueProvider: ValueProvider
+  ) {
+    let registration = ControllerCatalog.catalog.get(type);
+    if (!registration) {
+      registration = { actions: { [action]: { parameters: [] } } };
+    }
+    if (!registration.actions[action]) {
+      registration.actions[action] = {
+        parameters: [],
+      };
+    }
+    registration.actions[action].parameters[
+      parameterIndex
+    ].valueProvider = valueProvider;
     ControllerCatalog.catalog.set(type, registration);
   }
 

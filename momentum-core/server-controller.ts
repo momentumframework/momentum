@@ -1,5 +1,6 @@
 import { Type } from "../momentum-di/mod.ts";
 import { ControllerCatalog } from "./controller-catalog.ts";
+import { ExtendedParameterMetadata } from "./controller-metadata-internal.ts";
 import { ParameterMetadata } from "./controller-metadata.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerPlatform } from "./platform.ts";
@@ -77,14 +78,18 @@ export class ServerController {
 
   private async buildParameters(
     context: unknown,
-    parameterMetadata: ParameterMetadata[]
+    parameterMetadata: ExtendedParameterMetadata[]
   ) {
     const parameters: unknown[] = [];
     for (const metadata of parameterMetadata) {
-      const result = await metadata.callback(context, this.#platform, metadata);
-      if (metadata.isValueProvider) {
-        parameters[metadata.index] = result;
+      if (!metadata.valueProvider) {
+        continue;
       }
+      parameters[metadata.index] = await metadata.valueProvider(
+        context,
+        this.#platform,
+        metadata
+      );
     }
     return parameters;
   }

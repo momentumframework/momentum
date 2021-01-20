@@ -1,14 +1,10 @@
 import { ControllerCatalog } from "../controller-catalog.ts";
+import { ValueProvider } from "../controller-metadata-internal.ts";
 import { ControllerClass } from "../controller-metadata.ts";
 import { Reflect, Type } from "../deps.ts";
-import { ServerPlatform } from "../platform.ts";
 
 export function createParameterDecorator(
-  callback: (
-    context: unknown,
-    platform: ServerPlatform
-  ) => unknown | Promise<unknown>,
-  valueProvider = true
+  valueProvider?: ValueProvider
 ): ParameterDecorator {
   return function (
     // deno-lint-ignore ban-types
@@ -25,9 +21,15 @@ export function createParameterDecorator(
         type: Reflect.getMetadata("design:paramtypes", target, propertyKey)?.[
           parameterIndex
         ] as Type,
-        isValueProvider: valueProvider,
-        callback,
       }
     );
+    if (valueProvider) {
+      ControllerCatalog.registerValueProvider(
+        target.constructor as ControllerClass,
+        propertyKey.toString(),
+        parameterIndex,
+        valueProvider
+      );
+    }
   };
 }
