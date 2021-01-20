@@ -47,7 +47,7 @@ export class ServerController {
   createHandler(
     controller: Type<unknown>,
     action: string,
-    parameterMetadata: ParameterMetadata[]
+    parameterMetadata?: ParameterMetadata[]
   ): (context: unknown) => unknown {
     return async (context) => {
       try {
@@ -78,10 +78,10 @@ export class ServerController {
 
   private async buildParameters(
     context: unknown,
-    parameterMetadata: ExtendedParameterMetadata[]
+    parameterMetadata?: ExtendedParameterMetadata[]
   ) {
     const parameters: unknown[] = [];
-    for (const metadata of parameterMetadata) {
+    for (const metadata of parameterMetadata ?? []) {
       if (!metadata.valueProvider) {
         continue;
       }

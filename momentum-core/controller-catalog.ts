@@ -11,6 +11,7 @@ import {
   ControllerMetadata,
   ParameterMetadata,
 } from "./controller-metadata.ts";
+import { MvInterceptor } from "./mv-interceptor.ts";
 
 export class ControllerCatalog {
   private static readonly catalog = new Map<
@@ -20,7 +21,7 @@ export class ControllerCatalog {
       actions: {
         [action: string]: {
           metadata?: ExtendedActionMetadata;
-          parameters: ExtendedParameterMetadata[];
+          parameters?: ExtendedParameterMetadata[];
         };
       };
     }
@@ -34,7 +35,10 @@ export class ControllerCatalog {
     if (!registration) {
       registration = { metadata, actions: {} };
     } else {
-      registration.metadata = metadata;
+      registration.metadata = {
+        ...metadata,
+        interceptors: registration.metadata?.interceptors,
+      };
     }
     ControllerCatalog.catalog.set(type, registration);
   }
@@ -46,10 +50,9 @@ export class ControllerCatalog {
   ) {
     let registration = ControllerCatalog.catalog.get(type);
     if (!registration) {
-      registration = { actions: { [action]: { metadata, parameters: [] } } };
-    } else {
-      registration.actions[action].metadata = metadata;
+      registration = { actions: {} };
     }
+    registration.actions[action].metadata = metadata;
     ControllerCatalog.catalog.set(type, registration);
   }
 
@@ -60,14 +63,14 @@ export class ControllerCatalog {
   ) {
     let registration = ControllerCatalog.catalog.get(type);
     if (!registration) {
-      registration = { actions: { [action]: { parameters: [] } } };
+      registration = { actions: {} };
     }
     if (!registration.actions[action]) {
-      registration.actions[action] = {
-        parameters: [],
-      };
+      registration.actions[action] = { parameters: [] };
     }
-    registration.actions[action].parameters[metadata.index] = metadata;
+    const parameters = registration.actions[action]
+      .parameters as ExtendedParameterMetadata[];
+    parameters[metadata.index] = metadata;
     ControllerCatalog.catalog.set(type, registration);
   }
 
@@ -79,16 +82,66 @@ export class ControllerCatalog {
   ) {
     let registration = ControllerCatalog.catalog.get(type);
     if (!registration) {
-      registration = { actions: { [action]: { parameters: [] } } };
+      registration = { actions: {} };
     }
     if (!registration.actions[action]) {
-      registration.actions[action] = {
-        parameters: [],
+      registration.actions[action] = {};
+    }
+    if (!registration.actions[action].parameters) {
+      registration.actions[action].parameters = [];
+    }
+    const parameters = registration.actions[action]
+      .parameters as ExtendedParameterMetadata[];
+    if (parameters[parameterIndex]) {
+      parameters[parameterIndex] = {
+        type,
+        name: action,
+        index: parameterIndex,
       };
     }
-    registration.actions[action].parameters[
-      parameterIndex
-    ].valueProvider = valueProvider;
+    parameters[parameterIndex].valueProvider = valueProvider;
+    ControllerCatalog.catalog.set(type, registration);
+  }
+
+  static registerControllerInterceptor(
+    type: ControllerClass,
+    interceptor: Type<MvInterceptor> | MvInterceptor
+  ) {
+    let registration = ControllerCatalog.catalog.get(type);
+    if (!registration) {
+      registration = { actions: {} };
+    }
+    if (!registration.metadata) {
+      registration.metadata = { type };
+    }
+    if (!registration.metadata.interceptors) {
+      registration.metadata.interceptors = [];
+    }
+    registration.metadata.interceptors.push(interceptor);
+    ControllerCatalog.catalog.set(type, registration);
+  }
+
+  static registerActionInterceptor(
+    type: ControllerClass,
+    action: string,
+    interceptor: Type<MvInterceptor> | MvInterceptor
+  ) {
+    let registration = ControllerCatalog.catalog.get(type);
+    if (!registration) {
+      registration = { actions: {} };
+    }
+    if (!registration.actions[action]) {
+      registration.actions[action] = {};
+    }
+    if (!registration.actions[action].metadata) {
+      registration.actions[action].metadata = { action, interceptors: [] };
+    }
+    const metadata = registration.actions[action]
+      .metadata as ExtendedActionMetadata;
+    if (metadata.interceptors) {
+      metadata.interceptors = [];
+    }
+    metadata.interceptors?.push(interceptor);
     ControllerCatalog.catalog.set(type, registration);
   }
 
@@ -113,7 +166,7 @@ export class ControllerCatalog {
     }
   }
 
-  static getParameterMetadat(controller: ControllerClass, action: string) {
+  static getParameterMetadata(controller: ControllerClass, action: string) {
     return this.catalog.get(controller)?.actions[action].parameters;
   }
 
