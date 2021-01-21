@@ -7,6 +7,7 @@ import { DependencyScope, DiContainer, Type, TypeIdentifier } from "./deps.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
+import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerController } from "./server-controller.ts";
 
@@ -112,16 +113,11 @@ export abstract class ServerPlatform extends Platform {
     this.#serverController.registerMiddleware(middleware);
     return this;
   }
+
+  registerGlobalFilter(filter: MvFilter | Type<MvFilter>) {
+    this.#serverController.registerGlobalFilter(filter);
+    return this;
+  }
 }
 
-class MomentumPlatform extends Platform {
-  addRouteHandler() {
-    throw new Error("Method not implemented.");
-  }
-  extractFromContext() {
-    return undefined;
-  }
-  listen() {
-    throw new Error("Method not implemented.");
-  }
-}
+export class MomentumPlatform extends Platform {}

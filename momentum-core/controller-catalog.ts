@@ -11,7 +11,7 @@ import {
   ControllerMetadata,
   ParameterMetadata,
 } from "./controller-metadata.ts";
-import { MvInterceptor } from "./mv-interceptor.ts";
+import { MvFilter } from "./mv-filter.ts";
 
 export class ControllerCatalog {
   private static readonly catalog = new Map<
@@ -37,7 +37,7 @@ export class ControllerCatalog {
     } else {
       registration.metadata = {
         ...metadata,
-        interceptors: registration.metadata?.interceptors,
+        filters: registration.metadata?.filters,
       };
     }
     ControllerCatalog.catalog.set(type, registration);
@@ -52,7 +52,10 @@ export class ControllerCatalog {
     if (!registration) {
       registration = { actions: {} };
     }
-    registration.actions[action].metadata = metadata;
+    registration.actions[action].metadata = {
+      ...registration.actions[action].metadata,
+      ...metadata,
+    };
     ControllerCatalog.catalog.set(type, registration);
   }
 
@@ -99,9 +102,9 @@ export class ControllerCatalog {
     ControllerCatalog.catalog.set(type, registration);
   }
 
-  static registerControllerInterceptor(
+  static registerControllerFilter(
     type: ControllerClass,
-    interceptor: Type<MvInterceptor> | MvInterceptor
+    filter: Type<MvFilter> | MvFilter
   ) {
     let registration = ControllerCatalog.catalog.get(type);
     if (!registration) {
@@ -110,17 +113,17 @@ export class ControllerCatalog {
     if (!registration.metadata) {
       registration.metadata = { type };
     }
-    if (!registration.metadata.interceptors) {
-      registration.metadata.interceptors = [];
+    if (!registration.metadata.filters) {
+      registration.metadata.filters = [];
     }
-    registration.metadata.interceptors.push(interceptor);
+    registration.metadata.filters.push(filter);
     ControllerCatalog.catalog.set(type, registration);
   }
 
-  static registerActionInterceptor(
+  static registerActionFilter(
     type: ControllerClass,
     action: string,
-    interceptor: Type<MvInterceptor> | MvInterceptor
+    filter: Type<MvFilter> | MvFilter
   ) {
     let registration = ControllerCatalog.catalog.get(type);
     if (!registration) {
@@ -130,14 +133,14 @@ export class ControllerCatalog {
       registration.actions[action] = {};
     }
     if (!registration.actions[action].metadata) {
-      registration.actions[action].metadata = { action, interceptors: [] };
+      registration.actions[action].metadata = { action, filters: [] };
     }
     const metadata = registration.actions[action]
       .metadata as ExtendedActionMetadata;
-    if (metadata.interceptors) {
-      metadata.interceptors = [];
+    if (!metadata.filters) {
+      metadata.filters = [];
     }
-    metadata.interceptors?.push(interceptor);
+    metadata.filters?.push(filter);
     ControllerCatalog.catalog.set(type, registration);
   }
 

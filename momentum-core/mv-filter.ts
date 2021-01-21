@@ -4,10 +4,12 @@ import {
   ParameterMetadata,
 } from "./controller-metadata.ts";
 
-export interface MvInterceptor {
+export type NextFilter = () => Promise<unknown>;
+
+export interface MvFilter {
   intercept(
     context: unknown,
-    next: () => Promise<unknown>,
+    next: NextFilter,
     parameters: unknown[],
     controllerMetadata?: ControllerMetadata,
     actionMetadata?: ActionMetadata,

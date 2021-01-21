@@ -4,15 +4,15 @@ import {
   ParameterMetadata,
 } from "./controller-metadata.ts";
 import { Type } from "./deps.ts";
-import { MvInterceptor } from "./mv-interceptor.ts";
+import { MvFilter } from "./mv-filter.ts";
 import { ServerPlatform } from "./platform.ts";
 
 export interface ExtendedControllerMetadata extends ControllerMetadata {
-  interceptors?: (MvInterceptor | Type<MvInterceptor>)[];
+  filters?: (MvFilter | Type<MvFilter>)[];
 }
 
 export interface ExtendedActionMetadata extends ActionMetadata {
-  interceptors?: (MvInterceptor | Type<MvInterceptor>)[];
+  filters?: (MvFilter | Type<MvFilter>)[];
 }
 
 export type ValueProvider = (

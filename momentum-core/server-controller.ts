@@ -6,7 +6,7 @@ import {
   ExtendedParameterMetadata,
 } from "./controller-metadata-internal.ts";
 import { ParameterMetadata } from "./controller-metadata.ts";
-import { MvInterceptor } from "./mod.ts";
+import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerPlatform } from "./platform.ts";
 
@@ -14,7 +14,7 @@ export class ServerController {
   #platform: ServerPlatform;
   #middlewareRegistry: (MvMiddleware | Type<MvMiddleware>)[] = [];
   #middlewareCache?: MvMiddleware[];
-  #globalInterceptorRegistry: (MvInterceptor | Type<MvInterceptor>)[] = [];
+  #globalFilterRegistry: (MvFilter | Type<MvFilter>)[] = [];
 
   constructor(platform: ServerPlatform) {
     this.#platform = platform;
@@ -70,17 +70,15 @@ export class ServerController {
           context,
           parameterMetadatas
         );
-        const result = await controllerInstance[action](...parameters);
-        const middlewareResult = await this.executeMiddleware(context, result);
-        const interceptorResult = await this.executeInterceptors(
+        await this.executeMiddleware(context);
+        return await this.executeFilters(
           context,
-          middlewareResult,
+          async () => await controllerInstance[action](...parameters),
           parameters,
           controllerMetadata,
           actionMetadata,
           parameterMetadatas
         );
-        return interceptorResult;
       } catch (err) {
         throw err;
       }
@@ -91,15 +89,16 @@ export class ServerController {
     this.#middlewareRegistry.push(middleware);
   }
 
-  private async executeMiddleware(context: unknown, data: unknown) {
+  private async executeMiddleware(context: unknown) {
     if (!this.#middlewareCache) {
       this.#middlewareCache = this.getMiddleware();
     }
-    let result = Promise.resolve(data);
-    for (const middleware of this.#middlewareCache ?? []) {
-      result = middleware.execute(context, () => result);
+    let next = async () => {};
+    for (const middleware of this.#middlewareCache.reverse()) {
+      const n = next;
+      next = async () => await middleware.execute(context, n);
     }
-    return result;
+    await next();
   }
 
   private getMiddleware() {
@@ -110,50 +109,52 @@ export class ServerController {
     );
   }
 
-  registerGlobalInterceptor(interceptor: MvInterceptor | Type<MvInterceptor>) {
-    this.#globalInterceptorRegistry.push(interceptor);
+  registerGlobalFilter(filter: MvFilter | Type<MvFilter>) {
+    this.#globalFilterRegistry.push(filter);
   }
 
-  private async executeInterceptors(
+  private async executeFilters(
     context: unknown,
-    data: unknown,
+    executor: () => Promise<unknown>,
     parameters: unknown[],
     controllerMetadata: ExtendedControllerMetadata,
     actionMetadata: ExtendedActionMetadata,
     parameterMetadatas?: ParameterMetadata[]
   ) {
-    const mergedInterceptors = [
-      ...this.#globalInterceptorRegistry,
-      ...(controllerMetadata.interceptors ?? []),
-      ...(actionMetadata.interceptors ?? []),
-    ].map((interceptor) =>
-      typeof interceptor === "function"
-        ? this.#platform.resolve<MvInterceptor>(interceptor)
-        : interceptor
+    const mergedFilters = [
+      ...this.#globalFilterRegistry,
+      ...(controllerMetadata.filters ?? []),
+      ...(actionMetadata.filters ?? []),
+    ].map((filter) =>
+      typeof filter === "function"
+        ? this.#platform.resolve<MvFilter>(filter)
+        : filter
     );
-    let result = Promise.resolve(data);
-    for (const middleware of mergedInterceptors) {
-      result = middleware.intercept(
-        context,
-        () => result,
-        parameters,
-        {
-          type: controllerMetadata.type,
-          route: controllerMetadata.route,
-        },
-        {
-          action: actionMetadata.action,
-          route: actionMetadata.route,
-          method: actionMetadata.method,
-        },
-        parameterMetadatas?.map((parmeterMetadata) => ({
-          index: parmeterMetadata.index,
-          name: parmeterMetadata.name,
-          type: parmeterMetadata.type,
-        }))
-      );
+    let next = executor;
+    for (const middleware of mergedFilters.reverse()) {
+      const n = next;
+      next = async () =>
+        middleware.intercept(
+          context,
+          n,
+          parameters,
+          {
+            type: controllerMetadata.type,
+            route: controllerMetadata.route,
+          },
+          {
+            action: actionMetadata.action,
+            route: actionMetadata.route,
+            method: actionMetadata.method,
+          },
+          parameterMetadatas?.map((parmeterMetadata) => ({
+            index: parmeterMetadata.index,
+            name: parmeterMetadata.name,
+            type: parmeterMetadata.type,
+          }))
+        );
     }
-    return result;
+    return await next();
   }
 
   private async buildParameters(
