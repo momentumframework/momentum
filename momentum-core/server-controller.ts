@@ -1,20 +1,20 @@
 import { Type } from "../momentum-di/mod.ts";
 import { ControllerCatalog } from "./controller-catalog.ts";
 import {
-  ExtendedActionMetadata,
-  ExtendedControllerMetadata,
-  ExtendedParameterMetadata,
-} from "./controller-metadata-internal.ts";
-import { ParameterMetadata } from "./controller-metadata.ts";
+  ActionMetadata,
+  ControllerMetadata,
+  ParameterMetadata,
+} from "./controller-metadata.ts";
+import { FilterCatalog } from "./filter-catalog.ts";
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerPlatform } from "./platform.ts";
+import { ValueProviderCatalog } from "./value-provider-catalog.ts";
 
 export class ServerController {
   #platform: ServerPlatform;
   #middlewareRegistry: (MvMiddleware | Type<MvMiddleware>)[] = [];
   #middlewareCache?: MvMiddleware[];
-  #globalFilterRegistry: (MvFilter | Type<MvFilter>)[] = [];
 
   constructor(platform: ServerPlatform) {
     this.#platform = platform;
@@ -56,8 +56,8 @@ export class ServerController {
   createHandler(
     controller: Type<unknown>,
     action: string,
-    controllerMetadata: ExtendedControllerMetadata,
-    actionMetadata: ExtendedActionMetadata,
+    controllerMetadata: ControllerMetadata,
+    actionMetadata: ActionMetadata,
     parameterMetadatas?: ParameterMetadata[]
   ): (context: unknown) => unknown {
     return async (context) => {
@@ -68,6 +68,8 @@ export class ServerController {
         >;
         const parameters = await this.buildParameters(
           context,
+          controllerMetadata,
+          actionMetadata,
           parameterMetadatas
         );
         await this.executeMiddleware(context);
@@ -110,31 +112,30 @@ export class ServerController {
   }
 
   registerGlobalFilter(filter: MvFilter | Type<MvFilter>) {
-    this.#globalFilterRegistry.push(filter);
+    FilterCatalog.registerGlobalFilter(filter);
   }
 
   private async executeFilters(
     context: unknown,
     executor: () => Promise<unknown>,
     parameters: unknown[],
-    controllerMetadata: ExtendedControllerMetadata,
-    actionMetadata: ExtendedActionMetadata,
+    controllerMetadata: ControllerMetadata,
+    actionMetadata: ActionMetadata,
     parameterMetadatas?: ParameterMetadata[]
   ) {
-    const mergedFilters = [
-      ...this.#globalFilterRegistry,
-      ...(controllerMetadata.filters ?? []),
-      ...(actionMetadata.filters ?? []),
-    ].map((filter) =>
+    const filters = FilterCatalog.getFilters(
+      controllerMetadata.type,
+      actionMetadata.action
+    ).map((filter) =>
       typeof filter === "function"
         ? this.#platform.resolve<MvFilter>(filter)
         : filter
     );
     let next = executor;
-    for (const middleware of mergedFilters.reverse()) {
+    for (const filter of filters.reverse()) {
       const n = next;
       next = async () =>
-        middleware.intercept(
+        filter.filter(
           context,
           n,
           parameters,
@@ -159,17 +160,24 @@ export class ServerController {
 
   private async buildParameters(
     context: unknown,
-    parameterMetadata?: ExtendedParameterMetadata[]
+    controllerMetadata: ControllerMetadata,
+    actionMetadata: ActionMetadata,
+    parameterMetadatas?: ParameterMetadata[]
   ) {
     const parameters: unknown[] = [];
-    for (const metadata of parameterMetadata ?? []) {
-      if (!metadata.valueProvider) {
+    for (const parameterMetadata of parameterMetadatas ?? []) {
+      const valueProvider = ValueProviderCatalog.getValueProvider(
+        controllerMetadata.type,
+        actionMetadata.action,
+        parameterMetadata.index
+      );
+      if (!valueProvider) {
         continue;
       }
-      parameters[metadata.index] = await metadata.valueProvider(
+      parameters[parameterMetadata.index] = await valueProvider(
         context,
         this.#platform,
-        metadata
+        parameterMetadata
       );
     }
     return parameters;

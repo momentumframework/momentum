@@ -1,7 +1,8 @@
 import { ControllerCatalog } from "../controller-catalog.ts";
-import { ValueProvider } from "../controller-metadata-internal.ts";
 import { ControllerClass } from "../controller-metadata.ts";
 import { Reflect, Type } from "../deps.ts";
+import { ValueProviderCatalog } from "../value-provider-catalog.ts";
+import { ValueProvider } from "../value-provider.ts";
 
 export function createParameterDecorator(
   valueProvider?: ValueProvider
@@ -27,7 +28,7 @@ export function createParameterDecorator(
       }
     );
     if (valueProvider) {
-      ControllerCatalog.registerValueProvider(
+      ValueProviderCatalog.registerValueProvider(
         target.constructor as ControllerClass,
         propertyKey.toString(),
         parameterIndex,

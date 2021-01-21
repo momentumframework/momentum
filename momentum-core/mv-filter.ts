@@ -7,7 +7,7 @@ import {
 export type NextFilter = () => Promise<unknown>;
 
 export interface MvFilter {
-  intercept(
+  filter(
     context: unknown,
     next: NextFilter,
     parameters: unknown[],

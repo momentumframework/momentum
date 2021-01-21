@@ -1,27 +1,20 @@
 import { Type } from "../momentum-di/mod.ts";
 import {
-  ExtendedActionMetadata,
-  ExtendedControllerMetadata,
-  ExtendedParameterMetadata,
-  ValueProvider,
-} from "./controller-metadata-internal.ts";
-import {
   ActionMetadata,
   ControllerClass,
   ControllerMetadata,
   ParameterMetadata,
 } from "./controller-metadata.ts";
-import { MvFilter } from "./mv-filter.ts";
 
 export class ControllerCatalog {
   private static readonly catalog = new Map<
     Type,
     {
-      metadata?: ExtendedControllerMetadata;
+      metadata?: ControllerMetadata;
       actions: {
         [action: string]: {
-          metadata?: ExtendedActionMetadata;
-          parameters?: ExtendedParameterMetadata[];
+          metadata?: ActionMetadata;
+          parameters?: ParameterMetadata[];
         };
       };
     }
@@ -29,34 +22,23 @@ export class ControllerCatalog {
 
   static registerControllerMetadata(
     type: ControllerClass,
-    metadata: ControllerMetadata
+    metadata: Omit<ControllerMetadata, "type">
   ) {
-    let registration = ControllerCatalog.catalog.get(type);
-    if (!registration) {
-      registration = { metadata, actions: {} };
-    } else {
-      registration.metadata = {
-        ...metadata,
-        filters: registration.metadata?.filters,
-      };
-    }
-    ControllerCatalog.catalog.set(type, registration);
+    this.getControllerRegistration(type).metadata = {
+      ...metadata,
+      type,
+    };
   }
 
   static registerActionMetadata(
     type: ControllerClass,
     action: string,
-    metadata: ActionMetadata
+    metadata: Omit<ActionMetadata, "action">
   ) {
-    let registration = ControllerCatalog.catalog.get(type);
-    if (!registration) {
-      registration = { actions: {} };
-    }
-    registration.actions[action].metadata = {
-      ...registration.actions[action].metadata,
+    this.getActionRegistration(type, action).metadata = {
       ...metadata,
+      action,
     };
-    ControllerCatalog.catalog.set(type, registration);
   }
 
   static registerParameterMetadata(
@@ -64,84 +46,7 @@ export class ControllerCatalog {
     action: string,
     metadata: ParameterMetadata
   ) {
-    let registration = ControllerCatalog.catalog.get(type);
-    if (!registration) {
-      registration = { actions: {} };
-    }
-    if (!registration.actions[action]) {
-      registration.actions[action] = { parameters: [] };
-    }
-    const parameters = registration.actions[action]
-      .parameters as ExtendedParameterMetadata[];
-    parameters[metadata.index] = { ...parameters[metadata.index], ...metadata };
-    ControllerCatalog.catalog.set(type, registration);
-  }
-
-  static registerValueProvider(
-    type: ControllerClass,
-    action: string,
-    parameterIndex: number,
-    valueProvider: ValueProvider
-  ) {
-    let registration = ControllerCatalog.catalog.get(type);
-    if (!registration) {
-      registration = { actions: {} };
-    }
-    if (!registration.actions[action]) {
-      registration.actions[action] = {};
-    }
-    if (!registration.actions[action].parameters) {
-      registration.actions[action].parameters = [];
-    }
-    const parameters = registration.actions[action]
-      .parameters as ExtendedParameterMetadata[];
-    if (!parameters[parameterIndex]) {
-      parameters[parameterIndex] = { index: parameterIndex };
-    }
-    parameters[parameterIndex].valueProvider = valueProvider;
-    ControllerCatalog.catalog.set(type, registration);
-  }
-
-  static registerControllerFilter(
-    type: ControllerClass,
-    filter: Type<MvFilter> | MvFilter
-  ) {
-    let registration = ControllerCatalog.catalog.get(type);
-    if (!registration) {
-      registration = { actions: {} };
-    }
-    if (!registration.metadata) {
-      registration.metadata = { type };
-    }
-    if (!registration.metadata.filters) {
-      registration.metadata.filters = [];
-    }
-    registration.metadata.filters.push(filter);
-    ControllerCatalog.catalog.set(type, registration);
-  }
-
-  static registerActionFilter(
-    type: ControllerClass,
-    action: string,
-    filter: Type<MvFilter> | MvFilter
-  ) {
-    let registration = ControllerCatalog.catalog.get(type);
-    if (!registration) {
-      registration = { actions: {} };
-    }
-    if (!registration.actions[action]) {
-      registration.actions[action] = {};
-    }
-    if (!registration.actions[action].metadata) {
-      registration.actions[action].metadata = { action, filters: [] };
-    }
-    const metadata = registration.actions[action]
-      .metadata as ExtendedActionMetadata;
-    if (!metadata.filters) {
-      metadata.filters = [];
-    }
-    metadata.filters?.push(filter);
-    ControllerCatalog.catalog.set(type, registration);
+    this.getActionRegistration(type, action).parameters?.push(metadata);
   }
 
   static *getMetadataByRoute() {
@@ -165,8 +70,27 @@ export class ControllerCatalog {
     }
   }
 
-  static getParameterMetadata(controller: ControllerClass, action: string) {
-    return this.catalog.get(controller)?.actions[action].parameters;
+  static getParameterMetadata(type: ControllerClass, action: string) {
+    return this.getActionRegistration(type, action).parameters;
+  }
+
+  private static getControllerRegistration(type: ControllerClass) {
+    let registration = this.catalog.get(type);
+    if (!registration) {
+      registration = { actions: {} };
+      this.catalog.set(type, registration);
+    }
+    return registration;
+  }
+
+  private static getActionRegistration(type: ControllerClass, action: string) {
+    let controllerRegistration = this.getControllerRegistration(type);
+    let actionRegistration = controllerRegistration.actions[action];
+    if (!actionRegistration) {
+      actionRegistration = { parameters: [] };
+      controllerRegistration.actions[action] = actionRegistration;
+    }
+    return actionRegistration;
   }
 
   private static constructRoute(

@@ -1,5 +1,5 @@
-import { ControllerCatalog } from "../controller-catalog.ts";
 import { Type } from "../deps.ts";
+import { FilterCatalog } from "../filter-catalog.ts";
 import { MvFilter } from "../mv-filter.ts";
 
 export function Filter(
@@ -8,13 +8,13 @@ export function Filter(
   // deno-lint-ignore ban-types
   return function (target: Function | Object, propertyKey?: string | symbol) {
     if (propertyKey) {
-      ControllerCatalog.registerActionFilter(
+      FilterCatalog.registerActionFilter(
         target.constructor as Type,
         propertyKey.toString(),
         filter
       );
     } else {
-      ControllerCatalog.registerControllerFilter(target as Type, filter);
+      FilterCatalog.registerControllerFilter(target as Type, filter);
     }
   };
 }
