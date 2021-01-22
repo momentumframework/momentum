@@ -71,64 +71,75 @@ export class ModuleRef {
   }
 
   public static async createModuleRef(
-    rootContainer: DiContainer,
+    diContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
     scope: DependencyScope
   ): Promise<ModuleRef> {
-    const modules = await Promise.all(
+    const subModules = await Promise.all(
       (metadata.imports ?? []).map(
-        async (moduleDef) =>
-          await this.resolveModule(moduleDef, rootContainer, scope)
+        async (moduleDefinition) =>
+          await this.resolveModule(moduleDefinition, diContainer, scope)
       )
     );
-    const diContainer = this.buildModuleDiContainer(
-      rootContainer,
+    const moduleContainer = this.buildModuleDiContainer(
+      diContainer,
       metadata,
-      modules
+      subModules
     );
-    diContainer.registerType(
+    moduleContainer.registerType(
       metadata.type,
       metadata.type,
       metadata.params?.map((param) => ({ identifier: param })),
       {}
     );
-    const moduleResolver = new DependencyResolver(diContainer, scope);
+    const moduleResolver = new DependencyResolver(moduleContainer, scope);
     const instance = await moduleResolver.resolve(metadata.type);
-    return new ModuleRef(metadata, diContainer, instance, modules);
+    const moduleRef = new ModuleRef(
+      metadata,
+      moduleContainer,
+      instance,
+      subModules
+    );
+    moduleContainer.registerValue(ModuleRef, moduleRef);
+    return moduleRef;
   }
 
   private static async resolveModule(
-    moduleDef: ModuleClass | DynamicModule,
-    rootContainer: DiContainer,
-    scope: DependencyScope
+    moduleDefinition: ModuleClass | DynamicModule,
+    moduleContainer: DiContainer,
+    moduleScope: DependencyScope
   ) {
     let moduleMetadata: ExtendedModuleMetadata;
-    if (isDynamicModule(moduleDef)) {
-      const staticMetadata = ModuleCatalog.getMetadata(moduleDef.type);
+    if (isDynamicModule(moduleDefinition)) {
+      const staticMetadata = ModuleCatalog.getMetadata(moduleDefinition.type);
       moduleMetadata = {
         ...staticMetadata,
-        ...moduleDef,
+        ...moduleDefinition,
         imports: [
           ...(staticMetadata.imports ?? []),
-          ...(moduleDef.imports ?? []),
+          ...(moduleDefinition.imports ?? []),
         ],
         providers: [
           ...(staticMetadata.providers ?? []),
-          ...(moduleDef.providers ?? []),
+          ...(moduleDefinition.providers ?? []),
         ],
         controllers: [
           ...(staticMetadata.controllers ?? []),
-          ...(moduleDef.controllers ?? []),
+          ...(moduleDefinition.controllers ?? []),
         ],
         exports: [
           ...(staticMetadata.exports ?? []),
-          ...(moduleDef.exports ?? []),
+          ...(moduleDefinition.exports ?? []),
         ],
       };
     } else {
-      moduleMetadata = ModuleCatalog.getMetadata(moduleDef);
+      moduleMetadata = ModuleCatalog.getMetadata(moduleDefinition);
     }
-    return await this.createModuleRef(rootContainer, moduleMetadata, scope);
+    return await this.createModuleRef(
+      moduleContainer,
+      moduleMetadata,
+      moduleScope
+    );
   }
 
   private static buildModuleDiContainer(

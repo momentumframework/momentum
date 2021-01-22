@@ -21,8 +21,8 @@ export abstract class Platform {
   #container: DiContainer;
   #scope: DependencyScope;
 
-  constructor(container: DiContainer, scope: DependencyScope) {
-    this.#container = container;
+  constructor(rootContainer: DiContainer, scope: DependencyScope) {
+    this.#container = rootContainer.createChild();
     this.#scope = scope;
   }
 
@@ -32,16 +32,12 @@ export abstract class Platform {
   }
   get container() {
     this.ensureInitalized();
-    return this.#container;
-  }
-
-  get scope() {
-    this.ensureInitalized();
-    return this.#scope;
+    return this.module.diContainer;
   }
 
   resolve<T = unknown>(identifier: TypeIdentifier) {
-    return this.module.resolve<T>(identifier, this.scope);
+    this.ensureInitalized();
+    return this.module.resolve<T>(identifier);
   }
 
   async bootstrapModule(moduleType: ModuleClass) {
