@@ -15,13 +15,13 @@ export class ModuleCatalog {
     type: ModuleClass,
     params: TypeIdentifier[],
     props: Record<string, TypeIdentifier>,
-    config: ModuleMetadata,
+    config: ModuleMetadata
   ) {
-    ModuleCatalog.catalog.set(type, { ...config, type, params, props });
+    this.catalog.set(type, { ...config, type, params, props });
   }
 
   static getMetadata(type: ModuleClass) {
-    const metadata = ModuleCatalog.catalog.get(type);
+    const metadata = this.catalog.get(type);
     if (!metadata) {
       throw new Error(`Module ${type} is not registered`);
     }

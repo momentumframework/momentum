@@ -21,7 +21,7 @@ export type Provider =
 export type ModuleClass = Type;
 
 export interface ModuleMetadata {
-  imports?: ModuleClass[];
+  imports?: (ModuleClass | DynamicModule)[];
   providers?: (Type | Provider)[];
   controllers?: Type[];
   exports?: (TypeIdentifier | ModuleClass)[];
@@ -33,25 +33,19 @@ export interface ExtendedModuleMetadata extends ModuleMetadata {
   props: Record<string, TypeIdentifier>;
 }
 
+export type DynamicModule = Omit<ExtendedModuleMetadata, "params" | "props">;
+
 export function isProvider(arg: unknown): arg is Provider {
-  // deno-lint-ignore ban-ts-comment
-  // @ts-ignore
-  return !!arg.provide;
+  return !!(arg as Provider).provide;
 }
 export function isValueProvider(arg: Provider): arg is ValueProvider {
-  // deno-lint-ignore ban-ts-comment
-  // @ts-ignore
-  return !!arg.useValue;
+  return !!(arg as ValueProvider).useValue;
 }
 export function isFactoryProvider(arg: Provider): arg is FactoryProvider {
-  // deno-lint-ignore ban-ts-comment
-  // @ts-ignore
-  return !!arg.useFactory;
+  return !!(arg as FactoryProvider).useFactory;
 }
 export function isClassProvider(arg: Provider): arg is ClassProvider {
-  // deno-lint-ignore ban-ts-comment
-  // @ts-ignore
-  return !!arg.useFactory;
+  return !!(arg as ClassProvider).useClass;
 }
 export function isConstructorProvider(
   arg: Provider

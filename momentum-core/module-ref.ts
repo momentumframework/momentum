@@ -13,7 +13,15 @@ import {
   isProvider,
   isValueProvider,
   ExtendedModuleMetadata,
+  ModuleClass,
+  DynamicModule,
 } from "./module-metadata.ts";
+
+function isDynamicModule(
+  module: ModuleClass | DynamicModule
+): module is DynamicModule {
+  return typeof module !== "function";
+}
 
 export class ModuleRef {
   #metadata: ExtendedModuleMetadata;
@@ -63,7 +71,12 @@ export class ModuleRef {
       (metadata.imports ?? []).map((importedModule) =>
         ModuleRef.createModuleRef(
           rootContainer,
-          ModuleCatalog.getMetadata(importedModule),
+          isDynamicModule(importedModule)
+            ? {
+                ...ModuleCatalog.getMetadata(importedModule.type),
+                ...importedModule,
+              }
+            : ModuleCatalog.getMetadata(importedModule),
           scope
         )
       )
