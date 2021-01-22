@@ -4,12 +4,12 @@ import {
   ParameterMetadata,
 } from "./controller-metadata.ts";
 
-export type NextFilter = () => Promise<unknown>;
+export type NextFilterFunction = () => Promise<unknown>;
 
 export interface MvFilter {
   filter(
     context: unknown,
-    next: NextFilter,
+    next: NextFilterFunction,
     parameters: unknown[],
     controllerMetadata?: ControllerMetadata,
     actionMetadata?: ActionMetadata,

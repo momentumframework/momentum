@@ -22,6 +22,7 @@ export * from "./module-metadata.ts";
 export * from "./module-ref.ts";
 export * from "./mv-filter.ts";
 export * from "./mv-middleware.ts";
+export * from "./mv-platform-bootstrap.ts";
 export * from "./platform.ts";
 export * from "./transfomer.ts";
 export * from "./value-provider.ts";

@@ -24,18 +24,21 @@ function isDynamicModule(
 }
 
 export class ModuleRef {
-  #metadata: ExtendedModuleMetadata;
-  #diContainer: DiContainer;
-  #instance: unknown;
+  readonly #metadata: ExtendedModuleMetadata;
+  readonly #diContainer: DiContainer;
+  readonly #instance: unknown;
+  readonly #modules: ModuleRef[];
 
   constructor(
     metadata: ExtendedModuleMetadata,
     diContainer: DiContainer,
-    instance: unknown
+    instance: unknown,
+    modules: ModuleRef[]
   ) {
     this.#metadata = metadata;
     this.#diContainer = diContainer;
     this.#instance = instance;
+    this.#modules = modules;
   }
 
   get metadata() {
@@ -48,6 +51,10 @@ export class ModuleRef {
 
   get instance() {
     return this.#instance;
+  }
+
+  get modules() {
+    return this.#modules;
   }
 
   resolve<T = unknown>(identifier: TypeIdentifier): Promise<T>;
@@ -68,24 +75,25 @@ export class ModuleRef {
     metadata: ExtendedModuleMetadata,
     scope: DependencyScope
   ): Promise<ModuleRef> {
+    const modules = await Promise.all(
+      (metadata.imports ?? []).map(
+        async (importedModule) =>
+          await ModuleRef.createModuleRef(
+            rootContainer,
+            isDynamicModule(importedModule)
+              ? {
+                  ...ModuleCatalog.getMetadata(importedModule.type),
+                  ...importedModule,
+                }
+              : ModuleCatalog.getMetadata(importedModule),
+            scope
+          )
+      )
+    );
     const diContainer = ModuleRef.buildModuleDiContainer(
       rootContainer,
       metadata,
-      await Promise.all(
-        (metadata.imports ?? []).map(
-          async (importedModule) =>
-            await ModuleRef.createModuleRef(
-              rootContainer,
-              isDynamicModule(importedModule)
-                ? {
-                    ...ModuleCatalog.getMetadata(importedModule.type),
-                    ...importedModule,
-                  }
-                : ModuleCatalog.getMetadata(importedModule),
-              scope
-            )
-        )
-      )
+      modules
     );
     diContainer.registerType(
       metadata.type,
@@ -95,7 +103,7 @@ export class ModuleRef {
     );
     const moduleResolver = new DependencyResolver(diContainer, scope);
     const instance = await moduleResolver.resolve(metadata.type);
-    return new ModuleRef(metadata, diContainer, instance);
+    return new ModuleRef(metadata, diContainer, instance, modules);
   }
 
   private static buildModuleDiContainer(

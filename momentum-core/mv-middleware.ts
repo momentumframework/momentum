@@ -1,5 +1,5 @@
-export type NextMiddleware = () => Promise<void>;
+export type NextMiddlewareFunction = () => Promise<void>;
 
 export interface MvMiddleware {
-  execute(context: unknown, next: NextMiddleware): Promise<void>;
+  execute(context: unknown, next: NextMiddlewareFunction): Promise<void>;
 }

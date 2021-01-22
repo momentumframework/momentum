@@ -9,6 +9,7 @@ import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
+import { MvPlatformBootstrap } from "./mv-platform-bootstrap.ts";
 import { ServerController } from "./server-controller.ts";
 
 export function platformMomentum() {
@@ -45,21 +46,30 @@ export abstract class Platform {
 
   async bootstrapModule(moduleType: ModuleClass) {
     try {
-      await this.preInit();
+      await this.preBootstrap();
+      this.#container.registerValue(Platform as TypeIdentifier, this);
       this.#module = await ModuleRef.createModuleRef(
         this.#container,
         ModuleCatalog.getMetadata(moduleType),
         this.#scope
       );
-      await this.postInit();
+      this.executeBootstrapLifecycleEvent(this.module);
+      await this.postBootstrap();
       return this;
     } catch (err) {
       throw err;
     }
   }
 
-  async preInit(): Promise<void> {}
-  async postInit(): Promise<void> {}
+  executeBootstrapLifecycleEvent(module: ModuleRef) {
+    (module.instance as MvPlatformBootstrap).onPlatformBootstrap?.();
+    for (const submodule of module.modules) {
+      this.executeBootstrapLifecycleEvent(submodule);
+    }
+  }
+
+  async preBootstrap(): Promise<void> {}
+  async postBootstrap(): Promise<void> {}
 
   private ensureInitalized() {
     if (!this.#module) {
@@ -68,11 +78,9 @@ export abstract class Platform {
   }
 }
 
-export interface ServerListenOptions {
-  port: number;
-}
-
-export abstract class ServerPlatform extends Platform {
+export abstract class ServerPlatform<
+  TListenOptions = unknown
+> extends Platform {
   #serverController: ServerController;
 
   constructor(container: DiContainer, scope: DependencyScope) {
@@ -80,9 +88,9 @@ export abstract class ServerPlatform extends Platform {
     this.#serverController = new ServerController(this);
   }
 
-  async preInit() {
+  async preBootstrap() {
     await this.#serverController.initialize();
-    await super.preInit();
+    await super.preBootstrap();
   }
 
   abstract addRouteHandler(
@@ -107,7 +115,7 @@ export abstract class ServerPlatform extends Platform {
     identifier?: unknown
   ): unknown | Promise<unknown>;
 
-  abstract listen(options: ServerListenOptions): void | Promise<void>;
+  abstract listen(options: TListenOptions): void | Promise<void>;
 
   use(middleware: MvMiddleware | Type<MvMiddleware>) {
     this.#serverController.registerMiddleware(middleware);
