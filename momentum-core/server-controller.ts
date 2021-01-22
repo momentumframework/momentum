@@ -135,7 +135,7 @@ export class ServerController {
     let next = executor;
     for (const filter of filters.reverse()) {
       const n = next;
-      next = async () =>
+      next = () =>
         filter.filter(
           context,
           n,

@@ -84,7 +84,7 @@ export class ControllerCatalog {
   }
 
   private static getActionRegistration(type: ControllerClass, action: string) {
-    let controllerRegistration = this.getControllerRegistration(type);
+    const controllerRegistration = this.getControllerRegistration(type);
     let actionRegistration = controllerRegistration.actions[action];
     if (!actionRegistration) {
       actionRegistration = { parameters: [] };

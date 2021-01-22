@@ -77,20 +77,11 @@ export class ModuleRef {
   ): Promise<ModuleRef> {
     const modules = await Promise.all(
       (metadata.imports ?? []).map(
-        async (importedModule) =>
-          await ModuleRef.createModuleRef(
-            rootContainer,
-            isDynamicModule(importedModule)
-              ? {
-                  ...ModuleCatalog.getMetadata(importedModule.type),
-                  ...importedModule,
-                }
-              : ModuleCatalog.getMetadata(importedModule),
-            scope
-          )
+        async (moduleDef) =>
+          await this.resolveModule(moduleDef, rootContainer, scope)
       )
     );
-    const diContainer = ModuleRef.buildModuleDiContainer(
+    const diContainer = this.buildModuleDiContainer(
       rootContainer,
       metadata,
       modules
@@ -104,6 +95,40 @@ export class ModuleRef {
     const moduleResolver = new DependencyResolver(diContainer, scope);
     const instance = await moduleResolver.resolve(metadata.type);
     return new ModuleRef(metadata, diContainer, instance, modules);
+  }
+
+  private static async resolveModule(
+    moduleDef: ModuleClass | DynamicModule,
+    rootContainer: DiContainer,
+    scope: DependencyScope
+  ) {
+    let moduleMetadata: ExtendedModuleMetadata;
+    if (isDynamicModule(moduleDef)) {
+      const staticMetadata = ModuleCatalog.getMetadata(moduleDef.type);
+      moduleMetadata = {
+        ...staticMetadata,
+        ...moduleDef,
+        imports: [
+          ...(staticMetadata.imports ?? []),
+          ...(moduleDef.imports ?? []),
+        ],
+        providers: [
+          ...(staticMetadata.providers ?? []),
+          ...(moduleDef.providers ?? []),
+        ],
+        controllers: [
+          ...(staticMetadata.controllers ?? []),
+          ...(moduleDef.controllers ?? []),
+        ],
+        exports: [
+          ...(staticMetadata.exports ?? []),
+          ...(moduleDef.exports ?? []),
+        ],
+      };
+    } else {
+      moduleMetadata = ModuleCatalog.getMetadata(moduleDef);
+    }
+    return await this.createModuleRef(rootContainer, moduleMetadata, scope);
   }
 
   private static buildModuleDiContainer(
@@ -123,7 +148,7 @@ export class ModuleRef {
             provider.deps?.map((dep) => ({ identifier: dep }))
           );
         } else if (isClassProvider(provider)) {
-          diContainer.registerAlias(provider.provide, provider.useClass);
+          diContainer.registerAlias(provider.useClass, provider.provide);
         } else if (isFactoryProvider(provider)) {
           diContainer.registerFactory(
             provider.provide,

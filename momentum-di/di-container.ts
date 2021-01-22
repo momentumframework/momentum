@@ -23,7 +23,7 @@ interface TypeDefinition {
   props?: { [name: string]: Parameter };
 }
 // deno-lint-ignore no-explicit-any
-export type FactoryFunction = (...params: any[]) => unknown;
+export type FactoryFunction<T = unknown> = (...params: any[]) => T;
 interface FactoryDefinition {
   kind: "factory";
   factory: FactoryFunction;

@@ -25,4 +25,3 @@ export * from "./mv-middleware.ts";
 export * from "./mv-platform-bootstrap.ts";
 export * from "./platform.ts";
 export * from "./transfomer.ts";
-export * from "./value-provider.ts";

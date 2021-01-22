@@ -1,15 +1,18 @@
 import { FactoryFunction, Type, TypeIdentifier } from "../momentum-di/mod.ts";
 
 type ConstructorProvider = { provide: Type; deps?: TypeIdentifier[] };
-type ClassProvider = {
+export type ClassProvider<T = unknown> = {
   provide: TypeIdentifier;
-  useClass: Type;
+  useClass: Type<T>;
   deps?: TypeIdentifier[];
 };
-type ValueProvider = { provide: TypeIdentifier; useValue: unknown };
-type FactoryProvider = {
+export type ValueProvider<T = unknown> = {
   provide: TypeIdentifier;
-  useFactory: FactoryFunction;
+  useValue: T;
+};
+export type FactoryProvider<T = unknown> = {
+  provide: TypeIdentifier;
+  useFactory: FactoryFunction<T>;
   deps?: TypeIdentifier[];
 };
 export type Provider =
