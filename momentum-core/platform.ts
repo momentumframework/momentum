@@ -19,11 +19,11 @@ export function platformMomentum() {
 export abstract class Platform {
   #module?: ModuleRef;
   #container: DiContainer;
-  #scope: DependencyScope;
+  #singletonScope: DependencyScope;
 
   constructor(rootContainer: DiContainer, scope: DependencyScope) {
     this.#container = rootContainer.createChild();
-    this.#scope = scope;
+    this.#singletonScope = scope;
   }
 
   get module() {
@@ -35,9 +35,12 @@ export abstract class Platform {
     return this.module.diContainer;
   }
 
-  resolve<T = unknown>(identifier: TypeIdentifier) {
+  resolve<T = unknown>(
+    identifier: TypeIdentifier,
+    scope: DependencyScope = this.#singletonScope
+  ) {
     this.ensureInitalized();
-    return this.module.resolve<T>(identifier);
+    return this.module.resolve<T>(identifier, scope);
   }
 
   async bootstrapModule(moduleType: ModuleClass) {
@@ -47,7 +50,7 @@ export abstract class Platform {
       this.#module = await ModuleRef.createModuleRef(
         this.#container,
         ModuleCatalog.getMetadata(moduleType),
-        this.#scope
+        this.#singletonScope
       );
       this.executeBootstrapLifecycleEvent(this.module);
       await this.postBootstrap();

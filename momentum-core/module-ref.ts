@@ -66,7 +66,7 @@ export class ModuleRef {
     identifier: TypeIdentifier,
     scope = DependencyScope.beginScope()
   ) {
-    const resolver = new DependencyResolver(this.diContainer, scope);
+    const resolver = new DependencyResolver(this.#diContainer, scope);
     return (await resolver.resolve(identifier)) as T;
   }
 
