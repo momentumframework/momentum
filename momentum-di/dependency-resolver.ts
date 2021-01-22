@@ -8,24 +8,23 @@ import {
 export class DependencyResolver {
   constructor(
     private readonly container: DiContainer,
-    private readonly scope: DependencyScope,
-  ) {
-  }
+    private readonly scope: DependencyScope
+  ) {}
 
-  resolve<T>(identifier: TypeIdentifier) {
+  async resolve<T>(identifier: TypeIdentifier) {
     const rootNode = this.container.getDependencyGraph(identifier);
-    return this.resolveDependency(identifier, rootNode) as T;
+    return (await this.resolveDependency(identifier, rootNode)) as T;
   }
 
-  private resolveDependency(
+  private async resolveDependency(
     identifier: TypeIdentifier,
-    node: NullableDependencyGraphNode | undefined,
+    node: NullableDependencyGraphNode | undefined
   ) {
     if (!node) {
       throw Error(
         `Unknown type ${
           typeof identifier === "string" ? identifier : identifier.name
-        }`,
+        }`
       );
     }
     let obj = this.scope.get(identifier);
@@ -33,23 +32,31 @@ export class DependencyResolver {
       switch (node.kind) {
         case "type":
           obj = new node.ctor(
-            ...node.params.map((paramNode) =>
-              this.resolveDependency(paramNode.identifier, paramNode)
-            ),
+            ...(await Promise.all(
+              node.params.map(
+                async (paramNode) =>
+                  await this.resolveDependency(paramNode.identifier, paramNode)
+              )
+            ))
           );
           this.scope.set(identifier, obj);
-          Object.entries(node.props).forEach(([prop, propNode]) => {
-            obj[prop] = this.resolveDependency(
-              propNode.identifier,
-              propNode,
-            );
-          });
+          await Promise.all(
+            Object.entries(node.props).map(async ([prop, propNode]) => {
+              obj[prop] = await this.resolveDependency(
+                propNode.identifier,
+                propNode
+              );
+            })
+          );
           break;
         case "factory":
-          obj = node.factory(
-            ...node.params.map((paramNode) =>
-              this.resolveDependency(paramNode.identifier, paramNode)
-            ),
+          obj = await node.factory(
+            ...(await Promise.all(
+              node.params.map(
+                async (paramNode) =>
+                  await this.resolveDependency(paramNode.identifier, paramNode)
+              )
+            ))
           );
           this.scope.set(identifier, obj);
           break;

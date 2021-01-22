@@ -62,10 +62,9 @@ export class ServerController {
   ): (context: unknown) => unknown {
     return async (context) => {
       try {
-        const controllerInstance = this.#platform.resolve(controller) as Record<
-          string,
-          (...args: unknown[]) => unknown
-        >;
+        const controllerInstance = (await this.#platform.resolve(
+          controller
+        )) as Record<string, (...args: unknown[]) => unknown>;
         const parameters = await this.buildParameters(
           context,
           controllerMetadata,
@@ -93,7 +92,7 @@ export class ServerController {
 
   private async executeMiddleware(context: unknown) {
     if (!this.#middlewareCache) {
-      this.#middlewareCache = this.getMiddleware();
+      this.#middlewareCache = await Promise.all(this.getMiddleware());
     }
     let next = async () => {};
     for (const middleware of this.#middlewareCache.reverse()) {
@@ -123,13 +122,15 @@ export class ServerController {
     actionMetadata: ActionMetadata,
     parameterMetadatas?: ParameterMetadata[]
   ) {
-    const filters = FilterCatalog.getFilters(
-      controllerMetadata.type,
-      actionMetadata.action
-    ).map((filter) =>
-      typeof filter === "function"
-        ? this.#platform.resolve<MvFilter>(filter)
-        : filter
+    const filters = await Promise.all(
+      FilterCatalog.getFilters(
+        controllerMetadata.type,
+        actionMetadata.action
+      ).map(async (filter) =>
+        typeof filter === "function"
+          ? await this.#platform.resolve<MvFilter>(filter)
+          : filter
+      )
     );
     let next = executor;
     for (const filter of filters.reverse()) {

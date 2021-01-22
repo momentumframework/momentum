@@ -46,7 +46,7 @@ export abstract class Platform {
   async bootstrapModule(moduleType: ModuleClass) {
     try {
       await this.preInit();
-      this.#module = ModuleRef.createModuleRef(
+      this.#module = await ModuleRef.createModuleRef(
         this.#container,
         ModuleCatalog.getMetadata(moduleType),
         this.#scope

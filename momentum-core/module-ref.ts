@@ -50,34 +50,40 @@ export class ModuleRef {
     return this.#instance;
   }
 
-  resolve<T = unknown>(identifier: TypeIdentifier): T;
-  resolve<T = unknown>(identifier: TypeIdentifier, scope: DependencyScope): T;
+  resolve<T = unknown>(identifier: TypeIdentifier): Promise<T>;
   resolve<T = unknown>(
+    identifier: TypeIdentifier,
+    scope: DependencyScope
+  ): Promise<T>;
+  async resolve<T = unknown>(
     identifier: TypeIdentifier,
     scope = DependencyScope.beginScope()
   ) {
     const resolver = new DependencyResolver(this.diContainer, scope);
-    return resolver.resolve(identifier) as T;
+    return (await resolver.resolve(identifier)) as T;
   }
 
-  public static createModuleRef(
+  public static async createModuleRef(
     rootContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
     scope: DependencyScope
-  ): ModuleRef {
+  ): Promise<ModuleRef> {
     const diContainer = ModuleRef.buildModuleDiContainer(
       rootContainer,
       metadata,
-      (metadata.imports ?? []).map((importedModule) =>
-        ModuleRef.createModuleRef(
-          rootContainer,
-          isDynamicModule(importedModule)
-            ? {
-                ...ModuleCatalog.getMetadata(importedModule.type),
-                ...importedModule,
-              }
-            : ModuleCatalog.getMetadata(importedModule),
-          scope
+      await Promise.all(
+        (metadata.imports ?? []).map(
+          async (importedModule) =>
+            await ModuleRef.createModuleRef(
+              rootContainer,
+              isDynamicModule(importedModule)
+                ? {
+                    ...ModuleCatalog.getMetadata(importedModule.type),
+                    ...importedModule,
+                  }
+                : ModuleCatalog.getMetadata(importedModule),
+              scope
+            )
         )
       )
     );
@@ -88,7 +94,7 @@ export class ModuleRef {
       {}
     );
     const moduleResolver = new DependencyResolver(diContainer, scope);
-    const instance = moduleResolver.resolve(metadata.type);
+    const instance = await moduleResolver.resolve(metadata.type);
     return new ModuleRef(metadata, diContainer, instance);
   }
 

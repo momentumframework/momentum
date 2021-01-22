@@ -35,7 +35,7 @@ test("Platform.resolve() - resolves module dependency", async () => {
   const platform = await platformMomentum().bootstrapModule(AppModule);
 
   // act
-  const service = platform.resolve<Service>(Service);
+  const service = await platform.resolve<Service>(Service);
 
   // assert
   assertEquals(service.message, "Hello, Momentum!");

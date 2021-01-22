@@ -5,12 +5,11 @@ import { MvModule } from "./decorators/mv-module.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleRef } from "./module-ref.ts";
 import { DependencyScope } from "../momentum-di/mod.ts";
+import { fail } from "https://deno.land/std@0.82.0/testing/asserts.ts";
 
-class TestSubService {
-}
+class TestSubService {}
 class TestService {
-  constructor(public service: TestSubService) {
-  }
+  constructor(public service: TestSubService) {}
 }
 
 @MvModule({
@@ -23,26 +22,24 @@ class TestService {
   ],
   exports: [TestService],
 })
-class TestSubModule {
-}
+class TestSubModule {}
 
 @MvModule({
   imports: [TestSubModule],
 })
 class RootTestModule {
-  constructor(public service: TestService) {
-  }
+  constructor(public service: TestService) {}
 }
 
-test("ModuleRef.createModuleRef() creates module ref", () => {
+test("ModuleRef.createModuleRef() creates module ref", async () => {
   // arrange
   const scope = DependencyScope.beginScope();
 
   // act
-  const testModule = ModuleRef.createModuleRef(
+  const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
-    scope,
+    scope
   );
 
   // assert
@@ -50,15 +47,15 @@ test("ModuleRef.createModuleRef() creates module ref", () => {
   assert(testModule.instance.service instanceof TestService);
 });
 
-test("ModuleRef.createModuleRef() creates module with parameterized constructor", () => {
+test("ModuleRef.createModuleRef() creates module with parameterized constructor", async () => {
   // arrange
   const scope = DependencyScope.beginScope();
 
   // act
-  const testModule = ModuleRef.createModuleRef(
+  const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
-    scope,
+    scope
   );
 
   // assert
@@ -66,38 +63,42 @@ test("ModuleRef.createModuleRef() creates module with parameterized constructor"
   assert(testModule.instance.service instanceof TestService);
 });
 
-test("ModuleRef.resolve() resolves dependency", () => {
+test("ModuleRef.resolve() resolves dependency", async () => {
   // arrange
   const scope = DependencyScope.beginScope();
-  const testModule = ModuleRef.createModuleRef(
+  const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
-    scope,
+    scope
   );
 
   // act
-  const testService = testModule.resolve(TestService, scope);
+  const testService = await testModule.resolve(TestService, scope);
 
   // assert
   assert(testService instanceof TestService);
 });
 
-test("ModuleRef.resolve() only resolves exported dependency", () => {
+test("ModuleRef.resolve() only resolves exported dependency", async () => {
   // arrange
   const scope = DependencyScope.beginScope();
-  const testModule = ModuleRef.createModuleRef(
+  const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
-    scope,
+    scope
   );
 
+  try {
+    // act
+    await testModule.resolve(TestSubService, scope);
+  } catch (err) {
+    if (
+      err.message ==
+      "Error composing TestSubService. TestSubService is not registered"
+    ) {
+      return;
+    }
+  }
   // assert
-  assertThrows(
-    () => {
-      // act
-      testModule.resolve(TestSubService, scope);
-    },
-    undefined,
-    "Error composing TestSubService. TestSubService is not registered",
-  );
+  fail();
 });

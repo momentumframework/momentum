@@ -1,14 +1,6 @@
-import {
-  assert,
-  assertEquals,
-  test,
-} from "./test_deps.ts";
+import { assert, assertEquals, test } from "./test_deps.ts";
 
-import {
-  DependencyResolver,
-  DependencyScope,
-  DiContainer,
-} from "./mod.ts";
+import { DependencyResolver, DependencyScope, DiContainer } from "./mod.ts";
 import {
   Atom,
   Electron,
@@ -23,15 +15,15 @@ import {
 import { Injectable } from "./decorators/injectable.ts";
 import { Inject } from "./decorators/inject.ts";
 
-test("DependencyResolver.resolve() - resolves dependency", () => {
+test("DependencyResolver.resolve() - resolves dependency", async () => {
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope(),
+    DependencyScope.beginScope()
   );
 
   // act
-  const molecule = resolver.resolve<Molecule>(Molecule);
+  const molecule = await resolver.resolve<Molecule>(Molecule);
 
   // assert
   assert(molecule instanceof Molecule);
@@ -43,31 +35,31 @@ test("DependencyResolver.resolve() - resolves dependency", () => {
   assert(molecule.atom.electron instanceof Electron);
 });
 
-test("DependencyResolver.resolve() - allows optional dependencies", () => {
+test("DependencyResolver.resolve() - allows optional dependencies", async () => {
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope(),
+    DependencyScope.beginScope()
   );
 
   // act
-  const person = resolver.resolve<Person>(Person);
+  const person = await resolver.resolve<Person>(Person);
 
   // assert
   assert(person instanceof Person);
   assertEquals(person.pants, undefined);
 });
 
-test("DependencyResolver.resolve() - resolves property dependencies", () => {
+test("DependencyResolver.resolve() - resolves property dependencies", async () => {
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope(),
+    DependencyScope.beginScope()
   );
 
   // act
-  const thing1 = resolver.resolve<ThingOne>(ThingOne);
-  const thing2 = resolver.resolve<ThingTwo>("THING_TWO");
+  const thing1 = await resolver.resolve<ThingOne>(ThingOne);
+  const thing2 = await resolver.resolve<ThingTwo>("THING_TWO");
 
   // assert
   assert(thing1 instanceof ThingOne);
@@ -76,35 +68,32 @@ test("DependencyResolver.resolve() - resolves property dependencies", () => {
   assertEquals(thing2.otherThing, thing1);
 });
 
-test("DependencyResolver.resolve() - resolves factory dependencies", () => {
+test("DependencyResolver.resolve() - resolves factory dependencies", async () => {
   // arrange
   const container = new DiContainer();
-  container.registerFactory(
-    "MOLECULE",
-    (atom: Atom) => new Molecule(atom),
-    ["ATOM"],
-  );
+  container.registerFactory("MOLECULE", (atom: Atom) => new Molecule(atom), [
+    "ATOM",
+  ]);
   container.registerFactory("ATOM", () => new Atom());
 
   const resolver = new DependencyResolver(
     container,
-    DependencyScope.beginScope(),
+    DependencyScope.beginScope()
   );
 
   // act
-  const molecule = resolver.resolve<Molecule>("MOLECULE");
+  const molecule = await resolver.resolve<Molecule>("MOLECULE");
 
   // assert
   assert(molecule instanceof Molecule);
   assert(molecule.atom instanceof Atom);
 });
 
-test("DependencyResolver.resolve() - resolves value dependencies", () => {
+test("DependencyResolver.resolve() - resolves value dependencies", async () => {
   // arrange
   @Injectable()
   class Pizza {
-    constructor(@Inject("TOPPINGS") public toppings: string[]) {
-    }
+    constructor(@Inject("TOPPINGS") public toppings: string[]) {}
   }
   const container = DiContainer.root().createChild();
   const toppings = ["anchovies", "pineapple"];
@@ -112,11 +101,11 @@ test("DependencyResolver.resolve() - resolves value dependencies", () => {
 
   const resolver = new DependencyResolver(
     container,
-    DependencyScope.beginScope(),
+    DependencyScope.beginScope()
   );
 
   // act
-  const pizza = resolver.resolve<Pizza>(Pizza);
+  const pizza = await resolver.resolve<Pizza>(Pizza);
 
   // assert
   assert(pizza instanceof Pizza);
