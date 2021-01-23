@@ -100,11 +100,38 @@ export class OakPlatform extends ServerPlatform<ListenOptions> {
         return oakHelpers.getQuery(context, { mergeParams: true })[identifier];
       case "body":
         if (context.request.hasBody) {
-          const body = await context.request.body().value;
-          if (identifier) {
-            return await body[identifier];
-          } else {
-            return body;
+          const body = context.request.body();
+          switch (body.type) {
+            case "form":
+              const form = await body.value;
+              if (identifier) {
+                return form.get(identifier);
+              }
+              return Array.from(form.entries()).reduce(
+                (prev, [currKey, currValue]) => ({
+                  ...prev,
+                  [currKey]: prev[currKey]
+                    ? Array.isArray(prev[currKey])
+                      ? [...(prev[currKey] as []), currValue]
+                      : [prev[currKey], currValue]
+                    : currValue,
+                }),
+                {} as Record<string, unknown>
+              );
+            case "form-data":
+              const formData = await body.value.read();
+              if (identifier) {
+                return formData.fields[identifier];
+              }
+              return formData.fields;
+            case "json":
+              const json = await body.value;
+              if (identifier) {
+                return json[identifier];
+              }
+              return json;
+            default:
+              return await body.value;
           }
         }
         return;

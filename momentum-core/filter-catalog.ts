@@ -55,7 +55,7 @@ export class FilterCatalog {
     const mergedFilters = [
       ...this.globalCatalog,
       ...(this.controllerCatalog.get(type)?.registrations ?? []),
-      ...(this.controllerCatalog.get(type)?.actions[action].registrations ??
+      ...(this.controllerCatalog.get(type)?.actions[action]?.registrations ??
         []),
     ];
     const sortedFilters = mergedFilters
