@@ -1,5 +1,7 @@
+import { DeferredImpl } from "./deferred-impl.ts";
 import { DependencyScope } from "./dependency-scope.ts";
 import {
+  DependencyGraphNode,
   DiContainer,
   NullableDependencyGraphNode,
   TypeIdentifier,
@@ -18,57 +20,69 @@ export class DependencyResolver {
 
   private async resolveDependency(
     identifier: TypeIdentifier,
-    node: NullableDependencyGraphNode | undefined
+    node: NullableDependencyGraphNode | undefined,
+    deferred?: boolean
   ) {
-    if (!node) {
-      throw Error(
-        `Unknown type ${
-          typeof identifier === "string" ? identifier : identifier.name
-        }`
-      );
-    }
-    let obj = this.scope.get(identifier);
-    if (!obj) {
-      switch (node.kind) {
-        case "type":
-          obj = new node.ctor(
-            ...(await Promise.all(
-              node.params.map(
-                async (paramNode) =>
-                  await this.resolveDependency(paramNode.identifier, paramNode)
-              )
-            ))
-          );
-          this.scope.set(identifier, obj);
-          await Promise.all(
-            Object.entries(node.props).map(async ([prop, propNode]) => {
-              obj[prop] = await this.resolveDependency(
-                propNode.identifier,
-                propNode
-              );
-            })
-          );
-          break;
-        case "factory":
-          obj = await node.factory(
-            ...(await Promise.all(
-              node.params.map(
-                async (paramNode) =>
-                  await this.resolveDependency(paramNode.identifier, paramNode)
-              )
-            ))
-          );
-          this.scope.set(identifier, obj);
-          break;
-        case "value":
-          obj = node.value;
-          this.scope.set(identifier, obj);
-          break;
-        case "null":
-          obj = undefined;
-          this.scope.set(identifier, undefined);
+    const getter = async () => {
+      if (!node) {
+        throw Error(
+          `Unknown type ${
+            typeof identifier === "string" ? identifier : identifier.name
+          }`
+        );
       }
+      let obj = this.scope.get(identifier);
+      if (!obj) {
+        switch (node.kind) {
+          case "type":
+            obj = new node.ctor(
+              ...(await Promise.all(
+                node.params.map(
+                  async (paramNode) =>
+                    await this.resolveDependency(
+                      paramNode.node.identifier,
+                      paramNode.node,
+                      paramNode.defer
+                    )
+                )
+              ))
+            );
+            this.scope.set(identifier, obj);
+            await Promise.all(
+              Object.entries(node.props).map(async ([prop, propNode]) => {
+                obj[prop] = await this.resolveDependency(
+                  propNode.node.identifier,
+                  propNode.node,
+                  propNode.defer
+                );
+              })
+            );
+            break;
+          case "factory":
+            obj = await node.factory(
+              ...(await Promise.all(
+                node.params.map(
+                  async (paramNode) =>
+                    await this.resolveDependency(
+                      paramNode.node.identifier,
+                      paramNode.node
+                    )
+                )
+              ))
+            );
+            this.scope.set(identifier, obj);
+            break;
+          case "value":
+            obj = node.value;
+            this.scope.set(identifier, obj);
+            break;
+        }
+      }
+      return obj;
+    };
+    if (deferred) {
+      return new DeferredImpl(getter);
     }
-    return obj;
+    return await getter();
   }
 }

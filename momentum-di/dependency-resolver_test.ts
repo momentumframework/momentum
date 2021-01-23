@@ -1,6 +1,11 @@
 import { assert, assertEquals, test } from "./test_deps.ts";
 
-import { DependencyResolver, DependencyScope, DiContainer } from "./mod.ts";
+import {
+  Deferred,
+  DependencyResolver,
+  DependencyScope,
+  DiContainer,
+} from "./mod.ts";
 import {
   Atom,
   Electron,
@@ -14,6 +19,7 @@ import {
 } from "./shared-test-types.ts";
 import { Injectable } from "./decorators/injectable.ts";
 import { Inject } from "./decorators/inject.ts";
+import { Defer } from "./decorators/defer.ts";
 
 test("DependencyResolver.resolve() - resolves dependency", async () => {
   // arrange
@@ -110,4 +116,38 @@ test("DependencyResolver.resolve() - resolves value dependencies", async () => {
   // assert
   assert(pizza instanceof Pizza);
   assertEquals(pizza.toppings, toppings);
+});
+
+test("DependencyResolver.resolve() - resolves deferred dependencies", async () => {
+  // arrange
+  @Injectable("A")
+  class A {
+    constructor(
+      @Defer()
+      @Inject("B")
+      public b: Deferred<B>
+    ) {}
+  }
+  @Injectable("B")
+  class B {
+    constructor(
+      @Defer()
+      @Inject("A")
+      public a: Deferred<A>
+    ) {}
+  }
+  const resolver = new DependencyResolver(
+    DiContainer.root(),
+    DependencyScope.beginScope()
+  );
+
+  // act
+  const a = await resolver.resolve<A>("A");
+  const b = await resolver.resolve<B>("B");
+
+  // assert
+  assert(a instanceof A);
+  assert(b instanceof B);
+  assertEquals(await a.b.value(), b);
+  assertEquals(await b.a.value(), a);
 });

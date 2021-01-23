@@ -92,15 +92,12 @@ export class ModuleRef {
       metadata.params?.map((param) => ({ identifier: param })),
       {}
     );
+    let moduleRef: ModuleRef | undefined = undefined;
+    moduleContainer.registerFactory(ModuleRef, () => moduleRef);
     const moduleResolver = new DependencyResolver(moduleContainer, scope);
     const instance = await moduleResolver.resolve(metadata.type);
-    const moduleRef = new ModuleRef(
-      metadata,
-      moduleContainer,
-      instance,
-      subModules
-    );
-    moduleContainer.registerValue(ModuleRef, moduleRef);
+
+    moduleRef = new ModuleRef(metadata, moduleContainer, instance, subModules);
     return moduleRef;
   }
 

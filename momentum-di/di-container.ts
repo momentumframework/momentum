@@ -7,16 +7,18 @@ export type Type<T = any> = Function & (new (...params: any[]) => T);
 // deno-lint-ignore no-explicit-any
 export type TypeIdentifier<T = any> = Type<T> | Token;
 
-export type DependencyGraph = Map<TypeIdentifier, NullableDependencyGraphNode>;
+export type DependencyGraph = Map<TypeIdentifier, DependencyGraphNode>;
 
 type DefinitionKind = "type" | "factory" | "value";
 
 interface Parameter {
   isOptional?: boolean;
+  defer?: boolean;
   identifier: TypeIdentifier;
 }
 type PartialParameter = Partial<Parameter>;
-interface TypeDefinition {
+
+export interface TypeDefinition {
   kind: "type";
   type: Type;
   params?: Parameter[];
@@ -35,18 +37,25 @@ interface ValueDefinition {
 }
 type Definition = TypeDefinition | FactoryDefinition | ValueDefinition;
 
+interface TypeDependencyGraphParmeter {
+  node: NullableDependencyGraphNode;
+  defer?: boolean;
+}
+
 export interface TypeDependencyGraphNode {
   identifier: TypeIdentifier;
   kind: "type";
   ctor: Type;
-  params: NullableDependencyGraphNode[];
-  props: { [name: string]: NullableDependencyGraphNode };
+  params: TypeDependencyGraphParmeter[];
+  props: {
+    [name: string]: TypeDependencyGraphParmeter;
+  };
 }
 export interface FactoryDependencyGraphNode {
   identifier: TypeIdentifier;
   kind: "factory";
   factory: FactoryFunction;
-  params: NullableDependencyGraphNode[];
+  params: { node: DependencyGraphNode }[];
 }
 export interface ValueDependencyGraphNode {
   identifier: TypeIdentifier;
@@ -236,7 +245,11 @@ export class DiContainer {
       if (!definition) {
         const exporter = this.getExporter(identifier);
         if (exporter) {
-          return exporter.buildDependencyGraph(identifier, path, partialNodes);
+          return exporter.buildDependencyGraph(
+            identifier,
+            [...path],
+            partialNodes
+          );
         }
         const typeName =
           typeof identifier === "string" ? identifier : identifier.name;
@@ -254,21 +267,25 @@ export class DiContainer {
           `Error composing ${pathString}${typeName}. ${typeName} is not registered`
         );
       }
-      path.push(identifier);
       switch (definition.kind) {
         case "type":
           node = { identifier, kind: definition.kind };
           partialNodes.set(identifier, node);
           node.ctor = definition.type;
-          node.params = this.buildCtorSubtree(definition, path, partialNodes);
+          path.push(identifier);
+          node.params = this.buildCtorSubtree(
+            definition,
+            [...path],
+            partialNodes
+          );
           node.props = this.buildPropSubtree(
             definition,
-            path,
+            [...path],
             partialNodes
           ).reduce(
             (previous, current) => ({
               ...previous,
-              [current.prop]: current.node,
+              [current.prop]: current,
             }),
             {}
           );
@@ -277,9 +294,10 @@ export class DiContainer {
           node = { identifier, kind: definition.kind };
           partialNodes.set(identifier, node);
           node.factory = definition.factory;
+          path.push(identifier);
           node.params = this.buildFactorySubtree(
             definition,
-            path,
+            [...path],
             partialNodes
           );
           break;
@@ -309,11 +327,17 @@ export class DiContainer {
       .map((parameter) => {
         if (parameter.isOptional && !this.getDefinition(parameter.identifier)) {
           return {
-            identifier: parameter.identifier,
-            kind: "null",
-          } as NullDependencyGraphNode;
+            node: {
+              identifier: parameter.identifier,
+              kind: "null",
+            } as NullDependencyGraphNode,
+            defer: parameter.defer,
+          };
         }
-        return this.buildDependencyGraph(parameter.identifier, path, nodes);
+        return {
+          node: this.buildDependencyGraph(parameter.identifier, path, nodes),
+          defer: parameter.defer,
+        };
       });
   }
 
@@ -357,7 +381,7 @@ export class DiContainer {
       return [];
     }
     return defintion.params.map((parameter) => {
-      return this.buildDependencyGraph(parameter, path, nodes);
+      return { node: this.buildDependencyGraph(parameter, path, nodes) };
     });
   }
 
@@ -381,7 +405,10 @@ export class DiContainer {
       return;
     }
     for (const child of node.params) {
-      this.detectCircularDependencies(child, [...ancestors]);
+      if ((child as TypeDependencyGraphParmeter).defer) {
+        continue;
+      }
+      this.detectCircularDependencies(child.node, [...ancestors]);
     }
   }
 
