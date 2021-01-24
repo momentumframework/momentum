@@ -1,5 +1,6 @@
 import {
   Application,
+  FormDataBody,
   helpers as oakHelpers,
   ListenOptions,
   Router,
@@ -103,33 +104,14 @@ export class OakPlatform extends ServerPlatform<ListenOptions> {
           const body = context.request.body();
           switch (body.type) {
             case "form":
-              const form = await body.value;
-              if (identifier) {
-                return form.get(identifier);
-              }
-              return Array.from(form.entries()).reduce(
-                (prev, [currKey, currValue]) => ({
-                  ...prev,
-                  [currKey]: prev[currKey]
-                    ? Array.isArray(prev[currKey])
-                      ? [...(prev[currKey] as []), currValue]
-                      : [prev[currKey], currValue]
-                    : currValue,
-                }),
-                {} as Record<string, unknown>
-              );
+              return this.parseFormBody(await body.value, identifier);
             case "form-data":
-              const formData = await body.value.read();
-              if (identifier) {
-                return formData.fields[identifier];
-              }
-              return formData.fields;
+              return this.parseFormDataBody(
+                await body.value.read(),
+                identifier
+              );
             case "json":
-              const json = await body.value;
-              if (identifier) {
-                return json[identifier];
-              }
-              return json;
+              return this.parseJsonBody(await body.value, identifier);
             default:
               return await body.value;
           }
@@ -150,5 +132,36 @@ export class OakPlatform extends ServerPlatform<ListenOptions> {
 
   async listen(options: ListenOptions) {
     return await this.#app.listen(options);
+  }
+
+  private parseFormBody(form: URLSearchParams, identifier: string) {
+    if (identifier) {
+      return form.get(identifier);
+    }
+    return Array.from(form.entries()).reduce(
+      (prev, [currKey, currValue]) => ({
+        ...prev,
+        [currKey]: prev[currKey]
+          ? Array.isArray(prev[currKey])
+            ? [...(prev[currKey] as []), currValue]
+            : [prev[currKey], currValue]
+          : currValue,
+      }),
+      {} as Record<string, unknown>
+    );
+  }
+
+  private parseFormDataBody(formData: FormDataBody, identifier: string) {
+    if (identifier) {
+      return formData.fields[identifier];
+    }
+    return formData.fields;
+  }
+
+  private parseJsonBody(json: Record<string, unknown>, identifier: string) {
+    if (identifier) {
+      return json[identifier];
+    }
+    return json;
   }
 }

@@ -19,7 +19,6 @@ import {
 } from "./shared-test-types.ts";
 import { Injectable } from "./decorators/injectable.ts";
 import { Inject } from "./decorators/inject.ts";
-import { Defer } from "./decorators/defer.ts";
 
 test("DependencyResolver.resolve() - resolves dependency", async () => {
   // arrange
@@ -123,16 +122,14 @@ test("DependencyResolver.resolve() - resolves deferred dependencies", async () =
   @Injectable("A")
   class A {
     constructor(
-      @Defer()
-      @Inject("B")
+      @Inject("B", { defer: true })
       public b: Deferred<B>
     ) {}
   }
   @Injectable("B")
   class B {
     constructor(
-      @Defer()
-      @Inject("A")
+      @Inject("A", { defer: true })
       public a: Deferred<A>
     ) {}
   }

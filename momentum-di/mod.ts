@@ -1,7 +1,6 @@
 import "./shims/reflect.ts";
 
 export * from "./di-container.ts";
-export * from "./decorators/defer.ts";
 export * from "./decorators/inject.ts";
 export * from "./decorators/injectable.ts";
 export * from "./decorators/optional.ts";

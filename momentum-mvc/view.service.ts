@@ -1,13 +1,94 @@
-import { VIEW_ENGINE } from "./constants.ts";
-import { Inject } from "./deps.ts";
+import { MVC_CONFIG, VIEW_ENGINE } from "./constants.ts";
+import {
+  ActionMetadata,
+  ControllerMetadata,
+  exists,
+  Inject,
+  Optional,
+} from "./deps.ts";
+import { MvcConfig } from "./mvc-config.ts";
+import { ViewCatalog, ViewConfig } from "./view-catalog.ts";
 import { ViewEngine } from "./view-engine.ts";
+
+const defaultConfig = {
+  viewFolder: "./views",
+  viewFileExtension: "html",
+};
 
 export class ViewService {
   readonly #viewEngine: ViewEngine;
-  constructor(@Inject(VIEW_ENGINE) viewEngine: ViewEngine) {
+  readonly #config: MvcConfig;
+  constructor(
+    @Inject(VIEW_ENGINE)
+    viewEngine: ViewEngine,
+    @Optional()
+    @Inject(MVC_CONFIG)
+    config?: Partial<MvcConfig>
+  ) {
     this.#viewEngine = viewEngine;
+    this.#config = { ...defaultConfig, ...config };
   }
-  renderView(view: string, model: unknown) {
-    return this.#viewEngine.render(view, model);
+
+  async renderView(
+    controllerMetadata: ControllerMetadata,
+    actionMetadata: ActionMetadata,
+    model: unknown
+  ) {
+    const viewConfig = ViewCatalog.getView(
+      controllerMetadata.type,
+      actionMetadata.action
+    );
+    if (!viewConfig) {
+      return;
+    }
+    return await this.#viewEngine.renderTemplate(
+      model,
+      this.createViewCallback(
+        viewConfig,
+        controllerMetadata.type.name,
+        actionMetadata.action
+      ),
+      controllerMetadata,
+      actionMetadata
+    );
+  }
+
+  createViewCallback(
+    viewConfig: ViewConfig,
+    controller: string,
+    action: string
+  ) {
+    return async () => {
+      if (viewConfig.template) {
+        return viewConfig.template;
+      }
+      if (!viewConfig.name) {
+        return;
+      }
+      const path = [this.trimTrailingSlashe(this.#config.viewFolder)];
+      if (viewConfig.path) {
+        path.push(this.trimSlashes(viewConfig.path));
+      }
+      path.push(this.trimSlashes(viewConfig.name));
+      const templatePath = `${path.join("/")}.${
+        this.#config.viewFileExtension
+      }`;
+      if (!(await exists(templatePath))) {
+        throw new Error(
+          `No template found for action ${action} on controller ${controller}`
+        );
+      }
+      const template = await Deno.readTextFile(templatePath);
+
+      return template;
+    };
+  }
+
+  private trimTrailingSlashe(path?: string) {
+    return path?.replace(/^|[\/]+$/g, "");
+  }
+
+  private trimSlashes(path?: string) {
+    return path?.replace(/^[\/]+|[\/]+$/g, "");
   }
 }

@@ -17,7 +17,6 @@ import {
   Quark,
   ThingOne,
 } from "./shared-test-types.ts";
-import { Defer } from "./decorators/defer.ts";
 
 test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
   // arrange
@@ -199,8 +198,7 @@ test("DiContainer.buildDependencyGraph() - can defer dependencies", () => {
   @Injectable("FOO")
   class Foo {
     constructor(
-      @Defer()
-      @Inject("BAR")
+      @Inject("BAR", { defer: true })
       _bar: Deferred<Bar>
     ) {}
   }
@@ -208,8 +206,7 @@ test("DiContainer.buildDependencyGraph() - can defer dependencies", () => {
   @Injectable("BAR")
   class Bar {
     constructor(
-      @Defer()
-      @Inject("FOO")
+      @Inject("FOO", { defer: true })
       _foo: Deferred<Foo>
     ) {}
   }
