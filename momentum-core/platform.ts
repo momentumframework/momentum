@@ -1,3 +1,4 @@
+import { PLATFORM } from "./constants.ts";
 import {
   ActionMetadata,
   ControllerClass,
@@ -46,7 +47,7 @@ export abstract class Platform {
   async bootstrapModule(moduleType: ModuleClass) {
     try {
       await this.preBootstrap();
-      this.#container.registerValue(Platform as TypeIdentifier, this);
+      this.#container.registerValue(PLATFORM, this);
       this.#module = await ModuleRef.createModuleRef(
         this.#container,
         ModuleCatalog.getMetadata(moduleType),
