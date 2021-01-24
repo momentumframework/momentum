@@ -15,6 +15,7 @@ import { ViewEngine } from "./view-engine.ts";
 const defaultConfig = {
   viewFolder: "./src/views",
   viewFileExtension: "html",
+  cacheTemplates: true,
 };
 
 export class ViewService {
@@ -51,7 +52,8 @@ export class ViewService {
         actionMetadata.action
       ),
       controllerMetadata,
-      actionMetadata
+      actionMetadata,
+      this.#config.cacheTemplates
     );
   }
 

@@ -20,12 +20,14 @@ export class HandlebarsViewEngine implements ViewEngine {
     model: unknown,
     templateCallback: () => Promise<string | undefined>,
     controllerMetadata: ControllerMetadata,
-    actionMetadata: ActionMetadata
+    actionMetadata: ActionMetadata,
+    cacheTemplate: boolean
   ) {
     const compiledTemplate = await this.getCompiledTemplate(
       templateCallback,
       controllerMetadata.type,
-      actionMetadata.action
+      actionMetadata.action,
+      cacheTemplate
     );
     if (!compiledTemplate) {
       return;
@@ -36,7 +38,8 @@ export class HandlebarsViewEngine implements ViewEngine {
   private async getCompiledTemplate(
     templateCallback: () => Promise<string | undefined>,
     controllerType: ControllerClass,
-    action: string
+    action: string,
+    cacheTemplate: boolean
   ) {
     let controllerTemplateCache = this.#templateCache.get(controllerType);
     if (!controllerTemplateCache) {
@@ -44,13 +47,15 @@ export class HandlebarsViewEngine implements ViewEngine {
       this.#templateCache.set(controllerType, controllerTemplateCache);
     }
     let compiledTemplate = controllerTemplateCache[action];
-    if (!compiledTemplate) {
+    if (!compiledTemplate || !cacheTemplate) {
       const template = await templateCallback();
       if (!template) {
         return;
       }
       compiledTemplate = Handlebars.compile(template);
-      controllerTemplateCache[action] = compiledTemplate;
+      if (cacheTemplate) {
+        controllerTemplateCache[action] = compiledTemplate;
+      }
     }
     return compiledTemplate;
   }

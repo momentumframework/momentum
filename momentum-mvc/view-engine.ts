@@ -5,6 +5,7 @@ export interface ViewEngine {
     model: unknown,
     templateCallback: () => Promise<string | undefined>,
     controllerMetadata: ControllerMetadata,
-    actionMetadata: ActionMetadata
+    actionMetadata: ActionMetadata,
+    cacheTemplate: boolean
   ): Promise<string | undefined>;
 }
