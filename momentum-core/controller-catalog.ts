@@ -5,6 +5,7 @@ import {
   ControllerMetadata,
   ParameterMetadata,
 } from "./controller-metadata.ts";
+import { trimSlashes } from "./deps.ts";
 
 export class ControllerCatalog {
   private static readonly catalog = new Map<
@@ -98,18 +99,14 @@ export class ControllerCatalog {
     actionMetadata: ActionMetadata | undefined
   ) {
     const parts = [];
-    const controllerRoute = this.trimSlashes(controllerMetadata?.route);
+    const controllerRoute = trimSlashes(controllerMetadata?.route);
     if (controllerRoute) {
       parts.push(controllerRoute);
     }
-    const actionRoute = this.trimSlashes(actionMetadata?.route);
+    const actionRoute = trimSlashes(actionMetadata?.route);
     if (actionRoute) {
       parts.push(actionRoute);
     }
     return "/" + parts.join("/");
-  }
-
-  private static trimSlashes(path?: string) {
-    return path?.replace(/^[\/]+|[\/]+$/g, "");
   }
 }

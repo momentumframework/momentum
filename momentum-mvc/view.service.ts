@@ -5,6 +5,8 @@ import {
   exists,
   Inject,
   Optional,
+  trimSlashes,
+  trimTrailingSlashes,
 } from "./deps.ts";
 import { MvcConfig } from "./mvc-config.ts";
 import { ViewCatalog, ViewConfig } from "./view-catalog.ts";
@@ -65,11 +67,11 @@ export class ViewService {
       if (!viewConfig.name) {
         return;
       }
-      const path = [this.trimTrailingSlashe(this.#config.viewFolder)];
+      const path = [trimTrailingSlashes(this.#config.viewFolder)];
       if (viewConfig.path) {
-        path.push(this.trimSlashes(viewConfig.path));
+        path.push(trimSlashes(viewConfig.path));
       }
-      path.push(this.trimSlashes(viewConfig.name));
+      path.push(trimSlashes(viewConfig.name));
       const templatePath = `${path.join("/")}.${
         this.#config.viewFileExtension
       }`;
@@ -82,13 +84,5 @@ export class ViewService {
 
       return template;
     };
-  }
-
-  private trimTrailingSlashe(path?: string) {
-    return path?.replace(/^|[\/]+$/g, "");
-  }
-
-  private trimSlashes(path?: string) {
-    return path?.replace(/^[\/]+|[\/]+$/g, "");
   }
 }

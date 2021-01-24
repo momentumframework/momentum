@@ -106,7 +106,7 @@ export abstract class ServerPlatform<
     handler: (context: unknown) => Promise<boolean>
   ): void | Promise<void>;
 
-  abstract extractFromContext(
+  abstract getContextItem(
     kind:
       | "url"
       | "parameter"
@@ -119,6 +119,15 @@ export abstract class ServerPlatform<
     context: unknown,
     identifier?: unknown
   ): unknown | Promise<unknown>;
+
+  abstract setContextItem(
+    kind: "body" | "cookie" | "header",
+    context: unknown,
+    value: unknown,
+    identifier?: unknown
+  ): void | Promise<void>;
+
+  abstract sendFile(context: unknown, path: string): void | Promise<void>;
 
   abstract listen(options: TListenOptions): void | Promise<void>;
 

@@ -90,7 +90,7 @@ export class OakPlatform extends ServerPlatform<ListenOptions> {
     });
   }
 
-  async extractFromContext(
+  async getContextItem(
     kind:
       | "url"
       | "parameter"
@@ -139,6 +139,34 @@ export class OakPlatform extends ServerPlatform<ListenOptions> {
       default:
         throw new Error(`Unsupported context data ${kind}`);
     }
+  }
+
+  setContextItem(
+    kind: "body" | "status" | "cookie" | "header",
+    context: RouterContext,
+    // deno-lint-ignore no-explicit-any
+    value: any,
+    // deno-lint-ignore no-explicit-any
+    identifier?: any
+  ) {
+    switch (kind) {
+      case "body":
+        context.response.body = value;
+        break;
+      case "status":
+        context.response.status = value;
+        break;
+      case "cookie":
+        context.cookies.set(identifier, value);
+        break;
+      case "header":
+        context.response.headers.set(identifier, value);
+        break;
+    }
+  }
+
+  async sendFile(context: RouterContext, path: string) {
+    context.response.body = await Deno.readFile(path);
   }
 
   async listen(options: ListenOptions) {
