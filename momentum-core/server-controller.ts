@@ -19,7 +19,15 @@ export class ServerController {
   constructor(platform: ServerPlatform) {
     this.#platform = platform;
   }
+
   async initialize() {
+    this.#platform.addMiddlewareHandler(async (context) => {
+      try {
+        return await this.executeMiddleware(context);
+      } catch (err) {
+        throw err;
+      }
+    });
     for (const {
       controller,
       action,
@@ -71,7 +79,6 @@ export class ServerController {
           actionMetadata,
           parameterMetadatas
         );
-        await this.executeMiddleware(context);
         return await this.executeFilters(
           context,
           async () => await controllerInstance[action](...parameters),
@@ -94,12 +101,17 @@ export class ServerController {
     if (!this.#middlewareCache) {
       this.#middlewareCache = await Promise.all(this.getMiddleware());
     }
-    let next = async () => {};
+    let complete = false;
+    let next = () => {
+      complete = true;
+      return Promise.resolve();
+    };
     for (const middleware of this.#middlewareCache.reverse()) {
       const n = next;
       next = async () => await middleware.execute(context, n);
     }
     await next();
+    return complete;
   }
 
   private getMiddleware() {

@@ -102,8 +102,13 @@ export abstract class ServerPlatform<
     handler: (context: unknown) => unknown
   ): void | Promise<void>;
 
+  abstract addMiddlewareHandler(
+    handler: (context: unknown) => Promise<boolean>
+  ): void | Promise<void>;
+
   abstract extractFromContext(
     kind:
+      | "url"
       | "parameter"
       | "query"
       | "body"

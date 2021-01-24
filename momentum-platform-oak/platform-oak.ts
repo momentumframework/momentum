@@ -82,8 +82,17 @@ export class OakPlatform extends ServerPlatform<ListenOptions> {
     }
   }
 
+  addMiddlewareHandler(handler: (context: unknown) => Promise<boolean>) {
+    this.#app.use(async (context, next) => {
+      if (await handler(context)) {
+        await next();
+      }
+    });
+  }
+
   async extractFromContext(
     kind:
+      | "url"
       | "parameter"
       | "query"
       | "body"
@@ -95,6 +104,8 @@ export class OakPlatform extends ServerPlatform<ListenOptions> {
     identifier: string
   ) {
     switch (kind) {
+      case "url":
+        return context.request.url;
       case "parameter":
         return context.params[identifier];
       case "query":
