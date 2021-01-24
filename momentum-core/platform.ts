@@ -53,8 +53,8 @@ export abstract class Platform {
         ModuleCatalog.getMetadata(moduleType),
         this.#singletonScope
       );
-      this.executeBootstrapLifecycleEvent(this.module);
       await this.postBootstrap();
+      this.executeBootstrapLifecycleEvent(this.module);
       return this;
     } catch (err) {
       throw err;
@@ -88,9 +88,9 @@ export abstract class ServerPlatform<
     this.#serverController = new ServerController(this);
   }
 
-  async preBootstrap() {
+  async postBootstrap() {
     await this.#serverController.initialize();
-    await super.preBootstrap();
+    await super.postBootstrap();
   }
 
   abstract addRouteHandler(

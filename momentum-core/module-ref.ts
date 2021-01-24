@@ -2,6 +2,7 @@ import {
   DependencyResolver,
   DependencyScope,
   DiContainer,
+  Type,
   TypeIdentifier,
 } from "./deps.ts";
 
@@ -54,7 +55,14 @@ export class ModuleRef {
   }
 
   get modules() {
-    return this.#modules;
+    return [...this.#modules];
+  }
+
+  get controllers(): Type<unknown>[] {
+    return [
+      ...(this.#metadata.controllers ?? []),
+      ...this.#modules.flatMap((module) => module.controllers ?? []),
+    ];
   }
 
   resolve<T = unknown>(identifier: TypeIdentifier): Promise<T>;

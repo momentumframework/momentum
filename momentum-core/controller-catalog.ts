@@ -50,24 +50,24 @@ export class ControllerCatalog {
     this.getActionRegistration(type, action).parameters?.push(metadata);
   }
 
-  static *getMetadataByRoute() {
-    for (const [
-      type,
-      { metadata, actions },
-    ] of ControllerCatalog.catalog.entries()) {
-      for (const [method, actionRegistration] of Object.entries(actions)) {
-        yield {
-          controller: type,
-          action: method,
-          route: ControllerCatalog.constructRoute(
-            metadata,
-            actionRegistration.metadata
-          ),
-          controllerMetadata: metadata,
-          actionMetadata: actionRegistration.metadata,
-          parameterMetadata: actionRegistration.parameters,
-        };
-      }
+  static *getMetadataByRoute(type: ControllerClass) {
+    const registration = ControllerCatalog.catalog.get(type);
+    if (!registration) {
+      return;
+    }
+    for (const [method, actionRegistration] of Object.entries(
+      registration.actions
+    )) {
+      yield {
+        action: method,
+        route: ControllerCatalog.constructRoute(
+          registration.metadata,
+          actionRegistration.metadata
+        ),
+        controllerMetadata: registration.metadata,
+        actionMetadata: actionRegistration.metadata,
+        parameterMetadata: actionRegistration.parameters,
+      };
     }
   }
 

@@ -28,36 +28,37 @@ export class ServerController {
         throw err;
       }
     });
-    for (const {
-      controller,
-      action,
-      route,
-      controllerMetadata,
-      actionMetadata,
-      parameterMetadata,
-    } of ControllerCatalog.getMetadataByRoute()) {
-      if (!controllerMetadata) {
-        throw new Error(`Controller ${controller} is not registered`);
-      }
-      if (!actionMetadata) {
-        throw new Error(
-          `Controller action ${controller}.${action} is not registered`
-        );
-      }
-      await this.#platform.addRouteHandler(
-        controller,
+    for (const controller of this.#platform.module.controllers) {
+      for (const {
         action,
         route,
         controllerMetadata,
         actionMetadata,
-        this.createHandler(
+        parameterMetadata,
+      } of ControllerCatalog.getMetadataByRoute(controller)) {
+        if (!controllerMetadata) {
+          throw new Error(`Controller ${controller} is not registered`);
+        }
+        if (!actionMetadata) {
+          throw new Error(
+            `Controller action ${controller}.${action} is not registered`
+          );
+        }
+        await this.#platform.addRouteHandler(
           controller,
           action,
+          route,
           controllerMetadata,
           actionMetadata,
-          parameterMetadata
-        )
-      );
+          this.createHandler(
+            controller,
+            action,
+            controllerMetadata,
+            actionMetadata,
+            parameterMetadata
+          )
+        );
+      }
     }
   }
 
