@@ -13,7 +13,7 @@ import { ViewCatalog, ViewConfig } from "./view-catalog.ts";
 import { ViewEngine } from "./view-engine.ts";
 
 const defaultConfig = {
-  viewFolder: "./views",
+  viewFolder: "./src/views",
   viewFileExtension: "html",
 };
 
