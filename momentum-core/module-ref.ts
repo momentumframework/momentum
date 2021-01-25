@@ -179,10 +179,16 @@ export class ModuleRef {
     }
     if (metadata.imports) {
       for (const moduleRef of importedModules) {
-        if (!moduleRef?.metadata?.exports) {
+        if (
+          !moduleRef?.metadata?.exports &&
+          !moduleRef?.metadata?.controllers
+        ) {
           continue;
         }
-        for (const exportedIdentifier of moduleRef.metadata.exports) {
+        for (const exportedIdentifier of [
+          ...(moduleRef.metadata?.exports ?? []),
+          ...(moduleRef.metadata?.controllers ?? []),
+        ]) {
           diContainer.import(exportedIdentifier, moduleRef.diContainer);
         }
       }
