@@ -84,29 +84,40 @@ type PartialDependencyGraphNode = Partial<NullableDependencyGraphNode> & {
 export class DiContainer {
   private static globalContainer?: DiContainer;
 
-  #events = new EventEmitter<{ change(): void }>();
-  #imports = new Map<TypeIdentifier, DiContainer>();
-  #aliases = new Map<TypeIdentifier, TypeIdentifier>();
-  #definitions = new Map<TypeIdentifier, Definition>();
-  #ctorOverrides = new Map<Type, Map<number, PartialParameter[]>>();
-  #propOverrides = new Map<Type, Map<string, PartialParameter[]>>();
-  #dependencyGraph = new Map<TypeIdentifier, NullableDependencyGraphNode>();
+  readonly #name?: string;
+  readonly #parent?: DiContainer;
+  readonly #events = new EventEmitter<{ change(): void }>();
+  readonly #imports = new Map<TypeIdentifier, DiContainer>();
+  readonly #aliases = new Map<TypeIdentifier, TypeIdentifier>();
+  readonly #definitions = new Map<TypeIdentifier, Definition>();
+  readonly #ctorOverrides = new Map<Type, Map<number, PartialParameter[]>>();
+  readonly #propOverrides = new Map<Type, Map<string, PartialParameter[]>>();
+  readonly #dependencyGraph = new Map<
+    TypeIdentifier,
+    NullableDependencyGraphNode
+  >();
 
-  constructor(private parent?: DiContainer) {
-    if (parent) {
-      parent.#events.on("change", () => this.invalidateDependencyGraph());
+  constructor(parent?: DiContainer, name?: string) {
+    this.#parent = parent;
+    this.#name = name;
+    if (this.#parent) {
+      this.#parent.#events.on("change", () => this.invalidateDependencyGraph());
     }
+  }
+
+  get name() {
+    return this.#name;
   }
 
   static root() {
     if (!DiContainer.globalContainer) {
-      DiContainer.globalContainer = new DiContainer();
+      DiContainer.globalContainer = new DiContainer(undefined, "root");
     }
     return DiContainer.globalContainer;
   }
 
-  createChild() {
-    return new DiContainer(this);
+  createChild(name?: string) {
+    return new DiContainer(this, name);
   }
 
   getDependencyGraph(identifier: TypeIdentifier) {
@@ -230,8 +241,10 @@ export class DiContainer {
   }
 
   private invalidateDependencyGraph() {
-    this.#dependencyGraph.clear();
-    this.#events.emit("change");
+    if (this.#dependencyGraph.size > 0) {
+      this.#dependencyGraph.clear();
+      this.#events.emit("change");
+    }
   }
 
   private buildDependencyGraph(
@@ -418,8 +431,8 @@ export class DiContainer {
       identifier = alias;
     }
     let definiton = this.#definitions.get(identifier);
-    if (!definiton && this.parent) {
-      definiton = this.parent.getDefinition(identifier);
+    if (!definiton && this.#parent) {
+      definiton = this.#parent.getDefinition(identifier);
     }
     return definiton;
   }
@@ -427,7 +440,7 @@ export class DiContainer {
   private getAlias(identifier: TypeIdentifier): TypeIdentifier | undefined {
     let alias = this.#aliases.get(identifier);
     if (!alias) {
-      alias = this.parent?.getAlias(identifier);
+      alias = this.#parent?.getAlias(identifier);
     }
     return alias;
   }
@@ -436,21 +449,24 @@ export class DiContainer {
     return [
       ...new Set([
         ...this.#definitions.keys(),
-        ...(this.parent?.getDefinitionIdentifiers() ?? []),
+        ...(this.#parent?.getDefinitionIdentifiers() ?? []),
       ]),
     ];
   }
 
   private getExporter(identifier: TypeIdentifier): DiContainer | undefined {
     let exporter = this.#imports.get(identifier);
-    if (!exporter && this.parent) {
-      exporter = this.parent.getExporter(identifier);
+    if (!exporter) {
+      const parentExporter = this.#parent?.getExporter(identifier);
+      if (parentExporter != this) {
+        exporter = parentExporter;
+      }
     }
     return exporter;
   }
 
   private getCtorOverrides(type: Type): Map<number, PartialParameter> {
-    const definition = new Map(this.parent?.getCtorOverrides(type) || []);
+    const definition = new Map(this.#parent?.getCtorOverrides(type) || []);
     this.#ctorOverrides.get(type)?.forEach((ctorOverrides, paramIndex) => {
       const merged = ctorOverrides.reduce(
         (ctorOverride, definition) => ({ ...ctorOverride, ...definition }),
@@ -462,7 +478,7 @@ export class DiContainer {
   }
 
   private getPropOverrides(type: Type): Map<string, PartialParameter> {
-    const definition = new Map(this.parent?.getPropOverrides(type) || []);
+    const definition = new Map(this.#parent?.getPropOverrides(type) || []);
     this.#propOverrides.get(type)?.forEach((propOverrides, paramName) => {
       const merged = propOverrides.reduce(
         (propOverride, definition) => ({ ...propOverride, ...definition }),

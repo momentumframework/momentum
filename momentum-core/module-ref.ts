@@ -79,17 +79,20 @@ export class ModuleRef {
   }
 
   public static async createModuleRef(
-    diContainer: DiContainer,
+    parentContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
     scope: DependencyScope
   ): Promise<ModuleRef> {
-    const subModules = await Promise.all(
-      (metadata.imports ?? []).map(
-        async (moduleDefinition) =>
+    const diContainer = parentContainer.createChild(metadata.type.name);
+    const subModules: ModuleRef[] = [];
+    if (metadata.imports) {
+      for (const moduleDefinition of metadata.imports) {
+        subModules.push(
           await this.resolveModule(moduleDefinition, diContainer, scope)
-      )
-    );
-    const moduleContainer = this.buildModuleDiContainer(
+        );
+      }
+    }
+    const moduleContainer = this.populateDiContainer(
       diContainer,
       metadata,
       subModules
@@ -147,12 +150,11 @@ export class ModuleRef {
     );
   }
 
-  private static buildModuleDiContainer(
-    rootContainer: DiContainer,
+  private static populateDiContainer(
+    diContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
     importedModules: ModuleRef[]
   ) {
-    const diContainer = rootContainer.createChild();
     if (metadata.providers) {
       for (const provider of metadata.providers) {
         if (!isProvider(provider)) {

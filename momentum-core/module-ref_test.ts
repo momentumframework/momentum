@@ -246,3 +246,37 @@ test("ModuleRef.resolve() does not resolve non-exported", async () => {
     "Error composing Service. Service is not registered"
   );
 });
+
+test("ModuleRef.resolve() provides parent provider to child", async () => {
+  // arrange
+  @Injectable()
+  class SubService {}
+  @Injectable()
+  class Service {
+    constructor(public subService: SubService) {}
+  }
+  @MvModule({
+    providers: [Service],
+    exports: [Service],
+  })
+  class ChildModule {}
+  @MvModule({
+    providers: [SubService],
+    imports: [ChildModule],
+  })
+  class RootModule {}
+
+  const scope = DependencyScope.beginScope();
+  const testModule = await ModuleRef.createModuleRef(
+    DiContainer.root(),
+    ModuleCatalog.getMetadata(RootModule),
+    scope
+  );
+
+  // act
+  const service = await testModule.resolve<Service>(Service, scope);
+
+  // assert
+  assert(service instanceof Service);
+  assert(service.subService instanceof SubService);
+});
