@@ -20,7 +20,7 @@ interface MvcModuleOptions {
 }
 
 @MvModule({
-  providers: [ViewService],
+  providers: [MvcFilter, ViewService],
   exports: [ViewService],
 })
 export class MvcModule {

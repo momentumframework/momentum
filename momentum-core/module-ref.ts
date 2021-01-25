@@ -156,7 +156,7 @@ export class ModuleRef {
     if (metadata.providers) {
       for (const provider of metadata.providers) {
         if (!isProvider(provider)) {
-          diContainer.registerType(provider, provider);
+          diContainer.registerFromMetadata(provider);
         } else if (isConstructorProvider(provider)) {
           diContainer.registerType(
             provider.provide,
@@ -165,6 +165,7 @@ export class ModuleRef {
           );
         } else if (isClassProvider(provider)) {
           diContainer.registerAlias(provider.useClass, provider.provide);
+          diContainer.registerFromMetadata(provider.useClass);
         } else if (isFactoryProvider(provider)) {
           diContainer.registerFactory(
             provider.provide,
@@ -178,7 +179,7 @@ export class ModuleRef {
     }
     if (metadata.imports) {
       for (const moduleRef of importedModules) {
-        if (!moduleRef?.metadata.exports) {
+        if (!moduleRef?.metadata?.exports) {
           continue;
         }
         for (const exportedIdentifier of moduleRef.metadata.exports) {

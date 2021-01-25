@@ -241,16 +241,16 @@ export class DiContainer {
   ): DependencyGraphNode {
     let node = partialNodes.get(identifier);
     if (!node) {
+      const exporter = this.getExporter(identifier);
+      if (exporter) {
+        return exporter.buildDependencyGraph(
+          identifier,
+          [...path],
+          partialNodes
+        );
+      }
       const definition = this.getDefinition(identifier);
       if (!definition) {
-        const exporter = this.getExporter(identifier);
-        if (exporter) {
-          return exporter.buildDependencyGraph(
-            identifier,
-            [...path],
-            partialNodes
-          );
-        }
         const typeName =
           typeof identifier === "string" ? identifier : identifier.name;
         const pathString = path

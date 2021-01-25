@@ -1,61 +1,53 @@
 import { Inject, Injectable, Optional } from "./mod.ts";
 
-@Injectable()
-export class Quark {
-}
+@Injectable({ global: true })
+export class Quark {}
 
-@Injectable()
-export class Electron {
-}
+@Injectable({ global: true })
+export class Electron {}
 
-@Injectable()
+@Injectable({ global: true })
 export class Neutron {
-  constructor(public quark: Quark) {
-  }
+  constructor(public quark: Quark) {}
 }
 
-@Injectable()
+@Injectable({ global: true })
 export class Proton {
-  constructor(public quark: Quark) {
-  }
+  constructor(public quark: Quark) {}
 }
 
-@Injectable()
+@Injectable({ global: true })
 export class Atom {
   constructor(
     public proton?: Proton,
     public neutron?: Neutron,
-    public electron?: Electron,
-  ) {
-  }
+    public electron?: Electron
+  ) {}
 }
 
-@Injectable()
+@Injectable({ global: true })
 export class Molecule {
-  constructor(public atom: Atom) {
-  }
+  constructor(public atom: Atom) {}
 }
 
-@Injectable()
+@Injectable({ global: true })
 export class Person {
   constructor(
     @Inject("PANTS")
     @Optional()
-    public pants?: string,
-  ) {
-  }
+    public pants?: string
+  ) {}
 }
 
-class Thing {
-}
+class Thing {}
 
-@Injectable()
+@Injectable({ global: true })
 export class ThingOne extends Thing {
   @Inject("THING_TWO")
   otherThing?: Thing;
 }
 
-@Injectable("THING_TWO")
+@Injectable("THING_TWO", { global: true })
 export class ThingTwo extends Thing {
   @Inject(ThingOne)
   otherThing?: Thing;

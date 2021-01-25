@@ -96,7 +96,7 @@ test("DependencyResolver.resolve() - resolves factory dependencies", async () =>
 
 test("DependencyResolver.resolve() - resolves value dependencies", async () => {
   // arrange
-  @Injectable()
+  @Injectable({ global: true })
   class Pizza {
     constructor(@Inject("TOPPINGS") public toppings: string[]) {}
   }
@@ -119,14 +119,14 @@ test("DependencyResolver.resolve() - resolves value dependencies", async () => {
 
 test("DependencyResolver.resolve() - resolves deferred dependencies", async () => {
   // arrange
-  @Injectable("A")
+  @Injectable("A", { global: true })
   class A {
     constructor(
       @Inject("B", { defer: true })
       public b: Deferred<B>
     ) {}
   }
-  @Injectable("B")
+  @Injectable("B", { global: true })
   class B {
     constructor(
       @Inject("A", { defer: true })
