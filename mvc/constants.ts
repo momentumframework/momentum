@@ -1,2 +1,2 @@
-export const VIEW_ENGINE = "VIEW_ENGINE";
-export const MVC_CONFIG = "MVC_CONFIG";
+export const VIEW_ENGINE = "MV_MVC_VIEW_ENGINE";
+export const MVC_CONFIG = "MV_MVC_CONFIG";

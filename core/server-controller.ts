@@ -1,3 +1,5 @@
+import { SCOPED_CONTAINER, SCOPED_RESOLVER } from "./constants.ts";
+import { ContextAccessor } from "./context-accessor.ts";
 import { ControllerCatalog } from "./controller-catalog.ts";
 import {
   ActionMetadata,
@@ -6,7 +8,9 @@ import {
 } from "./controller-metadata.ts";
 import {
   CompositDependencyScope,
+  DependencyResolver,
   DependencyScope,
+  DiContainer,
   Scope,
   Type,
 } from "./deps.ts";
@@ -83,9 +87,20 @@ export class ServerController {
             [Scope.Request, requestScope],
           ])
         );
-        const controllerInstance = (await this.#platform.resolve(
-          controller,
+        const scopedContainer = this.#platform.container.deepClone("REQUEST_");
+        const scopedResolver = new DependencyResolver(
+          scopedContainer,
           compositeScope
+        );
+        scopedContainer.registerValue(
+          ContextAccessor,
+          new ContextAccessor(context, this.#platform)
+        );
+        scopedContainer.registerValue(SCOPED_CONTAINER, scopedContainer);
+        scopedContainer.registerValue(SCOPED_RESOLVER, scopedResolver);
+
+        const controllerInstance = (await scopedResolver.resolve(
+          controller
         )) as Record<string, (...args: unknown[]) => unknown>;
         const parameters = await this.buildParameters(
           context,
@@ -95,6 +110,7 @@ export class ServerController {
         );
         return await this.executeFilters(
           context,
+          scopedResolver,
           async () => await controllerInstance[action](...parameters),
           parameters,
           controllerMetadata,
@@ -102,6 +118,7 @@ export class ServerController {
           parameterMetadatas
         );
       } catch (err) {
+        console.log(err);
         throw err;
       } finally {
         requestScope.endScope();
@@ -144,6 +161,7 @@ export class ServerController {
 
   private async executeFilters(
     context: unknown,
+    scopedResolver: DependencyResolver,
     executor: () => Promise<unknown>,
     parameters: unknown[],
     controllerMetadata: ControllerMetadata,
@@ -156,7 +174,7 @@ export class ServerController {
         actionMetadata.action
       ).map(async (filter) =>
         typeof filter === "function"
-          ? await this.#platform.resolve<MvFilter>(filter)
+          ? await scopedResolver.resolve<MvFilter>(filter)
           : filter
       )
     );
@@ -204,9 +222,9 @@ export class ServerController {
         continue;
       }
       parameters[parameterMetadata.index] = await valueProvider(
-        context,
-        this.#platform,
-        parameterMetadata
+        new ContextAccessor(context, this.#platform),
+        parameterMetadata,
+        this.#platform
       );
     }
     return parameters;

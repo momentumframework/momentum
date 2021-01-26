@@ -43,17 +43,6 @@ class StandardDependencyScope extends DependencyScope {
   }
 }
 
-export class NullDependencyScope extends DependencyScope {
-  set() {
-    this.ensureScope();
-  }
-
-  get<T = unknown>(): T | undefined {
-    this.ensureScope();
-    return (undefined as unknown) as T;
-  }
-}
-
 export class CompositDependencyScope extends DependencyScope {
   readonly #scopes: Map<unknown, DependencyScope>;
 

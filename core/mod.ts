@@ -1,4 +1,5 @@
 export * from "./constants.ts";
+export * from "./context-accessor.ts";
 export * from "./decorators/body.ts";
 export * from "./decorators/controller.ts";
 export * from "./decorators/cookie.ts";

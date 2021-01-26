@@ -84,18 +84,15 @@ type PartialDependencyGraphNode = Partial<NullableDependencyGraphNode> & {
 export class DiContainer {
   private static globalContainer?: DiContainer;
 
-  readonly #name?: string;
-  readonly #parent?: DiContainer;
-  readonly #events = new EventEmitter<{ change(): void }>();
-  readonly #imports = new Map<TypeIdentifier, DiContainer>();
-  readonly #aliases = new Map<TypeIdentifier, TypeIdentifier>();
-  readonly #definitions = new Map<TypeIdentifier, Definition>();
-  readonly #ctorOverrides = new Map<Type, Map<number, PartialParameter[]>>();
-  readonly #propOverrides = new Map<Type, Map<string, PartialParameter[]>>();
-  readonly #dependencyGraph = new Map<
-    TypeIdentifier,
-    NullableDependencyGraphNode
-  >();
+  #name?: string;
+  #parent?: DiContainer;
+  #events = new EventEmitter<{ change(): void }>();
+  #imports = new Map<TypeIdentifier, DiContainer>();
+  #aliases = new Map<TypeIdentifier, TypeIdentifier>();
+  #definitions = new Map<TypeIdentifier, Definition>();
+  #ctorOverrides = new Map<Type, Map<number, PartialParameter[]>>();
+  #propOverrides = new Map<Type, Map<string, PartialParameter[]>>();
+  #dependencyGraph = new Map<TypeIdentifier, NullableDependencyGraphNode>();
 
   constructor(parent?: DiContainer, name?: string) {
     this.#parent = parent;
@@ -238,6 +235,38 @@ export class DiContainer {
     }
     prop.push(param);
     this.invalidateDependencyGraph();
+  }
+
+  deepClone(
+    namePrefix?: string,
+    cloneMap?: Map<DiContainer, DiContainer>
+  ): DiContainer {
+    if (!cloneMap) {
+      cloneMap = new Map();
+    }
+    const clone = new DiContainer(
+      this.#parent
+        ? cloneMap.has(this.#parent)
+          ? (cloneMap.get(this.#parent) as DiContainer)
+          : this.#parent?.deepClone(namePrefix, cloneMap)
+        : undefined,
+      `${namePrefix}${this.#name}`
+    );
+    cloneMap.set(this, clone);
+    clone.#imports = new Map(
+      Array.from(this.#imports).map(([identifier, container]) => [
+        identifier,
+        cloneMap?.has(container)
+          ? (cloneMap.get(container) as DiContainer)
+          : container.deepClone(namePrefix, cloneMap),
+      ])
+    );
+    clone.#aliases = new Map([...this.#aliases]);
+    clone.#definitions = new Map([...this.#definitions]);
+    clone.#ctorOverrides = new Map([...this.#ctorOverrides]);
+    clone.#propOverrides = new Map([...this.#propOverrides]);
+    clone.#dependencyGraph = new Map([...this.#dependencyGraph]);
+    return clone;
   }
 
   private invalidateDependencyGraph() {

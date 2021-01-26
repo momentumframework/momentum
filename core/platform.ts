@@ -8,7 +8,6 @@ import {
   CompositDependencyScope,
   DependencyScope,
   DiContainer,
-  NullDependencyScope,
   Scope,
   Type,
   TypeIdentifier,
@@ -135,7 +134,7 @@ export abstract class ServerPlatform extends Platform {
       | "response",
     context: unknown,
     identifier?: unknown
-  ): unknown | Promise<unknown>;
+  ): Promise<unknown>;
 
   abstract setContextItem(
     kind: "body" | "cookie" | "header",

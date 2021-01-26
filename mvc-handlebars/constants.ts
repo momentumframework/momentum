@@ -1,1 +1,1 @@
-export const CONFIG = "CONFIG";
+export const MVC_HANDLEBARS_CONFIG = "MV_MVC_HANDLEBARS_CONFIG";
