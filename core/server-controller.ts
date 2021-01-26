@@ -25,6 +25,7 @@ export class ServerController {
       try {
         return await this.executeMiddleware(context);
       } catch (err) {
+        debugger;
         throw err;
       }
     });
@@ -89,6 +90,7 @@ export class ServerController {
           parameterMetadatas
         );
       } catch (err) {
+        debugger;
         throw err;
       }
     };

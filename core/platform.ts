@@ -57,6 +57,7 @@ export abstract class Platform {
       this.executeBootstrapLifecycleEvent(this.module);
       return this;
     } catch (err) {
+      debugger;
       throw err;
     }
   }
