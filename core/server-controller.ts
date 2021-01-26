@@ -1,10 +1,15 @@
-import { Type } from "../momentum-di/mod.ts";
 import { ControllerCatalog } from "./controller-catalog.ts";
 import {
   ActionMetadata,
   ControllerMetadata,
   ParameterMetadata,
 } from "./controller-metadata.ts";
+import {
+  CompositDependencyScope,
+  DependencyScope,
+  Scope,
+  Type,
+} from "./deps.ts";
 import { FilterCatalog } from "./filter-catalog.ts";
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
@@ -25,7 +30,6 @@ export class ServerController {
       try {
         return await this.executeMiddleware(context);
       } catch (err) {
-        debugger;
         throw err;
       }
     });
@@ -71,9 +75,17 @@ export class ServerController {
     parameterMetadatas?: ParameterMetadata[]
   ): (context: unknown) => unknown {
     return async (context) => {
+      const requestScope = DependencyScope.beginScope();
       try {
+        const compositeScope = new CompositDependencyScope(
+          new Map([
+            ...this.#platform.dependencyScopes,
+            [Scope.Request, requestScope],
+          ])
+        );
         const controllerInstance = (await this.#platform.resolve(
-          controller
+          controller,
+          compositeScope
         )) as Record<string, (...args: unknown[]) => unknown>;
         const parameters = await this.buildParameters(
           context,
@@ -90,8 +102,9 @@ export class ServerController {
           parameterMetadatas
         );
       } catch (err) {
-        debugger;
         throw err;
+      } finally {
+        requestScope.endScope();
       }
     };
   }

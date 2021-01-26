@@ -4,7 +4,15 @@ import {
   ControllerClass,
   ControllerMetadata,
 } from "./controller-metadata.ts";
-import { DependencyScope, DiContainer, Type, TypeIdentifier } from "./deps.ts";
+import {
+  CompositDependencyScope,
+  DependencyScope,
+  DiContainer,
+  NullDependencyScope,
+  Scope,
+  Type,
+  TypeIdentifier,
+} from "./deps.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
@@ -20,11 +28,11 @@ export function platformMomentum() {
 export abstract class Platform {
   #module?: ModuleRef;
   #container: DiContainer;
-  #singletonScope: DependencyScope;
+  #dependencyScopes = new Map<unknown, DependencyScope>();
 
-  constructor(rootContainer: DiContainer, scope: DependencyScope) {
+  constructor(rootContainer: DiContainer, dependencyScopes: DependencyScope) {
     this.#container = rootContainer.createChild();
-    this.#singletonScope = scope;
+    this.#dependencyScopes.set(Scope.Singleton, dependencyScopes);
   }
 
   get module() {
@@ -36,9 +44,20 @@ export abstract class Platform {
     return this.module.diContainer;
   }
 
+  get dependencyScopes() {
+    return new Map([...this.#dependencyScopes]);
+  }
+
+  registerCustomScope(
+    scopeIdentifier: unknown,
+    dependencyScope: DependencyScope
+  ) {
+    this.#dependencyScopes.set(scopeIdentifier, dependencyScope);
+  }
+
   resolve<T = unknown>(
     identifier: TypeIdentifier,
-    scope: DependencyScope = this.#singletonScope
+    scope: DependencyScope = new CompositDependencyScope(this.#dependencyScopes)
   ) {
     this.ensureInitalized();
     return this.module.resolve<T>(identifier, scope);
@@ -51,13 +70,12 @@ export abstract class Platform {
       this.#module = await ModuleRef.createModuleRef(
         this.#container,
         ModuleCatalog.getMetadata(moduleType),
-        this.#singletonScope
+        new CompositDependencyScope(this.#dependencyScopes)
       );
       await this.postBootstrap();
       this.executeBootstrapLifecycleEvent(this.module);
       return this;
     } catch (err) {
-      debugger;
       throw err;
     }
   }
@@ -79,9 +97,7 @@ export abstract class Platform {
   }
 }
 
-export abstract class ServerPlatform<
-  TListenOptions = unknown
-> extends Platform {
+export abstract class ServerPlatform extends Platform {
   #serverController: ServerController;
 
   constructor(container: DiContainer, scope: DependencyScope) {
@@ -129,8 +145,6 @@ export abstract class ServerPlatform<
   ): void | Promise<void>;
 
   abstract sendFile(context: unknown, path: string): void | Promise<void>;
-
-  abstract listen(options: TListenOptions): void | Promise<void>;
 
   use(middleware: MvMiddleware | Type<MvMiddleware>) {
     this.#serverController.registerMiddleware(middleware);

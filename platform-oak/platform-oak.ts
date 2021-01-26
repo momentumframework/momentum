@@ -1,18 +1,17 @@
 import {
+  ActionMetadata,
   Application,
+  ControllerClass,
+  ControllerMetadata,
+  DependencyScope,
+  DiContainer,
   FormDataBody,
   helpers as oakHelpers,
   ListenOptions,
   Router,
   RouterContext,
+  ServerPlatform,
 } from "./deps.ts";
-import { ServerPlatform } from "../momentum-core/mod.ts";
-import { DependencyScope, DiContainer } from "../momentum-di/mod.ts";
-import {
-  ActionMetadata,
-  ControllerClass,
-  ControllerMetadata,
-} from "../momentum-core/controller-metadata.ts";
 
 export function platformOak(
   app: Application = new Application(),
@@ -26,7 +25,7 @@ export function platformOak(
   );
 }
 
-export class OakPlatform extends ServerPlatform<ListenOptions> {
+export class OakPlatform extends ServerPlatform {
   #app: Application;
   #router: Router;
   constructor(

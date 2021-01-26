@@ -1,11 +1,10 @@
-import { Type } from "../momentum-di/mod.ts";
 import {
   ActionMetadata,
   ControllerClass,
   ControllerMetadata,
   ParameterMetadata,
 } from "./controller-metadata.ts";
-import { trimSlashes } from "./deps.ts";
+import { trimSlashes, Type } from "./deps.ts";
 
 export class ControllerCatalog {
   private static readonly catalog = new Map<

@@ -1,14 +1,24 @@
 import { DiContainer, Type, TypeIdentifier } from "../di-container.ts";
+import { ScopeCatalog } from "../scope-catalog.ts";
+import { Scope } from "../scope.ts";
+
+export type InjectableOptions =
+  | { scope?: Scope; global?: boolean }
+  | {
+      scope: Scope.Custom;
+      global?: boolean;
+      scopeIdentifier: unknown;
+    };
 
 export function Injectable(): ClassDecorator;
-export function Injectable(options: { global: boolean }): ClassDecorator;
+export function Injectable(options: InjectableOptions): ClassDecorator;
 export function Injectable(
   identifier: TypeIdentifier,
-  options?: { global: boolean }
+  options?: InjectableOptions
 ): ClassDecorator;
 export function Injectable(
-  identifierOrOptions?: TypeIdentifier | { global: boolean },
-  options?: { global: boolean }
+  identifierOrOptions?: TypeIdentifier | InjectableOptions,
+  options?: InjectableOptions
 ): ClassDecorator {
   // deno-lint-ignore ban-types
   return function (target: Function) {
@@ -25,6 +35,16 @@ export function Injectable(
     }
     if (options?.global) {
       DiContainer.root().registerFromMetadata(target as Type);
+    }
+    if (options?.scope) {
+      if (options.scope === Scope.Custom) {
+        ScopeCatalog.registerScopeIdentifier(
+          identifier as Type,
+          (options as { scopeIdentifier: string }).scopeIdentifier
+        );
+      } else {
+        ScopeCatalog.registerScopeIdentifier(identifier as Type, options.scope);
+      }
     }
   };
 }

@@ -7,3 +7,4 @@ export * from "./decorators/optional.ts";
 export * from "./deferred.ts";
 export * from "./dependency-resolver.ts";
 export * from "./dependency-scope.ts";
+export * from "./scope.ts";

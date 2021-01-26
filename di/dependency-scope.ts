@@ -1,55 +1,79 @@
-import { EventEmitter } from "./deps.ts";
 import { TypeIdentifier } from "./di-container.ts";
+import { ScopeCatalog } from "./scope-catalog.ts";
 
-export class DependencyScope {
-  // deno-lint-ignore no-explicit-any
-  #cache = new Map<TypeIdentifier, any>();
-  #events = new EventEmitter<{ end(): void }>();
+export abstract class DependencyScope {
+  readonly #cache = new Map<TypeIdentifier, unknown>();
   #isEnded = false;
-
-  constructor(private readonly parent?: DependencyScope) {
-    if (parent) {
-      parent.#events.on("end", () => this.endScope());
-    }
-  }
 
   get isEnded() {
     return this.#isEnded;
   }
 
-  static beginScope() {
-    return new DependencyScope();
-  }
-
-  beginChildScope() {
-    this.ensureScope();
-    return new DependencyScope(this);
+  static beginScope(): DependencyScope {
+    return new StandardDependencyScope();
   }
 
   endScope() {
-    this.ensureScope();
     this.#isEnded = true;
     this.#cache.clear();
-    this.#events.emit("end");
   }
+
+  protected ensureScope() {
+    if (this.isEnded) {
+      throw Error("Scope is ended");
+    }
+  }
+
+  abstract set(identifier: TypeIdentifier, obj: unknown): void;
+
+  abstract get<T = unknown>(identifier: TypeIdentifier): T | undefined;
+}
+
+class StandardDependencyScope extends DependencyScope {
+  readonly #cache = new Map<TypeIdentifier, unknown>();
 
   set(identifier: TypeIdentifier, obj: unknown) {
     this.ensureScope();
     this.#cache.set(identifier, obj);
   }
 
-  get(identifier: TypeIdentifier) {
+  get<T = unknown>(identifier: TypeIdentifier) {
     this.ensureScope();
-    let obj = this.#cache.get(identifier);
-    if (!obj && this.parent) {
-      obj = this.parent.get(identifier);
-    }
-    return obj;
+    return this.#cache.get(identifier) as T;
+  }
+}
+
+export class NullDependencyScope extends DependencyScope {
+  set() {
+    this.ensureScope();
   }
 
-  private ensureScope() {
-    if (this.#isEnded) {
-      throw Error("Scope is ended");
-    }
+  get<T = unknown>(): T | undefined {
+    this.ensureScope();
+    return (undefined as unknown) as T;
+  }
+}
+
+export class CompositDependencyScope extends DependencyScope {
+  readonly #scopes: Map<unknown, DependencyScope>;
+
+  constructor(scopes: Map<unknown, DependencyScope>) {
+    super();
+    this.#scopes = scopes;
+  }
+
+  set(identifier: TypeIdentifier, obj: unknown) {
+    super.ensureScope();
+    this.getScope(identifier)?.set(identifier, obj);
+  }
+
+  get<T = unknown>(identifier: TypeIdentifier) {
+    this.ensureScope();
+    return this.getScope(identifier)?.get(identifier) as T;
+  }
+
+  private getScope(identifier: TypeIdentifier) {
+    const scopeIdentifier = ScopeCatalog.getScopeIdentifier(identifier);
+    return this.#scopes.get(scopeIdentifier);
   }
 }

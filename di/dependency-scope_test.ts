@@ -17,18 +17,6 @@ test("DependencyScope.beginScope() - creates a new dependency scope", () => {
   assert(scope instanceof DependencyScope);
 });
 
-test("DependencyScope.beginChildScope() - creates a child scope", () => {
-  // arrange
-  const parent = DependencyScope.beginScope();
-
-  // act
-  const child = parent.beginChildScope();
-
-  // assert
-  assert(child instanceof DependencyScope);
-  assertNotEquals(child, parent);
-});
-
 test("DependencyScope.set() - caches a dependency", () => {
   // arrange
   const scope = DependencyScope.beginScope();
@@ -55,38 +43,6 @@ test("DependencyScope.get() - gets a cached dependency", () => {
   assertEquals(cached, obj);
 });
 
-test("DependencyScope.get() - gets a parent cached dependency", () => {
-  // arrange
-  const parent = DependencyScope.beginScope();
-  const child = parent.beginChildScope();
-
-  const obj = new Person();
-
-  parent.set(Person, obj);
-
-  // act
-  const cached = child.get(Person);
-
-  // assert
-  assertEquals(cached, obj);
-});
-
-test("DependencyScope.get() - does not get a child cached dependency", () => {
-  // arrange
-  const parent = DependencyScope.beginScope();
-  const child = parent.beginChildScope();
-
-  const obj = new Person();
-
-  child.set(Person, obj);
-
-  // act
-  const cached = parent.get(Person);
-
-  // assert
-  assertEquals(cached, undefined);
-});
-
 test("DependencyScope.endScope() - ends the scope", () => {
   // arrange
   const scope = DependencyScope.beginScope();
@@ -98,18 +54,4 @@ test("DependencyScope.endScope() - ends the scope", () => {
   assert(scope.isEnded);
   assertThrows(() => scope.set(String, ""), undefined, "Scope is ended");
   assertThrows(() => scope.get(String), undefined, "Scope is ended");
-  assertThrows(() => scope.beginChildScope(), undefined, "Scope is ended");
-  assertThrows(() => scope.endScope(), undefined, "Scope is ended");
-});
-
-test("DependencyScope.endScope() - ends child scope", () => {
-  // arrange
-  const parent = DependencyScope.beginScope();
-  const child = parent.beginChildScope();
-
-  // act
-  parent.endScope();
-
-  // assert
-  assert(child.isEnded);
 });

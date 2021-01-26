@@ -6,8 +6,8 @@ import {
   ControllerClass,
   ControllerMetadata,
   Injectable,
+  ViewEngine,
 } from "./deps.ts";
-import { ViewEngine } from "../momentum-mvc/view-engine.ts";
 
 @Injectable()
 export class HandlebarsViewEngine implements ViewEngine {

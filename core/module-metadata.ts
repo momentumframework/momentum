@@ -1,4 +1,4 @@
-import { FactoryFunction, Type, TypeIdentifier } from "../momentum-di/mod.ts";
+import { FactoryFunction, Type, TypeIdentifier } from "./deps.ts";
 
 type ConstructorProvider = { provide: Type; deps?: TypeIdentifier[] };
 export type ClassProvider<T = unknown> = {

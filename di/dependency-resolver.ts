@@ -1,7 +1,6 @@
 import { DeferredImpl } from "./deferred-impl.ts";
 import { DependencyScope } from "./dependency-scope.ts";
 import {
-  DependencyGraphNode,
   DiContainer,
   NullableDependencyGraphNode,
   TypeIdentifier,
@@ -31,7 +30,8 @@ export class DependencyResolver {
           }`
         );
       }
-      let obj = this.scope.get(identifier);
+      // deno-lint-ignore no-explicit-any
+      let obj = this.scope.get<any>(identifier);
       if (!obj) {
         switch (node.kind) {
           case "type":

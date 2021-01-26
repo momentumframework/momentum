@@ -1,4 +1,4 @@
-import { Type } from "../momentum-di/mod.ts";
+import { Type } from "./deps.ts";
 
 export type ControllerClass = Type;
 

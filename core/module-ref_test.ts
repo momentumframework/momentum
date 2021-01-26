@@ -1,12 +1,8 @@
-import { DiContainer } from "./deps.ts";
-import { assert, assertThrows, test } from "./test_deps.ts";
-
+import { DependencyScope, DiContainer, Injectable } from "./deps.ts";
 import { MvModule } from "./decorators/mv-module.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleRef } from "./module-ref.ts";
-import { DependencyScope, Inject, Injectable } from "../momentum-di/mod.ts";
-import { fail } from "https://deno.land/std@0.82.0/testing/asserts.ts";
-import { assertEquals } from "../momentum-di/test_deps.ts";
+import { assert, assertEquals, fail, test } from "./test_deps.ts";
 
 class TestSubService {}
 class TestService {

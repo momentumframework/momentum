@@ -1,4 +1,4 @@
-import { TypeIdentifier } from "../momentum-di/mod.ts";
+import { TypeIdentifier } from "./deps.ts";
 import {
   ExtendedModuleMetadata,
   ModuleClass,

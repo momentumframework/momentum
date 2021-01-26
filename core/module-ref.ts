@@ -5,7 +5,6 @@ import {
   Type,
   TypeIdentifier,
 } from "./deps.ts";
-
 import { ModuleCatalog } from "./module-catalog.ts";
 import {
   isClassProvider,
@@ -75,20 +74,24 @@ export class ModuleRef {
     scope = DependencyScope.beginScope()
   ) {
     const resolver = new DependencyResolver(this.#diContainer, scope);
-    return (await resolver.resolve(identifier)) as T;
+    return await resolver.resolve<T>(identifier);
   }
 
   public static async createModuleRef(
     parentContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
-    scope: DependencyScope
+    dependencyScope: DependencyScope
   ): Promise<ModuleRef> {
     const diContainer = parentContainer.createChild(metadata.type.name);
     const subModules: ModuleRef[] = [];
     if (metadata.imports) {
       for (const moduleDefinition of metadata.imports) {
         subModules.push(
-          await this.resolveModule(moduleDefinition, diContainer, scope)
+          await this.resolveModule(
+            moduleDefinition,
+            diContainer,
+            dependencyScope
+          )
         );
       }
     }
@@ -105,7 +108,10 @@ export class ModuleRef {
     );
     let moduleRef: ModuleRef | undefined = undefined;
     moduleContainer.registerFactory(ModuleRef, () => moduleRef);
-    const moduleResolver = new DependencyResolver(moduleContainer, scope);
+    const moduleResolver = new DependencyResolver(
+      moduleContainer,
+      dependencyScope
+    );
     const instance = await moduleResolver.resolve(metadata.type);
 
     moduleRef = new ModuleRef(metadata, moduleContainer, instance, subModules);
