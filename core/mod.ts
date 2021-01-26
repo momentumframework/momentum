@@ -1,5 +1,4 @@
 export * from "./constants.ts";
-export * from "./controller-metadata.ts";
 export * from "./decorators/body.ts";
 export * from "./decorators/controller.ts";
 export * from "./decorators/cookie.ts";
@@ -18,7 +17,6 @@ export * from "./decorators/put.ts";
 export * from "./decorators/query.ts";
 export * from "./decorators/req.ts";
 export * from "./decorators/res.ts";
-export * from "./module-catalog.ts";
 export * from "./module-metadata.ts";
 export * from "./module-ref.ts";
 export * from "./mv-filter.ts";

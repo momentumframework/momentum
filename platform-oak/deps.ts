@@ -5,4 +5,5 @@ export type {
   RouterContext,
 } from "https://deno.land/x/oak/mod.ts";
 export * from "../core/mod.ts";
+export * from "../core/controller-metadata.ts";
 export * from "../di/mod.ts";
