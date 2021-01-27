@@ -1,3 +1,4 @@
+import { ContextAccessor } from "./context-accessor.ts";
 import {
   ActionMetadata,
   ControllerMetadata,
@@ -8,7 +9,7 @@ export type NextFilterFunction = () => Promise<unknown>;
 
 export interface MvFilter {
   filter(
-    context: unknown,
+    contextAccessor: ContextAccessor,
     next: NextFilterFunction,
     parameters: unknown[],
     controllerMetadata?: ControllerMetadata,

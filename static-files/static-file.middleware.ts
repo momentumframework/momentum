@@ -1,13 +1,12 @@
 import { STATIC_FILES_CONFIG } from "./contents.ts";
 import {
+  ContextAccessor,
   exists,
   Inject,
   Injectable,
   MvMiddleware,
   NextMiddlewareFunction,
   Optional,
-  PLATFORM,
-  ServerPlatform,
   trimSlashes,
   trimTrailingSlashes,
 } from "./deps.ts";
@@ -15,25 +14,24 @@ import { defaultConfig, StaticFilesConfig } from "./static-files-config.ts";
 
 @Injectable()
 export class StaticFileMiddleware implements MvMiddleware {
-  readonly #platform: ServerPlatform;
   readonly #config: StaticFilesConfig;
 
   constructor(
-    @Inject(PLATFORM)
-    platform: ServerPlatform,
     @Optional()
     @Inject(STATIC_FILES_CONFIG)
     config: StaticFilesConfig
   ) {
-    this.#platform = platform;
     this.#config = {
       ...defaultConfig,
       ...config,
       mimeMap: { ...defaultConfig.mimeMap, ...config?.mimeMap },
     };
   }
-  async execute(context: unknown, next: NextMiddlewareFunction) {
-    const url = (await this.#platform.getContextItem("url", context)) as URL;
+  async execute(
+    contextAccessor: ContextAccessor,
+    next: NextMiddlewareFunction
+  ) {
+    const url = await contextAccessor.getUrl();
     if (url.pathname.startsWith(this.#config.serverRoot)) {
       const filePath = [
         trimTrailingSlashes(this.#config.contentRoot),
@@ -43,14 +41,9 @@ export class StaticFileMiddleware implements MvMiddleware {
         const ext = filePath.substring(filePath.lastIndexOf("."));
         const contentType = this.#config.mimeMap?.[ext];
         if (contentType) {
-          await this.#platform.setContextItem(
-            "header",
-            context,
-            contentType,
-            "Content-Type"
-          );
+          await contextAccessor.setHeader("Content-Type", contentType);
         }
-        await this.#platform.sendFile(context, filePath);
+        await contextAccessor.sendFile(filePath);
         return;
       }
     }

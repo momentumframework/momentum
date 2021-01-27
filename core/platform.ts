@@ -18,7 +18,6 @@ import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
-import { MvPlatformBootstrap } from "./mv-platform-bootstrap.ts";
 import { ServerController } from "./server-controller.ts";
 
 function isCustomScope(scopeIdentifier: unknown) {
@@ -109,17 +108,9 @@ export abstract class Platform {
         new CompositDependencyScope(this.#dependencyScopes)
       );
       await this.postBootstrap();
-      this.executeBootstrapLifecycleEvent(this.module);
       return this;
     } catch (err) {
       throw err;
-    }
-  }
-
-  executeBootstrapLifecycleEvent(module: ModuleRef) {
-    (module.instance as MvPlatformBootstrap).onPlatformBootstrap?.();
-    for (const submodule of module.modules) {
-      this.executeBootstrapLifecycleEvent(submodule);
     }
   }
 

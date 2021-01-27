@@ -10,41 +10,60 @@ export class ContextAccessor {
     this.#platform = platform;
   }
 
-  get context() {
+  getContext() {
     return this.#context;
   }
-  get url() {
-    return this.#platform.getContextItem("url", this.#context);
+  async getUrl() {
+    return (await this.#platform.getContextItem("url", this.#context)) as URL;
   }
-  get request() {
-    return this.#platform.getContextItem("request", this.#context);
+  async getRequest() {
+    return await this.#platform.getContextItem("request", this.#context);
   }
-  get response() {
-    return this.#platform.getContextItem("response", this.#context);
+  async getResponse() {
+    return await this.#platform.getContextItem("response", this.#context);
   }
-  getBody(name?: string) {
-    return this.#platform.getContextItem("body", this.#context, name);
+  async getBody(name?: string) {
+    return await this.#platform.getContextItem("body", this.#context, name);
   }
-  getParameter(name: string) {
-    return this.#platform.getContextItem("parameter", this.#context, name);
+  async setBody(value: unknown) {
+    await this.#platform.setContextItem("body", this.#context, value);
   }
-  getQuery(name: string) {
-    return this.#platform.getContextItem("query", this.#context, name);
+  async getParameter(name: string) {
+    return (await this.#platform.getContextItem(
+      "parameter",
+      this.#context,
+      name
+    )) as string;
   }
-  getCookie(name: string) {
-    return this.#platform.getContextItem("cookie", this.#context, name);
+  async getQuery(name: string) {
+    return (await this.#platform.getContextItem(
+      "query",
+      this.#context,
+      name
+    )) as string;
   }
-  getHeader(name: string) {
-    return this.#platform.getContextItem("header", this.#context, name);
+  async getCookie(name: string) {
+    return (await this.#platform.getContextItem(
+      "cookie",
+      this.#context,
+      name
+    )) as string;
   }
-  setBody(name: string) {
-    this.#platform.setContextItem("body", this.#context, name);
+  async setCookie(name: string, value: string) {
+    await this.#platform.setContextItem("cookie", this.#context, value, name);
   }
-  setCookie(name: string) {
-    this.#platform.setContextItem("cookie", this.#context, name);
+  async getHeader(name: string) {
+    return (await this.#platform.getContextItem(
+      "header",
+      this.#context,
+      name
+    )) as string;
   }
-  setHeader(name: string) {
-    this.#platform.setContextItem("header", this.#context, name);
+  async setHeader(name: string, value: string) {
+    await this.#platform.setContextItem("header", this.#context, value, name);
+  }
+  async sendFile(path: string) {
+    await this.#platform.sendFile(this.#context, path);
   }
 }
 

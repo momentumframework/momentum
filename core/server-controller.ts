@@ -32,7 +32,9 @@ export class ServerController {
   async initialize() {
     this.#platform.addMiddlewareHandler(async (context) => {
       try {
-        return await this.executeMiddleware(context);
+        return await this.executeMiddleware(
+          new ContextAccessor(context, this.#platform)
+        );
       } catch (err) {
         throw err;
       }
@@ -118,7 +120,6 @@ export class ServerController {
           parameterMetadatas
         );
       } catch (err) {
-        console.log(err);
         throw err;
       } finally {
         requestScope.endScope();
@@ -130,7 +131,7 @@ export class ServerController {
     this.#middlewareRegistry.push(middleware);
   }
 
-  private async executeMiddleware(context: unknown) {
+  private async executeMiddleware(contextAccessor: ContextAccessor) {
     if (!this.#middlewareCache) {
       this.#middlewareCache = await Promise.all(this.getMiddleware());
     }
@@ -141,7 +142,7 @@ export class ServerController {
     };
     for (const middleware of this.#middlewareCache.reverse()) {
       const n = next;
-      next = async () => await middleware.execute(context, n);
+      next = async () => await middleware.execute(contextAccessor, n);
     }
     await next();
     return complete;
@@ -180,11 +181,11 @@ export class ServerController {
     );
     let next = executor;
     for (const filter of filters.reverse()) {
-      const n = next;
+      const localNext = next;
       next = () =>
         filter.filter(
-          context,
-          n,
+          new ContextAccessor(context, this.#platform),
+          localNext,
           parameters,
           {
             type: controllerMetadata.type,
