@@ -94,7 +94,7 @@ export class ModuleRef {
             moduleDefinition,
             diContainer,
             dependencyScope,
-            scopeCatalog.createChild()
+            scopeCatalog
           )
         );
       }

@@ -120,6 +120,7 @@ export class CompositDependencyScope extends DependencyScope {
     for (const scope of this.#scopes.values()) {
       scope.set(typeIdentifier, obj);
     }
+    this.parent?.set(typeIdentifier, obj);
   }
 
   get<T = unknown>(typeIdentifier: TypeIdentifier): T | undefined {
@@ -130,6 +131,7 @@ export class CompositDependencyScope extends DependencyScope {
         return obj as T;
       }
     }
+    return this.parent?.get(typeIdentifier);
   }
 
   get items(): unknown[] {
