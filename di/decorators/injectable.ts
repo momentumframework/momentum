@@ -23,6 +23,7 @@ export function Injectable(
   // deno-lint-ignore ban-types
   return function (target: Function) {
     let identifier;
+
     if (identifierOrOptions) {
       if (isIdentifier(identifierOrOptions)) {
         identifier = identifierOrOptions;
@@ -30,21 +31,23 @@ export function Injectable(
         options = identifierOrOptions;
       }
     }
+    options = { scope: Scope.Injection, ...options };
     if (identifier) {
       DiContainer.root().registerAlias(target as Type, identifier);
     }
     if (options?.global) {
       DiContainer.root().registerFromMetadata(target as Type);
     }
-    if (options?.scope) {
-      if (options.scope === Scope.Custom) {
-        ScopeCatalog.registerScopeIdentifier(
-          identifier as Type,
-          (options as { scopeIdentifier: string }).scopeIdentifier
-        );
-      } else {
-        ScopeCatalog.registerScopeIdentifier(identifier as Type, options.scope);
-      }
+    if (options.scope === Scope.Custom) {
+      ScopeCatalog.root().registerScopeIdentifier(
+        identifier as Type,
+        (options as { scopeIdentifier: string }).scopeIdentifier
+      );
+    } else {
+      ScopeCatalog.root().registerScopeIdentifier(
+        identifier ?? (target as Type),
+        options.scope
+      );
     }
   };
 }

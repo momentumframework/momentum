@@ -19,12 +19,13 @@ import {
 } from "./shared-test-types.ts";
 import { Injectable } from "./decorators/injectable.ts";
 import { Inject } from "./decorators/inject.ts";
+import { Scope } from "./scope.ts";
 
 test("DependencyResolver.resolve() - resolves dependency", async () => {
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope()
+    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
   );
 
   // act
@@ -44,7 +45,7 @@ test("DependencyResolver.resolve() - allows optional dependencies", async () => 
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope()
+    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
   );
 
   // act
@@ -59,7 +60,7 @@ test("DependencyResolver.resolve() - resolves property dependencies", async () =
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope()
+    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
   );
 
   // act
@@ -83,7 +84,7 @@ test("DependencyResolver.resolve() - resolves factory dependencies", async () =>
 
   const resolver = new DependencyResolver(
     container,
-    DependencyScope.beginScope()
+    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
   );
 
   // act
@@ -106,7 +107,7 @@ test("DependencyResolver.resolve() - resolves value dependencies", async () => {
 
   const resolver = new DependencyResolver(
     container,
-    DependencyScope.beginScope()
+    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
   );
 
   // act
@@ -135,7 +136,7 @@ test("DependencyResolver.resolve() - resolves deferred dependencies", async () =
   }
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope()
+    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
   );
 
   // act

@@ -1,4 +1,10 @@
-import { DependencyScope, DiContainer, Injectable } from "./deps.ts";
+import {
+  DependencyScope,
+  DiContainer,
+  Injectable,
+  Scope,
+  ScopeCatalog,
+} from "./deps.ts";
 import { MvModule } from "./decorators/mv-module.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleRef } from "./module-ref.ts";
@@ -30,12 +36,15 @@ class RootTestModule {
 
 test("ModuleRef.createModuleRef() creates module ref", async () => {
   // arrange
-  const scope = DependencyScope.beginScope();
+  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
+    Scope.Injection
+  );
 
   // act
   const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
+    ScopeCatalog.root(),
     scope
   );
 
@@ -46,12 +55,15 @@ test("ModuleRef.createModuleRef() creates module ref", async () => {
 
 test("ModuleRef.createModuleRef() creates module with parameterized constructor", async () => {
   // arrange
-  const scope = DependencyScope.beginScope();
+  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
+    Scope.Injection
+  );
 
   // act
   const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
+    ScopeCatalog.root(),
     scope
   );
 
@@ -62,10 +74,13 @@ test("ModuleRef.createModuleRef() creates module with parameterized constructor"
 
 test("ModuleRef.resolve() resolves dependency", async () => {
   // arrange
-  const scope = DependencyScope.beginScope();
+  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
+    Scope.Injection
+  );
   const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
+    ScopeCatalog.root(),
     scope
   );
 
@@ -78,10 +93,13 @@ test("ModuleRef.resolve() resolves dependency", async () => {
 
 test("ModuleRef.resolve() only resolves exported dependency", async () => {
   // arrange
-  const scope = DependencyScope.beginScope();
+  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
+    Scope.Injection
+  );
   const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
+    ScopeCatalog.root(),
     scope
   );
 
@@ -131,10 +149,13 @@ test("ModuleRef.resolve() resolves from deeply nested exports", async () => {
   })
   class RootModule {}
 
-  const scope = DependencyScope.beginScope();
+  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
+    Scope.Injection
+  );
   const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootModule),
+    ScopeCatalog.root(),
     scope
   );
 
@@ -179,10 +200,13 @@ test("ModuleRef.resolve() resolves tokenized from deeply nested modules", async 
   })
   class RootModule {}
 
-  const scope = DependencyScope.beginScope();
+  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
+    Scope.Injection
+  );
   const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootModule),
+    ScopeCatalog.root(),
     scope
   );
 
@@ -222,10 +246,13 @@ test("ModuleRef.resolve() does not resolve non-exported", async () => {
   })
   class RootModule {}
 
-  const scope = DependencyScope.beginScope();
+  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
+    Scope.Injection
+  );
   const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootModule),
+    ScopeCatalog.root(),
     scope
   );
 
@@ -262,10 +289,13 @@ test("ModuleRef.resolve() provides parent provider to child", async () => {
   })
   class RootModule {}
 
-  const scope = DependencyScope.beginScope();
+  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
+    Scope.Injection
+  );
   const testModule = await ModuleRef.createModuleRef(
     DiContainer.root(),
     ModuleCatalog.getMetadata(RootModule),
+    ScopeCatalog.root(),
     scope
   );
 

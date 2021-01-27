@@ -10,7 +10,7 @@ export function Controller(
   // deno-lint-ignore ban-types
   return function (target: Function) {
     DiContainer.root().registerFromMetadata(target as Type);
-    ScopeCatalog.registerScopeIdentifier(target as Type, Scope.Request);
+    ScopeCatalog.root().registerScopeIdentifier(target as Type, Scope.Request);
     ControllerCatalog.registerControllerMetadata(
       target as ControllerClass,
       typeof metadataOrRoute === "string"

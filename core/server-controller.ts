@@ -79,7 +79,7 @@ export class ServerController {
     parameterMetadatas?: ParameterMetadata[]
   ): (context: unknown) => unknown {
     return async (context) => {
-      const requestScope = DependencyScope.beginScope();
+      const requestScope = DependencyScope.beginScope(Scope.Request);
       try {
         const compositeScope = new CompositDependencyScope(
           new Map([

@@ -82,7 +82,7 @@ type PartialDependencyGraphNode = Partial<NullableDependencyGraphNode> & {
 };
 
 export class DiContainer {
-  private static globalContainer?: DiContainer;
+  private static rootContainer?: DiContainer;
 
   #name?: string;
   #parent?: DiContainer;
@@ -107,10 +107,10 @@ export class DiContainer {
   }
 
   static root() {
-    if (!DiContainer.globalContainer) {
-      DiContainer.globalContainer = new DiContainer(undefined, "root");
+    if (!DiContainer.rootContainer) {
+      DiContainer.rootContainer = new DiContainer(undefined, "root");
     }
-    return DiContainer.globalContainer;
+    return DiContainer.rootContainer;
   }
 
   createChild(name?: string) {

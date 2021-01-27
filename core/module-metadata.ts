@@ -1,11 +1,26 @@
-import { FactoryFunction, Type, TypeIdentifier } from "./deps.ts";
+import { FactoryFunction, Scope, Type, TypeIdentifier } from "./deps.ts";
 
-type ConstructorProvider = { provide: Type; deps?: TypeIdentifier[] };
+type ScopedProvider =
+  | {
+      scope?:
+        | Scope.Injection
+        | Scope.Request
+        | Scope.Singleton
+        | Scope.Transient;
+    }
+  | {
+      scope: Scope.Custom;
+      scopeIdentifier?: unknown;
+    };
+type ConstructorProvider = {
+  provide: Type;
+  deps?: TypeIdentifier[];
+} & ScopedProvider;
 export type ClassProvider<T = unknown> = {
   provide: TypeIdentifier;
   useClass: Type<T>;
   deps?: TypeIdentifier[];
-};
+} & ScopedProvider;
 export type ValueProvider<T = unknown> = {
   provide: TypeIdentifier;
   useValue: T;
@@ -14,7 +29,7 @@ export type FactoryProvider<T = unknown> = {
   provide: TypeIdentifier;
   useFactory: FactoryFunction<T>;
   deps?: TypeIdentifier[];
-};
+} & ScopedProvider;
 export type Provider =
   | ConstructorProvider
   | ClassProvider

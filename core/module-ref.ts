@@ -2,6 +2,8 @@ import {
   DependencyResolver,
   DependencyScope,
   DiContainer,
+  Scope,
+  ScopeCatalog,
   Type,
   TypeIdentifier,
 } from "./deps.ts";
@@ -71,7 +73,7 @@ export class ModuleRef {
   ): Promise<T>;
   async resolve<T = unknown>(
     identifier: TypeIdentifier,
-    scope = DependencyScope.beginScope()
+    scope = DependencyScope.beginScope(Scope.Injection)
   ) {
     const resolver = new DependencyResolver(this.#diContainer, scope);
     return await resolver.resolve<T>(identifier);
@@ -80,6 +82,7 @@ export class ModuleRef {
   public static async createModuleRef(
     parentContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
+    scopeCatalog: ScopeCatalog,
     dependencyScope: DependencyScope
   ): Promise<ModuleRef> {
     const diContainer = parentContainer.createChild(metadata.type.name);
@@ -90,7 +93,8 @@ export class ModuleRef {
           await this.resolveModule(
             moduleDefinition,
             diContainer,
-            dependencyScope
+            dependencyScope,
+            scopeCatalog.createChild()
           )
         );
       }
@@ -98,7 +102,8 @@ export class ModuleRef {
     const moduleContainer = this.populateDiContainer(
       diContainer,
       metadata,
-      subModules
+      subModules,
+      scopeCatalog
     );
     moduleContainer.registerType(
       metadata.type,
@@ -121,7 +126,8 @@ export class ModuleRef {
   private static async resolveModule(
     moduleDefinition: ModuleClass | DynamicModule,
     moduleContainer: DiContainer,
-    moduleScope: DependencyScope
+    moduleScope: DependencyScope,
+    scopeCatalog: ScopeCatalog
   ) {
     let moduleMetadata: ExtendedModuleMetadata;
     if (isDynamicModule(moduleDefinition)) {
@@ -152,6 +158,7 @@ export class ModuleRef {
     return await this.createModuleRef(
       moduleContainer,
       moduleMetadata,
+      scopeCatalog,
       moduleScope
     );
   }
@@ -159,7 +166,8 @@ export class ModuleRef {
   private static populateDiContainer(
     diContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
-    importedModules: ModuleRef[]
+    importedModules: ModuleRef[],
+    scopeCatalog: ScopeCatalog
   ) {
     if (metadata.providers) {
       for (const provider of metadata.providers) {
@@ -171,15 +179,51 @@ export class ModuleRef {
             provider.provide,
             provider.deps?.map((dep) => ({ identifier: dep }))
           );
+          if (provider.scope === Scope.Custom) {
+            scopeCatalog.registerScopeIdentifier(
+              (provider as { scopeIdentifier: unknown })
+                .scopeIdentifier as TypeIdentifier,
+              provider.provide
+            );
+          } else if (provider.scope) {
+            scopeCatalog.registerScopeIdentifier(
+              provider.provide,
+              provider.scope
+            );
+          }
         } else if (isClassProvider(provider)) {
           diContainer.registerAlias(provider.useClass, provider.provide);
           diContainer.registerFromMetadata(provider.useClass);
+          if (provider.scope === Scope.Custom) {
+            scopeCatalog.registerScopeIdentifier(
+              (provider as { scopeIdentifier: unknown })
+                .scopeIdentifier as TypeIdentifier,
+              provider.provide
+            );
+          } else if (provider.scope) {
+            scopeCatalog.registerScopeIdentifier(
+              provider.provide,
+              provider.scope
+            );
+          }
         } else if (isFactoryProvider(provider)) {
           diContainer.registerFactory(
             provider.provide,
             provider.useFactory,
             provider.deps
           );
+          if (provider.scope === Scope.Custom) {
+            scopeCatalog.registerScopeIdentifier(
+              (provider as { scopeIdentifier: unknown })
+                .scopeIdentifier as TypeIdentifier,
+              provider.provide
+            );
+          } else if (provider.scope) {
+            scopeCatalog.registerScopeIdentifier(
+              provider.provide,
+              provider.scope
+            );
+          }
         } else if (isValueProvider(provider)) {
           diContainer.registerValue(provider.provide, provider.useValue);
         }

@@ -48,4 +48,4 @@ export class ContextAccessor {
   }
 }
 
-ScopeCatalog.registerScopeIdentifier(ContextAccessor, Scope.Request);
+ScopeCatalog.root().registerScopeIdentifier(ContextAccessor, Scope.Request);

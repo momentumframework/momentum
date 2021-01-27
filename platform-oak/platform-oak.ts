@@ -1,3 +1,4 @@
+import { ScopeCatalog } from "../core/deps.ts";
 import {
   ActionMetadata,
   Application,
@@ -17,12 +18,7 @@ export function platformOak(
   app: Application = new Application(),
   router: Router = new Router()
 ) {
-  return new OakPlatform(
-    DiContainer.root(),
-    DependencyScope.beginScope(),
-    app,
-    router
-  );
+  return new OakPlatform(DiContainer.root(), ScopeCatalog.root(), app, router);
 }
 
 export class OakPlatform extends ServerPlatform {
@@ -30,11 +26,11 @@ export class OakPlatform extends ServerPlatform {
   #router: Router;
   constructor(
     container: DiContainer,
-    scope: DependencyScope,
+    scopeCatalog: ScopeCatalog,
     application: Application,
     router: Router
   ) {
-    super(container, scope);
+    super(container, scopeCatalog);
     this.#app = application;
     this.#router = router;
   }
