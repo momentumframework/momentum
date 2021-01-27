@@ -4,6 +4,7 @@ export interface ViewConfig {
   name?: string;
   path?: string;
   template?: string;
+  layout?: string | false;
 }
 
 export class ViewCatalog {

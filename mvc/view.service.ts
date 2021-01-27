@@ -13,8 +13,8 @@ import { ViewCatalog, ViewConfig } from "./view-catalog.ts";
 import { ViewEngine } from "./view-engine.ts";
 
 const defaultConfig = {
+  defaultLayout: "main",
   viewFolder: "./src/views",
-  viewFileExtension: "html",
   cacheTemplates: true,
 };
 
@@ -46,14 +46,16 @@ export class ViewService {
     }
     return await this.#viewEngine.renderTemplate(
       model,
+      controllerMetadata,
+      actionMetadata,
+      viewConfig.layout ?? this.#config.defaultLayout,
+      this.#config.cacheTemplates,
       this.createViewCallback(
         viewConfig,
         controllerMetadata.type.name,
         actionMetadata.action
       ),
-      controllerMetadata,
-      actionMetadata,
-      this.#config.cacheTemplates
+      this.createLayoutCallback(viewConfig)
     );
   }
 
@@ -85,6 +87,23 @@ export class ViewService {
       const template = await Deno.readTextFile(templatePath);
 
       return template;
+    };
+  }
+
+  createLayoutCallback(viewConfig: ViewConfig) {
+    return async () => {
+      const layout = viewConfig.layout ?? this.#config.defaultLayout;
+      const layoutPath = await this.#viewEngine.resolveFilePath(
+        [trimTrailingSlashes(this.#config.viewFolder), "_layout", layout].join(
+          "/"
+        )
+      );
+      if (!(await exists(layoutPath))) {
+        throw new Error(`Layout template ${layout} not found`);
+      }
+      const layoutTemplate = await Deno.readTextFile(layoutPath);
+
+      return layoutTemplate;
     };
   }
 }

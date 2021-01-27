@@ -1,5 +1,7 @@
-import { MvModule, VIEW_ENGINE } from "./deps.ts";
+import { MVC_HANDLEBARS_CONFIG } from "./constants.ts";
+import { DynamicModule, MvModule, VIEW_ENGINE } from "./deps.ts";
 import { HandlebarsViewEngine } from "./handlebars-view-engine.ts";
+import { MvcHandlebarsConfig } from "./mvc-handlebars-config.ts";
 
 @MvModule({
   providers: [
@@ -10,4 +12,16 @@ import { HandlebarsViewEngine } from "./handlebars-view-engine.ts";
   ],
   exports: [VIEW_ENGINE],
 })
-export class MvcHandlebarsModule {}
+export class MvcHandlebarsModule {
+  static register(config: MvcHandlebarsConfig): DynamicModule {
+    return {
+      type: MvcHandlebarsModule,
+      providers: [
+        {
+          provide: MVC_HANDLEBARS_CONFIG,
+          useValue: config,
+        },
+      ],
+    };
+  }
+}
