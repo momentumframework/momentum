@@ -1,4 +1,4 @@
-import { Type, Reflect } from "../deps.ts";
+import { Type, Reflect, ScopeCatalog, Scope } from "../deps.ts";
 
 import { ModuleCatalog } from "../module-catalog.ts";
 import { ModuleClass, ModuleMetadata } from "../module-metadata.ts";
@@ -12,6 +12,10 @@ export function MvModule(metadata: ModuleMetadata): ClassDecorator {
       paramTypes,
       {},
       metadata
+    );
+    ScopeCatalog.root().registerScopeIdentifier(
+      target as ModuleClass,
+      Scope.Singleton
     );
   };
 }

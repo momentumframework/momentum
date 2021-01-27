@@ -35,6 +35,10 @@ export abstract class DependencyScope {
     return this.#isEnded;
   }
 
+  protected get scopeCatalog() {
+    return this.#scopeCatalog;
+  }
+
   static beginScope(
     identifier: unknown,
     scopeCatalog = ScopeCatalog.root()
@@ -57,6 +61,8 @@ export abstract class DependencyScope {
 
   abstract get<T = unknown>(typeIdentifier: TypeIdentifier): T | undefined;
 
+  abstract get items(): unknown[];
+
   protected ensureScope() {
     if (this.#isEnded) {
       throw Error("Scope is ended");
@@ -69,7 +75,7 @@ class StandardDependencyScope extends DependencyScope {
 
   set(typeIdentifier: TypeIdentifier, obj: unknown) {
     this.ensureScope();
-    const scopeIdentifier = ScopeCatalog.root().getScopeIdentifier(
+    const scopeIdentifier = this.scopeCatalog.getScopeIdentifier(
       typeIdentifier
     );
     if (scopeIdentifier === this.identifier) {
@@ -86,6 +92,13 @@ class StandardDependencyScope extends DependencyScope {
       obj = this.parent?.get<T>(typeIdentifier);
     }
     return obj;
+  }
+
+  get items(): unknown[] {
+    return [
+      ...[...this.#cache.entries()].map(([_, item]) => item),
+      ...(this.parent?.items ?? []),
+    ];
   }
 
   endScope() {
@@ -117,5 +130,12 @@ export class CompositDependencyScope extends DependencyScope {
         return obj as T;
       }
     }
+  }
+
+  get items(): unknown[] {
+    return [
+      ...[...this.#scopes.entries()].flatMap(([_, scope]) => scope.items),
+      ...(this.parent?.items ?? []),
+    ];
   }
 }

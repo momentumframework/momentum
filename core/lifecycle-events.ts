@@ -13,5 +13,5 @@ export interface OnRequestStart {
 }
 
 export interface OnRequestEnd {
-  mvOnRequestStart(contextAccessor: ContextAccessor): void | Promise<void>;
+  mvOnRequestEnd(contextAccessor: ContextAccessor): void | Promise<void>;
 }

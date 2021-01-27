@@ -1,5 +1,6 @@
 import {
   ActionMetadata,
+  ContextAccessor,
   ControllerMetadata,
   Injectable,
   MvFilter,
@@ -11,7 +12,7 @@ import { ViewService } from "./view.service.ts";
 export class MvcFilter implements MvFilter {
   constructor(private readonly viewService: ViewService) {}
   async filter(
-    _context: unknown,
+    _contextAccessor: ContextAccessor,
     next: NextFilterFunction,
     _parameters: unknown[],
     controllerMetadata?: ControllerMetadata,

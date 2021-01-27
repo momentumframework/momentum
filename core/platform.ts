@@ -13,6 +13,7 @@ import {
   Type,
   TypeIdentifier,
 } from "./deps.ts";
+import { OnPlatformBootstrap } from "./lifecycle-events.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
@@ -115,7 +116,18 @@ export abstract class Platform {
   }
 
   async preBootstrap(): Promise<void> {}
-  async postBootstrap(): Promise<void> {}
+  async postBootstrap(): Promise<void> {
+    const uniqueItems = [
+      ...new Set(
+        [...this.#dependencyScopes].flatMap(
+          ([_, dependencyScope]) => dependencyScope.items
+        )
+      ),
+    ];
+    for (const item of uniqueItems) {
+      await (item as Partial<OnPlatformBootstrap>)?.mvOnPlatformBootstrap?.();
+    }
+  }
 
   private ensureInitalized() {
     if (!this.#module) {

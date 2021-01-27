@@ -10,11 +10,11 @@ import {
   CompositDependencyScope,
   DependencyResolver,
   DependencyScope,
-  DiContainer,
   Scope,
   Type,
 } from "./deps.ts";
 import { FilterCatalog } from "./filter-catalog.ts";
+import { OnRequestEnd, OnRequestStart } from "./mod.ts";
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerPlatform } from "./platform.ts";
@@ -94,23 +94,26 @@ export class ServerController {
           scopedContainer,
           compositeScope
         );
-        scopedContainer.registerValue(
-          ContextAccessor,
-          new ContextAccessor(context, this.#platform)
-        );
+        const contextAccessor = new ContextAccessor(context, this.#platform);
+        scopedContainer.registerValue(ContextAccessor, contextAccessor);
         scopedContainer.registerValue(SCOPED_CONTAINER, scopedContainer);
         scopedContainer.registerValue(SCOPED_RESOLVER, scopedResolver);
 
         const controllerInstance = (await scopedResolver.resolve(
           controller
         )) as Record<string, (...args: unknown[]) => unknown>;
+        for (const item of [...new Set(compositeScope.items)]) {
+          await (item as Partial<OnRequestStart>)?.mvOnRequestStart?.(
+            contextAccessor
+          );
+        }
         const parameters = await this.buildParameters(
           context,
           controllerMetadata,
           actionMetadata,
           parameterMetadatas
         );
-        return await this.executeFilters(
+        const result = await this.executeFilters(
           context,
           scopedResolver,
           async () => await controllerInstance[action](...parameters),
@@ -119,6 +122,12 @@ export class ServerController {
           actionMetadata,
           parameterMetadatas
         );
+        for (const item of [...new Set(compositeScope.items)]) {
+          await (item as Partial<OnRequestEnd>)?.mvOnRequestEnd?.(
+            contextAccessor
+          );
+        }
+        return result;
       } catch (err) {
         throw err;
       } finally {
