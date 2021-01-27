@@ -5,6 +5,7 @@ import {
   Injectable,
   MvMiddleware,
   NextMiddlewareFunction,
+  Optional,
   PLATFORM,
   ServerPlatform,
   trimSlashes,
@@ -20,6 +21,7 @@ export class StaticFileMiddleware implements MvMiddleware {
   constructor(
     @Inject(PLATFORM)
     platform: ServerPlatform,
+    @Optional()
     @Inject(STATIC_FILES_CONFIG)
     config: StaticFilesConfig
   ) {

@@ -59,4 +59,8 @@ export class HandlebarsViewEngine implements ViewEngine {
     }
     return compiledTemplate;
   }
+
+  resolveFilePath(viewPath: string): string {
+    return `${viewPath}.hbs`;
+  }
 }

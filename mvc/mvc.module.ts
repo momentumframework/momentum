@@ -15,8 +15,8 @@ import { MvcFilter } from "./mvc-filter.ts";
 import { ViewService } from "./view.service.ts";
 
 interface MvcModuleOptions {
-  viewModule: ModuleClass | DynamicModule;
-  config: Partial<MvcConfig>;
+  viewEngineModule: ModuleClass | DynamicModule;
+  config?: Partial<MvcConfig>;
 }
 
 @MvModule({
@@ -27,7 +27,7 @@ export class MvcModule {
   static register(options: MvcModuleOptions): DynamicModule {
     return {
       type: MvcModule,
-      imports: [options.viewModule],
+      imports: [options.viewEngineModule],
       providers: [
         {
           provide: MVC_CONFIG,
@@ -43,11 +43,11 @@ export class MvcModule {
       >;
     } & Pick<FactoryProvider, "deps"> &
       Pick<ModuleMetadata, "imports"> &
-      Pick<MvcModuleOptions, "viewModule">
+      Pick<MvcModuleOptions, "viewEngineModule">
   ): DynamicModule {
     return {
       type: MvcModule,
-      imports: [options.viewModule, ...(options.imports ?? [])],
+      imports: [options.viewEngineModule, ...(options.imports ?? [])],
       providers: [
         {
           provide: MVC_CONFIG,

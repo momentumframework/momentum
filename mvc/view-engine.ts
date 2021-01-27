@@ -8,4 +8,6 @@ export interface ViewEngine {
     actionMetadata: ActionMetadata,
     cacheTemplate: boolean
   ): Promise<string | undefined>;
+
+  resolveFilePath(viewPath: string): string | Promise<string>;
 }

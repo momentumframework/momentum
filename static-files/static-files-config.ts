@@ -28,4 +28,6 @@ export const defaultConfig = {
     ".woff2": "application/font-woff2",
     ".zip": "application/zip",
   },
+  contentRoot: "./src/content",
+  serverRoot: "/content",
 };

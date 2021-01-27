@@ -74,9 +74,9 @@ export class ViewService {
         path.push(trimSlashes(viewConfig.path));
       }
       path.push(trimSlashes(viewConfig.name));
-      const templatePath = `${path.join("/")}.${
-        this.#config.viewFileExtension
-      }`;
+      const templatePath = await this.#viewEngine.resolveFilePath(
+        path.join("/")
+      );
       if (!(await exists(templatePath))) {
         throw new Error(
           `No template found for action ${action} on controller ${controller}`
