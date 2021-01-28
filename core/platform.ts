@@ -1,18 +1,11 @@
+import { DiCache } from "../di/di-cache.ts";
 import { PLATFORM } from "./constants.ts";
 import {
   ActionMetadata,
   ControllerClass,
   ControllerMetadata,
 } from "./controller-metadata.ts";
-import {
-  CompositDependencyScope,
-  DependencyScope,
-  DiContainer,
-  Scope,
-  ScopeCatalog,
-  Type,
-  TypeIdentifier,
-} from "./deps.ts";
+import { DiContainer, Scope, Type, TypeIdentifier } from "./deps.ts";
 import { OnPlatformBootstrap } from "./lifecycle-events.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
@@ -26,25 +19,16 @@ function isCustomScope(scopeIdentifier: unknown) {
 }
 
 export function platformMomentum() {
-  return new MomentumPlatform(
-    DiContainer.root().createChild(),
-    ScopeCatalog.root().createChild()
-  );
+  return new MomentumPlatform(DiContainer.root().createChild("platform"));
 }
 
 export abstract class Platform {
+  readonly #diCache = new DiCache().beginScope(Scope.Singleton);
+  readonly #container: DiContainer;
   #module?: ModuleRef;
-  #container: DiContainer;
-  #scopeCatalog: ScopeCatalog;
-  #dependencyScopes = new Map<unknown, DependencyScope>();
 
-  constructor(container: DiContainer, scopeCatalog: ScopeCatalog) {
+  constructor(container: DiContainer) {
     this.#container = container;
-    this.#scopeCatalog = scopeCatalog;
-    this.#dependencyScopes.set(
-      Scope.Singleton,
-      DependencyScope.beginScope(Scope.Singleton, this.#scopeCatalog)
-    );
   }
 
   get module() {
@@ -57,45 +41,13 @@ export abstract class Platform {
     return this.module.diContainer;
   }
 
-  get dependencyScopes() {
-    return new Map([...this.#dependencyScopes]);
+  get diCache() {
+    return this.#diCache;
   }
 
-  setScope(typeIdentifier: TypeIdentifier, scope: Scope) {
-    this.#scopeCatalog.registerScopeIdentifier(typeIdentifier, scope);
-  }
-
-  registerCustomScope(dependencyScope: DependencyScope) {
-    if (!isCustomScope(dependencyScope.identifier)) {
-      throw new Error(
-        `${dependencyScope.identifier} is not a custom scope and cannot be registered`
-      );
-    }
-    if (this.dependencyScopes.has(dependencyScope.identifier)) {
-      throw new Error(
-        `Custom scope ${dependencyScope.identifier} is already registered`
-      );
-    }
-    this.#dependencyScopes.set(dependencyScope.identifier, dependencyScope);
-  }
-
-  deregisterCustomScope(dependencyScope: DependencyScope) {
-    if (!isCustomScope(dependencyScope.identifier)) {
-      throw new Error(
-        `${dependencyScope.identifier} is not a custom scope and cannot be deregistered`
-      );
-    }
-    this.#dependencyScopes.delete(dependencyScope.identifier);
-  }
-
-  resolve<T = unknown>(
-    identifier: TypeIdentifier,
-    dependencyScope: DependencyScope = new CompositDependencyScope(
-      this.#dependencyScopes
-    )
-  ) {
+  resolve<T = unknown>(identifier: TypeIdentifier) {
     this.ensureInitalized();
-    return this.module.resolve<T>(identifier, dependencyScope);
+    return this.module.resolve<T>(identifier, this.diCache);
   }
 
   async bootstrapModule(moduleType: ModuleClass) {
@@ -103,10 +55,9 @@ export abstract class Platform {
       await this.preBootstrap();
       this.#container.registerValue(PLATFORM, this);
       this.#module = await ModuleRef.createModuleRef(
-        this.#container,
         ModuleCatalog.getMetadata(moduleType),
-        this.#scopeCatalog,
-        new CompositDependencyScope(this.#dependencyScopes)
+        this.#container,
+        this.#diCache
       );
       await this.postBootstrap();
       return this;
@@ -117,14 +68,7 @@ export abstract class Platform {
 
   async preBootstrap(): Promise<void> {}
   async postBootstrap(): Promise<void> {
-    const uniqueItems = [
-      ...new Set(
-        [...this.#dependencyScopes].flatMap(
-          ([_, dependencyScope]) => dependencyScope.items
-        )
-      ),
-    ];
-    for (const item of uniqueItems) {
+    for (const item of new Set(this.#diCache.items)) {
       await (item as Partial<OnPlatformBootstrap>)?.mvOnPlatformBootstrap?.();
     }
   }
@@ -139,8 +83,8 @@ export abstract class Platform {
 export abstract class ServerPlatform extends Platform {
   #serverController: ServerController;
 
-  constructor(container: DiContainer, scopeCatalog: ScopeCatalog) {
-    super(container, scopeCatalog);
+  constructor(container: DiContainer) {
+    super(container);
     this.#serverController = new ServerController(this);
   }
 

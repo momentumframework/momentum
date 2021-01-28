@@ -24,7 +24,7 @@ export type ClassProvider<T = unknown> = {
 export type ValueProvider<T = unknown> = {
   provide: TypeIdentifier;
   useValue: T;
-};
+} & ScopedProvider;
 export type FactoryProvider<T = unknown> = {
   provide: TypeIdentifier;
   useFactory: FactoryFunction<T>;

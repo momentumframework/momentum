@@ -1,22 +1,22 @@
 import { Inject, Injectable, Optional } from "./mod.ts";
 
-@Injectable({ global: true })
+@Injectable()
 export class Quark {}
 
-@Injectable({ global: true })
+@Injectable()
 export class Electron {}
 
-@Injectable({ global: true })
+@Injectable()
 export class Neutron {
   constructor(public quark: Quark) {}
 }
 
-@Injectable({ global: true })
+@Injectable()
 export class Proton {
   constructor(public quark: Quark) {}
 }
 
-@Injectable({ global: true })
+@Injectable()
 export class Atom {
   constructor(
     public proton?: Proton,
@@ -25,12 +25,12 @@ export class Atom {
   ) {}
 }
 
-@Injectable({ global: true })
+@Injectable()
 export class Molecule {
   constructor(public atom: Atom) {}
 }
 
-@Injectable({ global: true })
+@Injectable()
 export class Person {
   constructor(
     @Inject("PANTS")
@@ -41,13 +41,13 @@ export class Person {
 
 class Thing {}
 
-@Injectable({ global: true })
+@Injectable()
 export class ThingOne extends Thing {
   @Inject("THING_TWO")
   otherThing?: Thing;
 }
 
-@Injectable("THING_TWO", { global: true })
+@Injectable("THING_TWO")
 export class ThingTwo extends Thing {
   @Inject(ThingOne)
   otherThing?: Thing;

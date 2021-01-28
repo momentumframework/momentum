@@ -1,5 +1,5 @@
 import { DeferredImpl } from "./deferred-impl.ts";
-import { DependencyScope } from "./dependency-scope.ts";
+import { DiCache } from "./di-cache.ts";
 import {
   DiContainer,
   NullableDependencyGraphNode,
@@ -7,13 +7,15 @@ import {
 } from "./di-container.ts";
 
 export class DependencyResolver {
-  constructor(
-    private readonly container: DiContainer,
-    private readonly scope: DependencyScope
-  ) {}
+  readonly #container: DiContainer;
+  readonly #cache: DiCache;
+  constructor(container: DiContainer, cache: DiCache) {
+    this.#container = container;
+    this.#cache = cache;
+  }
 
   async resolve<T>(identifier: TypeIdentifier) {
-    const rootNode = this.container.getDependencyGraph(identifier);
+    const rootNode = this.#container.getDependencyGraph(identifier);
     return (await this.resolveDependency(identifier, rootNode)) as T;
   }
 
@@ -22,7 +24,7 @@ export class DependencyResolver {
     node: NullableDependencyGraphNode | undefined,
     deferred?: boolean
   ) {
-    const getter = async () => {
+    const resolveFunc = async () => {
       if (!node) {
         throw Error(
           `Unknown type ${
@@ -31,11 +33,11 @@ export class DependencyResolver {
         );
       }
       // deno-lint-ignore no-explicit-any
-      let obj = this.scope.get<any>(identifier);
-      if (!obj) {
+      let value = this.#cache.get<any>(node.owner, identifier);
+      if (!value) {
         switch (node.kind) {
           case "type":
-            obj = new node.ctor(
+            value = new node.ctor(
               ...(await Promise.all(
                 node.params.map(
                   async (paramNode) =>
@@ -47,10 +49,10 @@ export class DependencyResolver {
                 )
               ))
             );
-            this.scope.set(identifier, obj);
+            this.#cache.set(node.scope, node.owner, identifier, value);
             await Promise.all(
               Object.entries(node.props).map(async ([prop, propNode]) => {
-                obj[prop] = await this.resolveDependency(
+                value[prop] = await this.resolveDependency(
                   propNode.node.identifier,
                   propNode.node,
                   propNode.defer
@@ -59,7 +61,7 @@ export class DependencyResolver {
             );
             break;
           case "factory":
-            obj = await node.factory(
+            value = await node.factory(
               ...(await Promise.all(
                 node.params.map(
                   async (paramNode) =>
@@ -70,19 +72,19 @@ export class DependencyResolver {
                 )
               ))
             );
-            this.scope.set(identifier, obj);
+            this.#cache.set(node.scope, node.owner, identifier, value);
             break;
           case "value":
-            obj = node.value;
-            this.scope.set(identifier, obj);
+            value = node.value;
+            this.#cache.set(node.scope, node.owner, identifier, value);
             break;
         }
       }
-      return obj;
+      return value;
     };
     if (deferred) {
-      return new DeferredImpl(getter);
+      return new DeferredImpl(resolveFunc);
     }
-    return await getter();
+    return await resolveFunc();
   }
 }

@@ -1,14 +1,9 @@
-import {
-  DependencyScope,
-  DiContainer,
-  Injectable,
-  Scope,
-  ScopeCatalog,
-} from "./deps.ts";
+import { DiContainer, Injectable, Scope } from "./deps.ts";
 import { MvModule } from "./decorators/mv-module.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleRef } from "./module-ref.ts";
 import { assert, assertEquals, fail, test } from "./test_deps.ts";
+import { DiCache } from "../di/mod.ts";
 
 class TestSubService {}
 class TestService {
@@ -36,16 +31,15 @@ class RootTestModule {
 
 test("ModuleRef.createModuleRef() creates module ref", async () => {
   // arrange
-  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
-    Scope.Injection
-  );
+  const diCache = new DiCache()
+    .beginScope(Scope.Singleton)
+    .beginScope(Scope.Injection);
 
   // act
   const testModule = await ModuleRef.createModuleRef(
-    DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
-    ScopeCatalog.root(),
-    scope
+    DiContainer.root(),
+    diCache
   );
 
   // assert
@@ -55,16 +49,15 @@ test("ModuleRef.createModuleRef() creates module ref", async () => {
 
 test("ModuleRef.createModuleRef() creates module with parameterized constructor", async () => {
   // arrange
-  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
-    Scope.Injection
-  );
+  const diCache = new DiCache()
+    .beginScope(Scope.Singleton)
+    .beginScope(Scope.Injection);
 
   // act
   const testModule = await ModuleRef.createModuleRef(
-    DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
-    ScopeCatalog.root(),
-    scope
+    DiContainer.root(),
+    diCache
   );
 
   // assert
@@ -74,18 +67,17 @@ test("ModuleRef.createModuleRef() creates module with parameterized constructor"
 
 test("ModuleRef.resolve() resolves dependency", async () => {
   // arrange
-  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
-    Scope.Injection
-  );
+  const diCache = new DiCache()
+    .beginScope(Scope.Singleton)
+    .beginScope(Scope.Injection);
   const testModule = await ModuleRef.createModuleRef(
-    DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
-    ScopeCatalog.root(),
-    scope
+    DiContainer.root(),
+    diCache
   );
 
   // act
-  const testService = await testModule.resolve(TestService, scope);
+  const testService = await testModule.resolve(TestService, diCache);
 
   // assert
   assert(testService instanceof TestService);
@@ -93,19 +85,18 @@ test("ModuleRef.resolve() resolves dependency", async () => {
 
 test("ModuleRef.resolve() only resolves exported dependency", async () => {
   // arrange
-  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
-    Scope.Injection
-  );
+  const diCache = new DiCache()
+    .beginScope(Scope.Singleton)
+    .beginScope(Scope.Injection);
   const testModule = await ModuleRef.createModuleRef(
-    DiContainer.root(),
     ModuleCatalog.getMetadata(RootTestModule),
-    ScopeCatalog.root(),
-    scope
+    DiContainer.root(),
+    diCache
   );
 
   try {
     // act
-    await testModule.resolve(TestSubService, scope);
+    await testModule.resolve(TestSubService, diCache);
   } catch (err) {
     if (
       err.message ==
@@ -120,9 +111,9 @@ test("ModuleRef.resolve() only resolves exported dependency", async () => {
 
 test("ModuleRef.resolve() resolves from deeply nested exports", async () => {
   // arrange
-  @Injectable(SubService, { global: false })
+  @Injectable(SubService)
   class SubService {}
-  @Injectable(Service, { global: false })
+  @Injectable(Service)
   class Service {
     constructor(public subService: SubService) {}
   }
@@ -149,18 +140,17 @@ test("ModuleRef.resolve() resolves from deeply nested exports", async () => {
   })
   class RootModule {}
 
-  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
-    Scope.Injection
-  );
+  const diCache = new DiCache()
+    .beginScope(Scope.Singleton)
+    .beginScope(Scope.Injection);
   const testModule = await ModuleRef.createModuleRef(
-    DiContainer.root(),
     ModuleCatalog.getMetadata(RootModule),
-    ScopeCatalog.root(),
-    scope
+    DiContainer.root(),
+    diCache
   );
 
   // act
-  const service = await testModule.resolve(Service, scope);
+  const service = await testModule.resolve(Service, diCache);
 
   // assert
   assert(service instanceof Service);
@@ -200,18 +190,17 @@ test("ModuleRef.resolve() resolves tokenized from deeply nested modules", async 
   })
   class RootModule {}
 
-  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
-    Scope.Injection
-  );
+  const diCache = new DiCache()
+    .beginScope(Scope.Singleton)
+    .beginScope(Scope.Injection);
   const testModule = await ModuleRef.createModuleRef(
-    DiContainer.root(),
     ModuleCatalog.getMetadata(RootModule),
-    ScopeCatalog.root(),
-    scope
+    DiContainer.root(),
+    diCache
   );
 
   // act
-  const service = await testModule.resolve<Service>(SERVICE, scope);
+  const service = await testModule.resolve<Service>(SERVICE, diCache);
 
   // assert
   assert(service instanceof Service);
@@ -220,7 +209,7 @@ test("ModuleRef.resolve() resolves tokenized from deeply nested modules", async 
 
 test("ModuleRef.resolve() does not resolve non-exported", async () => {
   // arrange
-  @Injectable(SubService, { global: false })
+  @Injectable(SubService)
   class SubService {}
   @Injectable(Service, { global: false })
   class Service {
@@ -246,20 +235,19 @@ test("ModuleRef.resolve() does not resolve non-exported", async () => {
   })
   class RootModule {}
 
-  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
-    Scope.Injection
-  );
+  const diCache = new DiCache()
+    .beginScope(Scope.Singleton)
+    .beginScope(Scope.Injection);
   const testModule = await ModuleRef.createModuleRef(
-    DiContainer.root(),
     ModuleCatalog.getMetadata(RootModule),
-    ScopeCatalog.root(),
-    scope
+    DiContainer.root(),
+    diCache
   );
 
   let errorMessage = undefined;
   try {
     // act
-    await testModule.resolve(Service, scope);
+    await testModule.resolve(Service, diCache);
   } catch (err) {
     errorMessage = err.message;
   }
@@ -289,18 +277,17 @@ test("ModuleRef.resolve() provides parent provider to child", async () => {
   })
   class RootModule {}
 
-  const scope = DependencyScope.beginScope(Scope.Singleton).beginChildScope(
-    Scope.Injection
-  );
+  const diCache = new DiCache()
+    .beginScope(Scope.Singleton)
+    .beginScope(Scope.Injection);
   const testModule = await ModuleRef.createModuleRef(
-    DiContainer.root(),
     ModuleCatalog.getMetadata(RootModule),
-    ScopeCatalog.root(),
-    scope
+    DiContainer.root(),
+    diCache
   );
 
   // act
-  const service = await testModule.resolve<Service>(Service, scope);
+  const service = await testModule.resolve<Service>(Service, diCache);
 
   // assert
   assert(service instanceof Service);

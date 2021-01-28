@@ -1,3 +1,4 @@
+import { DiCache } from "../di/di-cache.ts";
 import { SCOPED_CONTAINER, SCOPED_RESOLVER } from "./constants.ts";
 import { ContextAccessor } from "./context-accessor.ts";
 import { ControllerCatalog } from "./controller-catalog.ts";
@@ -6,13 +7,7 @@ import {
   ControllerMetadata,
   ParameterMetadata,
 } from "./controller-metadata.ts";
-import {
-  CompositDependencyScope,
-  DependencyResolver,
-  DependencyScope,
-  Scope,
-  Type,
-} from "./deps.ts";
+import { DependencyResolver, Scope, Type } from "./deps.ts";
 import { FilterCatalog } from "./filter-catalog.ts";
 import { OnRequestEnd, OnRequestStart } from "./mod.ts";
 import { MvFilter } from "./mv-filter.ts";
@@ -21,8 +16,8 @@ import { ServerPlatform } from "./platform.ts";
 import { ValueProviderCatalog } from "./value-provider-catalog.ts";
 
 export class ServerController {
-  #platform: ServerPlatform;
-  #middlewareRegistry: (MvMiddleware | Type<MvMiddleware>)[] = [];
+  readonly #platform: ServerPlatform;
+  readonly #middlewareRegistry: (MvMiddleware | Type<MvMiddleware>)[] = [];
   #middlewareCache?: MvMiddleware[];
 
   constructor(platform: ServerPlatform) {
@@ -81,28 +76,34 @@ export class ServerController {
     parameterMetadatas?: ParameterMetadata[]
   ): (context: unknown) => unknown {
     return async (context) => {
-      const requestScope = DependencyScope.beginScope(Scope.Request);
+      const diCache = this.#platform.diCache
+        .createChild()
+        .beginScope(Scope.Injection)
+        .beginScope(Scope.Request);
       try {
-        const compositeScope = new CompositDependencyScope(
-          new Map([
-            ...this.#platform.dependencyScopes,
-            [Scope.Request, requestScope],
-          ])
-        );
-        const scopedContainer = this.#platform.container.deepClone("REQUEST_");
-        const scopedResolver = new DependencyResolver(
-          scopedContainer,
-          compositeScope
-        );
+        const scopedContainer = this.#platform.container.deepClone();
+        const scopedResolver = new DependencyResolver(scopedContainer, diCache);
         const contextAccessor = new ContextAccessor(context, this.#platform);
-        scopedContainer.registerValue(ContextAccessor, contextAccessor);
-        scopedContainer.registerValue(SCOPED_CONTAINER, scopedContainer);
-        scopedContainer.registerValue(SCOPED_RESOLVER, scopedResolver);
-
-        const controllerInstance = (await scopedResolver.resolve(
-          controller
-        )) as Record<string, (...args: unknown[]) => unknown>;
-        for (const item of [...new Set(compositeScope.items)]) {
+        scopedContainer.registerValue(
+          ContextAccessor,
+          contextAccessor,
+          Scope.Request
+        );
+        scopedContainer.registerValue(
+          SCOPED_CONTAINER,
+          scopedContainer,
+          Scope.Request
+        );
+        scopedContainer.registerValue(
+          SCOPED_RESOLVER,
+          scopedResolver,
+          Scope.Request
+        );
+        const controllerInstance: Record<
+          string,
+          (...args: unknown[]) => Promise<unknown>
+        > = await scopedResolver.resolve(controller);
+        for (const item of new Set(diCache.items)) {
           await (item as Partial<OnRequestStart>)?.mvOnRequestStart?.(
             contextAccessor
           );
@@ -122,7 +123,7 @@ export class ServerController {
           actionMetadata,
           parameterMetadatas
         );
-        for (const item of [...new Set(compositeScope.items)]) {
+        for (const item of new Set(diCache.items)) {
           await (item as Partial<OnRequestEnd>)?.mvOnRequestEnd?.(
             contextAccessor
           );
@@ -131,7 +132,8 @@ export class ServerController {
       } catch (err) {
         throw err;
       } finally {
-        requestScope.endScope();
+        diCache.endScope(Scope.Injection);
+        diCache.endScope(Scope.Request);
       }
     };
   }

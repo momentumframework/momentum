@@ -1,6 +1,6 @@
 import { ControllerCatalog } from "../controller-catalog.ts";
 import { ControllerClass, ControllerMetadata } from "../controller-metadata.ts";
-import { DiContainer, Scope, ScopeCatalog, Type } from "../deps.ts";
+import { DiContainer, Scope, Type } from "../deps.ts";
 
 export function Controller(metadata: ControllerMetadata): ClassDecorator;
 export function Controller(route: string): ClassDecorator;
@@ -9,8 +9,11 @@ export function Controller(
 ): ClassDecorator {
   // deno-lint-ignore ban-types
   return function (target: Function) {
-    DiContainer.root().registerFromMetadata(target as Type);
-    ScopeCatalog.root().registerScopeIdentifier(target as Type, Scope.Request);
+    DiContainer.root().registerFromMetadata(
+      target as Type,
+      undefined,
+      Scope.Request
+    );
     ControllerCatalog.registerControllerMetadata(
       target as ControllerClass,
       typeof metadataOrRoute === "string"

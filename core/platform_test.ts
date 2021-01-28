@@ -3,7 +3,7 @@ import { assert, assertEquals, test } from "./test_deps.ts";
 
 import { ModuleRef, MvModule, platformMomentum } from "./mod.ts";
 
-@Injectable({ global: true })
+@Injectable()
 class Service {
   @Inject("MESSAGE")
   message?: string;

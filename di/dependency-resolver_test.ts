@@ -1,11 +1,6 @@
 import { assert, assertEquals, test } from "./test_deps.ts";
 
-import {
-  Deferred,
-  DependencyResolver,
-  DependencyScope,
-  DiContainer,
-} from "./mod.ts";
+import { Deferred, DependencyResolver, DiContainer } from "./mod.ts";
 import {
   Atom,
   Electron,
@@ -20,12 +15,13 @@ import {
 import { Injectable } from "./decorators/injectable.ts";
 import { Inject } from "./decorators/inject.ts";
 import { Scope } from "./scope.ts";
+import { DiCache } from "./di-cache.ts";
 
 test("DependencyResolver.resolve() - resolves dependency", async () => {
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
   );
 
   // act
@@ -45,7 +41,7 @@ test("DependencyResolver.resolve() - allows optional dependencies", async () => 
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
   );
 
   // act
@@ -60,7 +56,7 @@ test("DependencyResolver.resolve() - resolves property dependencies", async () =
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
   );
 
   // act
@@ -76,7 +72,7 @@ test("DependencyResolver.resolve() - resolves property dependencies", async () =
 
 test("DependencyResolver.resolve() - resolves factory dependencies", async () => {
   // arrange
-  const container = new DiContainer();
+  const container = DiContainer.root().createChild("test");
   container.registerFactory("MOLECULE", (atom: Atom) => new Molecule(atom), [
     "ATOM",
   ]);
@@ -84,7 +80,7 @@ test("DependencyResolver.resolve() - resolves factory dependencies", async () =>
 
   const resolver = new DependencyResolver(
     container,
-    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
   );
 
   // act
@@ -97,17 +93,17 @@ test("DependencyResolver.resolve() - resolves factory dependencies", async () =>
 
 test("DependencyResolver.resolve() - resolves value dependencies", async () => {
   // arrange
-  @Injectable({ global: true })
+  @Injectable()
   class Pizza {
     constructor(@Inject("TOPPINGS") public toppings: string[]) {}
   }
-  const container = DiContainer.root().createChild();
+  const container = DiContainer.root().createChild("test");
   const toppings = ["anchovies", "pineapple"];
   container.registerValue("TOPPINGS", toppings);
 
   const resolver = new DependencyResolver(
     container,
-    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
   );
 
   // act
@@ -120,14 +116,14 @@ test("DependencyResolver.resolve() - resolves value dependencies", async () => {
 
 test("DependencyResolver.resolve() - resolves deferred dependencies", async () => {
   // arrange
-  @Injectable("A", { global: true })
+  @Injectable("A")
   class A {
     constructor(
       @Inject("B", { defer: true })
       public b: Deferred<B>
     ) {}
   }
-  @Injectable("B", { global: true })
+  @Injectable("B")
   class B {
     constructor(
       @Inject("A", { defer: true })
@@ -136,7 +132,7 @@ test("DependencyResolver.resolve() - resolves deferred dependencies", async () =
   }
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    DependencyScope.beginScope(Scope.Singleton).beginChildScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
   );
 
   // act

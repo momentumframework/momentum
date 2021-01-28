@@ -1,10 +1,8 @@
-import { ScopeCatalog } from "../core/deps.ts";
 import {
   ActionMetadata,
   Application,
   ControllerClass,
   ControllerMetadata,
-  DependencyScope,
   DiContainer,
   FormDataBody,
   helpers as oakHelpers,
@@ -18,7 +16,7 @@ export function platformOak(
   app: Application = new Application(),
   router: Router = new Router()
 ) {
-  return new OakPlatform(DiContainer.root(), ScopeCatalog.root(), app, router);
+  return new OakPlatform(DiContainer.root(), app, router);
 }
 
 export class OakPlatform extends ServerPlatform {
@@ -26,11 +24,10 @@ export class OakPlatform extends ServerPlatform {
   #router: Router;
   constructor(
     container: DiContainer,
-    scopeCatalog: ScopeCatalog,
     application: Application,
     router: Router
   ) {
-    super(container, scopeCatalog);
+    super(container);
     this.#app = application;
     this.#router = router;
   }

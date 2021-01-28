@@ -97,11 +97,11 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
 test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
   // arrange
   class Piston {}
-  @Injectable({ global: true })
+  @Injectable()
   class Engine {
     constructor(public pistons: Piston) {}
   }
-  @Injectable({ global: true })
+  @Injectable()
   class Car {
     constructor(public engine: Engine) {}
   }
@@ -127,17 +127,17 @@ test("DiContainer.buildDependencyGraph() - allows optional dependency", () => {
 
 test("DiContainer.buildDependencyGraph() - fails on circular dependency", () => {
   // arrange
-  @Injectable({ global: true })
+  @Injectable()
   class Money {
     constructor(@Inject("JOB") _job: unknown) {}
   }
 
-  @Injectable({ global: true })
+  @Injectable()
   class College {
     constructor(_money: Money) {}
   }
 
-  @Injectable("JOB", { global: true })
+  @Injectable("JOB")
   class Job {
     constructor(_college: College) {}
   }
@@ -174,7 +174,7 @@ test("DiContainer.buildDependencyGraph() - allows circular property dependencies
 test("DiContainer.buildDependencyGraph() - child container can override parent", () => {
   // arrange
   const global = DiContainer.root();
-  const child = global.createChild();
+  const child = global.createChild("test");
 
   child.registerValue("PANTS", "Jeans");
 
@@ -195,15 +195,15 @@ test("DiContainer.buildDependencyGraph() - child container can override parent",
 
 test("DiContainer.buildDependencyGraph() - can defer dependencies", () => {
   // arrange
-  @Injectable("FOO", { global: true })
+  @Injectable("FOO")
   class Foo {
     constructor(
-      @Inject("BAR", { defer: true })
+      @Inject("BAR")
       _bar: Deferred<Bar>
     ) {}
   }
 
-  @Injectable("BAR", { global: true })
+  @Injectable("BAR")
   class Bar {
     constructor(
       @Inject("FOO", { defer: true })

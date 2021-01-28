@@ -1,9 +1,7 @@
 import {
   DependencyResolver,
-  DependencyScope,
+  DiCache,
   DiContainer,
-  Scope,
-  ScopeCatalog,
   Type,
   TypeIdentifier,
 } from "./deps.ts";
@@ -28,17 +26,20 @@ function isDynamicModule(
 export class ModuleRef {
   readonly #metadata: ExtendedModuleMetadata;
   readonly #diContainer: DiContainer;
+  readonly #diCache: DiCache;
   readonly #instance: unknown;
   readonly #modules: ModuleRef[];
 
   constructor(
     metadata: ExtendedModuleMetadata,
     diContainer: DiContainer,
+    diCache: DiCache,
     instance: unknown,
     modules: ModuleRef[]
   ) {
     this.#metadata = metadata;
     this.#diContainer = diContainer;
+    this.#diCache = diCache;
     this.#instance = instance;
     this.#modules = modules;
   }
@@ -67,67 +68,63 @@ export class ModuleRef {
   }
 
   resolve<T = unknown>(identifier: TypeIdentifier): Promise<T>;
-  resolve<T = unknown>(
-    identifier: TypeIdentifier,
-    scope: DependencyScope
-  ): Promise<T>;
+  resolve<T = unknown>(identifier: TypeIdentifier, cache: DiCache): Promise<T>;
   async resolve<T = unknown>(
     identifier: TypeIdentifier,
-    scope = DependencyScope.beginScope(Scope.Injection)
+    cache = this.#diCache
   ) {
-    const resolver = new DependencyResolver(this.#diContainer, scope);
+    const resolver = new DependencyResolver(this.#diContainer, cache);
     return await resolver.resolve<T>(identifier);
   }
 
   public static async createModuleRef(
-    parentContainer: DiContainer,
-    metadata: ExtendedModuleMetadata,
-    scopeCatalog: ScopeCatalog,
-    dependencyScope: DependencyScope
+    moduleMetadata: ExtendedModuleMetadata,
+    diContainer: DiContainer,
+    diCache: DiCache
   ): Promise<ModuleRef> {
-    const diContainer = parentContainer.createChild(metadata.type.name);
+    const moduleDiContainer = diContainer.createChild(moduleMetadata.type.name);
     const subModules: ModuleRef[] = [];
-    if (metadata.imports) {
-      for (const moduleDefinition of metadata.imports) {
+    if (moduleMetadata.imports) {
+      for (const submoduleDefinition of moduleMetadata.imports) {
         subModules.push(
           await this.resolveModule(
-            moduleDefinition,
-            diContainer,
-            dependencyScope,
-            scopeCatalog
+            submoduleDefinition,
+            moduleDiContainer,
+            diCache
           )
         );
       }
     }
     const moduleContainer = this.populateDiContainer(
-      diContainer,
-      metadata,
-      subModules,
-      scopeCatalog
+      moduleMetadata,
+      moduleDiContainer,
+      subModules
     );
     moduleContainer.registerType(
-      metadata.type,
-      metadata.type,
-      metadata.params?.map((param) => ({ identifier: param })),
+      moduleMetadata.type,
+      moduleMetadata.type,
+      moduleMetadata.params?.map((param) => ({ identifier: param })),
       {}
     );
     let moduleRef: ModuleRef | undefined = undefined;
     moduleContainer.registerFactory(ModuleRef, () => moduleRef);
-    const moduleResolver = new DependencyResolver(
-      moduleContainer,
-      dependencyScope
-    );
-    const instance = await moduleResolver.resolve(metadata.type);
+    const moduleResolver = new DependencyResolver(moduleContainer, diCache);
+    const instance = await moduleResolver.resolve(moduleMetadata.type);
 
-    moduleRef = new ModuleRef(metadata, moduleContainer, instance, subModules);
+    moduleRef = new ModuleRef(
+      moduleMetadata,
+      moduleDiContainer,
+      diCache,
+      instance,
+      subModules
+    );
     return moduleRef;
   }
 
   private static async resolveModule(
     moduleDefinition: ModuleClass | DynamicModule,
-    moduleContainer: DiContainer,
-    moduleScope: DependencyScope,
-    scopeCatalog: ScopeCatalog
+    diContainer: DiContainer,
+    diCache: DiCache
   ) {
     let moduleMetadata: ExtendedModuleMetadata;
     if (isDynamicModule(moduleDefinition)) {
@@ -155,19 +152,13 @@ export class ModuleRef {
     } else {
       moduleMetadata = ModuleCatalog.getMetadata(moduleDefinition);
     }
-    return await this.createModuleRef(
-      moduleContainer,
-      moduleMetadata,
-      scopeCatalog,
-      moduleScope
-    );
+    return await this.createModuleRef(moduleMetadata, diContainer, diCache);
   }
 
   private static populateDiContainer(
-    diContainer: DiContainer,
     metadata: ExtendedModuleMetadata,
-    importedModules: ModuleRef[],
-    scopeCatalog: ScopeCatalog
+    diContainer: DiContainer,
+    importedModules: ModuleRef[]
   ) {
     if (metadata.providers) {
       for (const provider of metadata.providers) {
@@ -177,55 +168,30 @@ export class ModuleRef {
           diContainer.registerType(
             provider.provide,
             provider.provide,
-            provider.deps?.map((dep) => ({ identifier: dep }))
+            provider.deps?.map((dep) => ({ identifier: dep })),
+            undefined,
+            provider.scope
           );
-          if (provider.scope === Scope.Custom) {
-            scopeCatalog.registerScopeIdentifier(
-              (provider as { scopeIdentifier: unknown })
-                .scopeIdentifier as TypeIdentifier,
-              provider.provide
-            );
-          } else if (provider.scope) {
-            scopeCatalog.registerScopeIdentifier(
-              provider.provide,
-              provider.scope
-            );
-          }
         } else if (isClassProvider(provider)) {
           diContainer.registerAlias(provider.useClass, provider.provide);
-          diContainer.registerFromMetadata(provider.useClass);
-          if (provider.scope === Scope.Custom) {
-            scopeCatalog.registerScopeIdentifier(
-              (provider as { scopeIdentifier: unknown })
-                .scopeIdentifier as TypeIdentifier,
-              provider.provide
-            );
-          } else if (provider.scope) {
-            scopeCatalog.registerScopeIdentifier(
-              provider.provide,
-              provider.scope
-            );
-          }
+          diContainer.registerFromMetadata(
+            provider.useClass,
+            undefined,
+            provider.scope
+          );
         } else if (isFactoryProvider(provider)) {
           diContainer.registerFactory(
             provider.provide,
             provider.useFactory,
-            provider.deps
+            provider.deps,
+            provider.scope
           );
-          if (provider.scope === Scope.Custom) {
-            scopeCatalog.registerScopeIdentifier(
-              (provider as { scopeIdentifier: unknown })
-                .scopeIdentifier as TypeIdentifier,
-              provider.provide
-            );
-          } else if (provider.scope) {
-            scopeCatalog.registerScopeIdentifier(
-              provider.provide,
-              provider.scope
-            );
-          }
         } else if (isValueProvider(provider)) {
-          diContainer.registerValue(provider.provide, provider.useValue);
+          diContainer.registerValue(
+            provider.provide,
+            provider.useValue,
+            provider.scope
+          );
         }
       }
     }

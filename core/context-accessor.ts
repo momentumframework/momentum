@@ -1,5 +1,3 @@
-import { Scope } from "../di/mod.ts";
-import { ScopeCatalog } from "../di/scope-catalog.ts";
 import { ServerPlatform } from "./platform.ts";
 
 export class ContextAccessor {
@@ -66,5 +64,3 @@ export class ContextAccessor {
     await this.#platform.sendFile(this.#context, path);
   }
 }
-
-ScopeCatalog.root().registerScopeIdentifier(ContextAccessor, Scope.Request);

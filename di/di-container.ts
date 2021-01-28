@@ -1,4 +1,5 @@
 import { EventEmitter } from "./deps.ts";
+import { Scope } from "./scope.ts";
 import { Reflect } from "./shims/reflect.ts";
 
 export type Token = string;
@@ -8,6 +9,8 @@ export type Type<T = any> = Function & (new (...params: any[]) => T);
 export type TypeIdentifier<T = any> = Type<T> | Token;
 
 export type DependencyGraph = Map<TypeIdentifier, DependencyGraphNode>;
+
+const defaultScope = Scope.Injection;
 
 type DefinitionKind = "type" | "factory" | "value";
 
@@ -23,6 +26,7 @@ export interface TypeDefinition {
   type: Type;
   params?: Parameter[];
   props?: { [name: string]: Parameter };
+  scope: Scope | string;
 }
 // deno-lint-ignore no-explicit-any
 export type FactoryFunction<T = unknown> = (...params: any[]) => T;
@@ -30,10 +34,12 @@ interface FactoryDefinition {
   kind: "factory";
   factory: FactoryFunction;
   params?: TypeIdentifier[];
+  scope: Scope | string;
 }
 interface ValueDefinition {
   kind: "value";
   value: unknown;
+  scope: Scope | string;
 }
 type Definition = TypeDefinition | FactoryDefinition | ValueDefinition;
 
@@ -42,7 +48,11 @@ interface TypeDependencyGraphParmeter {
   defer?: boolean;
 }
 
-export interface TypeDependencyGraphNode {
+interface ScopedDependencyGraphNode {
+  owner: DiContainer;
+  scope: Scope | string;
+}
+export interface TypeDependencyGraphNode extends ScopedDependencyGraphNode {
   identifier: TypeIdentifier;
   kind: "type";
   ctor: Type;
@@ -51,18 +61,19 @@ export interface TypeDependencyGraphNode {
     [name: string]: TypeDependencyGraphParmeter;
   };
 }
-export interface FactoryDependencyGraphNode {
+export interface FactoryDependencyGraphNode extends ScopedDependencyGraphNode {
   identifier: TypeIdentifier;
   kind: "factory";
   factory: FactoryFunction;
   params: { node: DependencyGraphNode }[];
 }
-export interface ValueDependencyGraphNode {
+export interface ValueDependencyGraphNode extends ScopedDependencyGraphNode {
   identifier: TypeIdentifier;
   kind: "value";
   value: unknown;
 }
-export interface NullDependencyGraphNode {
+export interface NullDependencyGraphNode
+  extends Pick<ScopedDependencyGraphNode, "owner"> {
   identifier: TypeIdentifier;
   kind: "null";
 }
@@ -92,7 +103,10 @@ export class DiContainer {
   #definitions = new Map<TypeIdentifier, Definition>();
   #ctorOverrides = new Map<Type, Map<number, PartialParameter[]>>();
   #propOverrides = new Map<Type, Map<string, PartialParameter[]>>();
-  #dependencyGraph = new Map<TypeIdentifier, NullableDependencyGraphNode>();
+  #dependencyGraph = new Map<
+    DiContainer,
+    Map<TypeIdentifier, NullableDependencyGraphNode>
+  >();
 
   constructor(parent?: DiContainer, name?: string) {
     this.#parent = parent;
@@ -106,6 +120,13 @@ export class DiContainer {
     return this.#name;
   }
 
+  get qualifiedName() {
+    if (!this.#parent) {
+      return this.name;
+    }
+    return `${this.#parent?.name}_${this.#name}`;
+  }
+
   static root() {
     if (!DiContainer.rootContainer) {
       DiContainer.rootContainer = new DiContainer(undefined, "root");
@@ -113,7 +134,7 @@ export class DiContainer {
     return DiContainer.rootContainer;
   }
 
-  createChild(name?: string) {
+  createChild(name: string) {
     return new DiContainer(this, name);
   }
 
@@ -123,22 +144,32 @@ export class DiContainer {
 
     this.detectCircularDependencies(graph);
 
-    this.#dependencyGraph.set(identifier, graph);
-
+    if (this.#dependencyGraph.has(this)) {
+      this.#dependencyGraph.get(this)?.set(identifier, graph);
+    } else {
+      this.#dependencyGraph.set(this, new Map([[identifier, graph]]));
+    }
     return graph;
   }
 
   preCompileDependencyGraph() {
     this.invalidateDependencyGraph();
-    const partialNodes = new Map<TypeIdentifier, PartialDependencyGraphNode>();
+    const partialNodes = new Map<
+      DiContainer,
+      Map<TypeIdentifier, PartialDependencyGraphNode>
+    >();
     for (const identifier of this.getDefinitionIdentifiers()) {
-      this.#dependencyGraph.set(
-        identifier,
-        this.buildDependencyGraph(identifier, [], partialNodes)
-      );
+      const graph = this.buildDependencyGraph(identifier, [], partialNodes);
+      if (this.#dependencyGraph.has(this)) {
+        this.#dependencyGraph.get(this)?.set(identifier, graph);
+      } else {
+        this.#dependencyGraph.set(this, new Map([[identifier, graph]]));
+      }
     }
-    for (const graph of this.#dependencyGraph.values()) {
-      this.detectCircularDependencies(graph);
+    for (const containerGraphs of this.#dependencyGraph.values()) {
+      for (const graph of containerGraphs.values()) {
+        this.detectCircularDependencies(graph);
+      }
     }
   }
 
@@ -169,41 +200,55 @@ export class DiContainer {
     identifier: TypeIdentifier,
     type: Type,
     params?: Parameter[],
-    props?: Record<string, Parameter>
+    props?: Record<string, Parameter>,
+    scope: Scope | string = defaultScope
   ) {
     this.register(identifier, {
       kind: "type",
       type,
       params,
       props,
+      scope,
     });
   }
 
   registerFactory(
     identifier: TypeIdentifier,
     factory: FactoryFunction,
-    params?: TypeIdentifier[]
+    params?: TypeIdentifier[],
+    scope: Scope | string = defaultScope
   ) {
     this.register(identifier, {
       kind: "factory",
       factory,
       params,
+      scope,
     });
   }
 
-  registerValue(identifier: TypeIdentifier, value: unknown) {
+  registerValue(
+    identifier: TypeIdentifier,
+    value: unknown,
+    scope: Scope | string = defaultScope
+  ) {
     this.register(identifier, {
       kind: "value",
       value,
+      scope,
     });
   }
 
-  registerFromMetadata(target: Type, identifier?: TypeIdentifier) {
+  registerFromMetadata(
+    target: Type,
+    identifier?: TypeIdentifier,
+    scope: Scope | string = defaultScope
+  ) {
     const paramTypes: Type[] = Reflect.getMetadata("design:paramtypes", target);
     this.register(identifier ?? target, {
       kind: "type",
       type: target,
       params: paramTypes?.map((param) => ({ identifier: param })),
+      scope,
     });
   }
 
@@ -237,10 +282,7 @@ export class DiContainer {
     this.invalidateDependencyGraph();
   }
 
-  deepClone(
-    namePrefix?: string,
-    cloneMap?: Map<DiContainer, DiContainer>
-  ): DiContainer {
+  deepClone(cloneMap?: Map<DiContainer, DiContainer>): DiContainer {
     if (!cloneMap) {
       cloneMap = new Map();
     }
@@ -248,9 +290,9 @@ export class DiContainer {
       this.#parent
         ? cloneMap.has(this.#parent)
           ? (cloneMap.get(this.#parent) as DiContainer)
-          : this.#parent?.deepClone(namePrefix, cloneMap)
+          : this.#parent?.deepClone(cloneMap)
         : undefined,
-      `${namePrefix}${this.#name}`
+      this.#name
     );
     cloneMap.set(this, clone);
     clone.#imports = new Map(
@@ -258,7 +300,7 @@ export class DiContainer {
         identifier,
         cloneMap?.has(container)
           ? (cloneMap.get(container) as DiContainer)
-          : container.deepClone(namePrefix, cloneMap),
+          : container.deepClone(cloneMap),
       ])
     );
     clone.#aliases = new Map([...this.#aliases]);
@@ -278,51 +320,51 @@ export class DiContainer {
 
   private buildDependencyGraph(
     identifier: TypeIdentifier,
-    path: TypeIdentifier[],
-    partialNodes: Map<TypeIdentifier, PartialDependencyGraphNode>
+    dependencyPath: TypeIdentifier[],
+    partialNodes: Map<
+      DiContainer,
+      Map<TypeIdentifier, PartialDependencyGraphNode>
+    >
   ): DependencyGraphNode {
-    let node = partialNodes.get(identifier);
+    let node = partialNodes.get(this)?.get(identifier);
     if (!node) {
       const exporter = this.getExporter(identifier);
       if (exporter) {
         return exporter.buildDependencyGraph(
           identifier,
-          [...path],
+          [...dependencyPath],
           partialNodes
         );
       }
       const definition = this.getDefinition(identifier);
       if (!definition) {
-        const typeName =
-          typeof identifier === "string" ? identifier : identifier.name;
-        const pathString = path
-          .map(
-            (pathIdentifier) =>
-              `${
-                typeof pathIdentifier === "string"
-                  ? pathIdentifier
-                  : pathIdentifier.name
-              } < `
-          )
-          .join("");
-        throw Error(
-          `Error composing ${pathString}${typeName}. ${typeName} is not registered`
+        throw new Error(
+          this.getInjectionErrorMessage(identifier, dependencyPath)
         );
       }
       switch (definition.kind) {
         case "type":
-          node = { identifier, kind: definition.kind };
-          partialNodes.set(identifier, node);
+          node = {
+            identifier,
+            kind: definition.kind,
+            owner: this,
+            scope: definition.scope,
+          };
+          if (partialNodes.has(this)) {
+            partialNodes.get(this)?.set(identifier, node);
+          } else {
+            partialNodes.set(this, new Map([[identifier, node]]));
+          }
           node.ctor = definition.type;
-          path.push(identifier);
+          dependencyPath.push(identifier);
           node.params = this.buildCtorSubtree(
             definition,
-            [...path],
+            [...dependencyPath],
             partialNodes
           );
           node.props = this.buildPropSubtree(
             definition,
-            [...path],
+            [...dependencyPath],
             partialNodes
           ).reduce(
             (previous, current) => ({
@@ -333,29 +375,66 @@ export class DiContainer {
           );
           break;
         case "factory":
-          node = { identifier, kind: definition.kind };
-          partialNodes.set(identifier, node);
+          node = {
+            identifier,
+            kind: definition.kind,
+            owner: this,
+            scope: definition.scope,
+          };
+          if (partialNodes.has(this)) {
+            partialNodes.get(this)?.set(identifier, node);
+          } else {
+            partialNodes.set(this, new Map([[identifier, node]]));
+          }
           node.factory = definition.factory;
-          path.push(identifier);
+          dependencyPath.push(identifier);
           node.params = this.buildFactorySubtree(
             definition,
-            [...path],
+            [...dependencyPath],
             partialNodes
           );
           break;
         case "value":
-          node = { identifier, kind: definition.kind };
-          partialNodes.set(identifier, node);
+          node = {
+            identifier,
+            kind: definition.kind,
+            owner: this,
+            scope: definition.scope,
+          };
+          if (partialNodes.has(this)) {
+            partialNodes.get(this)?.set(identifier, node);
+          } else {
+            partialNodes.set(this, new Map([[identifier, node]]));
+          }
           node.value = definition.value;
       }
     }
     return node as DependencyGraphNode;
   }
 
+  private getInjectionErrorMessage(
+    identifier: TypeIdentifier,
+    dependencyPath: TypeIdentifier[]
+  ) {
+    const typeName =
+      typeof identifier === "string" ? identifier : identifier.name;
+    const pathString = dependencyPath
+      .map(
+        (pathIdentifier) =>
+          `${
+            typeof pathIdentifier === "string"
+              ? pathIdentifier
+              : pathIdentifier.name
+          } < `
+      )
+      .join("");
+    return `Error composing ${pathString}${typeName}. ${typeName} is not registered`;
+  }
+
   private buildCtorSubtree(
     definition: TypeDefinition,
     path: TypeIdentifier[],
-    nodes: Map<TypeIdentifier, PartialDependencyGraphNode>
+    nodes: Map<DiContainer, Map<TypeIdentifier, PartialDependencyGraphNode>>
   ) {
     const ctorParms = this.getCtorOverrides(definition.type);
     if (!definition.params && !ctorParms.size) {
@@ -386,7 +465,7 @@ export class DiContainer {
   private buildPropSubtree(
     definition: TypeDefinition,
     path: TypeIdentifier[],
-    nodes: Map<TypeIdentifier, PartialDependencyGraphNode>
+    nodes: Map<DiContainer, Map<TypeIdentifier, PartialDependencyGraphNode>>
   ) {
     const props = this.getPropOverrides(definition.type);
     if (!definition.props && !props.size) {
@@ -417,7 +496,7 @@ export class DiContainer {
   private buildFactorySubtree(
     defintion: FactoryDefinition,
     path: TypeIdentifier[],
-    nodes: Map<TypeIdentifier, PartialDependencyGraphNode>
+    nodes: Map<DiContainer, Map<TypeIdentifier, PartialDependencyGraphNode>>
   ) {
     if (!defintion.params) {
       return [];
