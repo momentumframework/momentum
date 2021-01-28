@@ -1,5 +1,5 @@
 import { DiContainer, TypeIdentifier } from "./di-container.ts";
-import { Scope } from "../src/deps.ts";
+import { Scope } from "./scope.ts";
 
 export class DiCache {
   readonly #parent?: DiCache;
