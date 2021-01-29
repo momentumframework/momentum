@@ -9,7 +9,14 @@ import {
 } from "./controller-metadata.ts";
 import { DependencyResolver, Scope, Type } from "./deps.ts";
 import { FilterCatalog } from "./filter-catalog.ts";
-import { OnRequestEnd, OnRequestStart } from "./mod.ts";
+import {
+  ActionResult,
+  ContentResult,
+  OnRequestEnd,
+  OnRequestStart,
+  RedirectResult,
+  StatusCodeResult,
+} from "./mod.ts";
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerPlatform } from "./platform.ts";
@@ -128,8 +135,20 @@ export class ServerController {
             contextAccessor
           );
         }
+        if (result instanceof StatusCodeResult) {
+          contextAccessor.setStatus(result.statusCode);
+          if (result instanceof RedirectResult) {
+            contextAccessor.setHeader("Location", result.location);
+            return;
+          }
+          if (result instanceof ContentResult) {
+            contextAccessor.setBody(result.content);
+            return;
+          }
+        }
         return result;
       } catch (err) {
+        console.log(err);
         throw err;
       } finally {
         diCache.endScope(Scope.Injection);

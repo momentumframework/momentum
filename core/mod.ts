@@ -1,3 +1,4 @@
+export * from "./action-result.ts";
 export * from "./constants.ts";
 export * from "./context-accessor.ts";
 export * from "./decorators/body.ts";

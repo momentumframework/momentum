@@ -121,7 +121,7 @@ export abstract class ServerPlatform extends Platform {
   ): Promise<unknown>;
 
   abstract setContextItem(
-    kind: "body" | "cookie" | "header",
+    kind: "body" | "status" | "cookie" | "header" | "status",
     context: unknown,
     value: unknown,
     identifier?: unknown

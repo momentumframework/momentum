@@ -60,6 +60,9 @@ export class ContextAccessor {
   async setHeader(name: string, value: string) {
     await this.#platform.setContextItem("header", this.#context, value, name);
   }
+  async setStatus(status: number) {
+    await this.#platform.setContextItem("status", this.#context, status);
+  }
   async sendFile(path: string) {
     await this.#platform.sendFile(this.#context, path);
   }
