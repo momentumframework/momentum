@@ -124,7 +124,7 @@ export class DiContainer {
     if (!this.#parent) {
       return this.name;
     }
-    return `${this.#parent?.name}_${this.#name}`;
+    return `${this.#parent?.name}.${this.#name}`;
   }
 
   static root() {

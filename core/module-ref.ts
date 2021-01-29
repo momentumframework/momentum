@@ -2,6 +2,7 @@ import {
   DependencyResolver,
   DiCache,
   DiContainer,
+  Scope,
   Type,
   TypeIdentifier,
 } from "./deps.ts";
@@ -73,8 +74,13 @@ export class ModuleRef {
     identifier: TypeIdentifier,
     cache = this.#diCache
   ) {
-    const resolver = new DependencyResolver(this.#diContainer, cache);
-    return await resolver.resolve<T>(identifier);
+    const scopedCache = cache.createChild().beginScope(Scope.Injection);
+    try {
+      const resolver = new DependencyResolver(this.#diContainer, scopedCache);
+      return await resolver.resolve<T>(identifier);
+    } finally {
+      scopedCache.endScope(Scope.Injection);
+    }
   }
 
   public static async createModuleRef(

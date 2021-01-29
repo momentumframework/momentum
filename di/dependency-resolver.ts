@@ -2,7 +2,9 @@ import { DeferredImpl } from "./deferred-impl.ts";
 import { DiCache } from "./di-cache.ts";
 import {
   DiContainer,
+  FactoryDependencyGraphNode,
   NullableDependencyGraphNode,
+  TypeDependencyGraphNode,
   TypeIdentifier,
 } from "./di-container.ts";
 
@@ -37,43 +39,9 @@ export class DependencyResolver {
       if (!value) {
         switch (node.kind) {
           case "type":
-            value = new node.ctor(
-              ...(await Promise.all(
-                node.params.map(
-                  async (paramNode) =>
-                    await this.resolveDependency(
-                      paramNode.node.identifier,
-                      paramNode.node,
-                      paramNode.defer
-                    )
-                )
-              ))
-            );
-            this.#cache.set(node.scope, node.owner, identifier, value);
-            await Promise.all(
-              Object.entries(node.props).map(async ([prop, propNode]) => {
-                value[prop] = await this.resolveDependency(
-                  propNode.node.identifier,
-                  propNode.node,
-                  propNode.defer
-                );
-              })
-            );
-            break;
+            return await this.buildTypeNode(node, identifier);
           case "factory":
-            value = await node.factory(
-              ...(await Promise.all(
-                node.params.map(
-                  async (paramNode) =>
-                    await this.resolveDependency(
-                      paramNode.node.identifier,
-                      paramNode.node
-                    )
-                )
-              ))
-            );
-            this.#cache.set(node.scope, node.owner, identifier, value);
-            break;
+            return await this.buildFactoryNode(node, identifier);
           case "value":
             value = node.value;
             this.#cache.set(node.scope, node.owner, identifier, value);
@@ -86,5 +54,48 @@ export class DependencyResolver {
       return new DeferredImpl(resolveFunc);
     }
     return await resolveFunc();
+  }
+
+  private async buildTypeNode(
+    node: TypeDependencyGraphNode,
+    identifier: TypeIdentifier<unknown>
+  ) {
+    const params = [];
+    for (const paramNode of node.params) {
+      params.push(
+        await this.resolveDependency(
+          paramNode.node.identifier,
+          paramNode.node,
+          paramNode.defer
+        )
+      );
+    }
+    // deno-lint-ignore no-explicit-any
+    const value: any = new node.ctor(...params);
+    this.#cache.set(node.scope, node.owner, identifier, value);
+    for (const [prop, propNode] of Object.entries(node.props)) {
+      value[prop] = await this.resolveDependency(
+        propNode.node.identifier,
+        propNode.node,
+        propNode.defer
+      );
+    }
+    return value;
+  }
+
+  private async buildFactoryNode(
+    node: FactoryDependencyGraphNode,
+    identifier: TypeIdentifier
+  ) {
+    const params = [];
+    for (const paramNode of node.params) {
+      params.push(
+        await this.resolveDependency(paramNode.node.identifier, paramNode.node)
+      );
+    }
+    // deno-lint-ignore no-explicit-any
+    const value: any = await node.factory(...params);
+    this.#cache.set(node.scope, node.owner, identifier, value);
+    return value;
   }
 }
