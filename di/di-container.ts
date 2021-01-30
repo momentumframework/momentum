@@ -97,7 +97,10 @@ export class DiContainer {
 
   #name: string;
   #parent?: DiContainer;
-  #events = new EventEmitter<{ change(): void }>();
+  #events = new EventEmitter<{
+    invalidate(): void;
+    change(type: TypeIdentifier): void;
+  }>();
   #imports = new Map<TypeIdentifier, DiContainer>();
   #aliases = new Map<TypeIdentifier, TypeIdentifier>();
   #definitions = new Map<TypeIdentifier, Definition>();
@@ -112,7 +115,12 @@ export class DiContainer {
     this.#parent = parent;
     this.#name = name;
     if (this.#parent) {
-      this.#parent.#events.on("change", () => this.invalidateDependencyGraph());
+      this.#parent.#events.on("change", (identifier) =>
+        this.trimDependencyGraph(identifier)
+      );
+      this.#parent.#events.on("invalidate", () =>
+        this.invalidateDependencyGraph()
+      );
     }
   }
 
@@ -183,7 +191,7 @@ export class DiContainer {
 
   import(identifier: TypeIdentifier, container: DiContainer) {
     this.#imports.set(identifier, container);
-    container.#events.on("change", () => this.invalidateDependencyGraph());
+    this.trimDependencyGraph(identifier);
   }
 
   register(identifier: TypeIdentifier, definition: Definition) {
@@ -193,7 +201,7 @@ export class DiContainer {
       );
     }
     this.#definitions.set(identifier, definition);
-    this.invalidateDependencyGraph();
+    this.trimDependencyGraph(identifier);
   }
 
   registerAlias(identifier: TypeIdentifier, alias: TypeIdentifier) {
@@ -274,7 +282,7 @@ export class DiContainer {
       ctorOverrides.set(paramIndex, ctorOverride);
     }
     ctorOverride.push(param);
-    this.invalidateDependencyGraph();
+    this.trimDependencyGraph(type);
   }
 
   registerProperty(type: Type, propName: string, param: PartialParameter) {
@@ -289,7 +297,7 @@ export class DiContainer {
       props.set(propName, prop);
     }
     prop.push(param);
-    this.invalidateDependencyGraph();
+    this.trimDependencyGraph(type);
   }
 
   deepClone(cloneMap?: Map<DiContainer, DiContainer>): DiContainer {
@@ -324,7 +332,45 @@ export class DiContainer {
   private invalidateDependencyGraph() {
     if (this.#dependencyGraph.size > 0) {
       this.#dependencyGraph.clear();
-      this.#events.emit("change");
+      this.#events.emit("invalidate");
+    }
+  }
+
+  private trimDependencyGraph(...identifiers: TypeIdentifier[]) {
+    for (const graph of Array.from(this.#dependencyGraph.values())) {
+      for (const [graphIdentifier, node] of Array.from(graph.entries())) {
+        for (const trimIdentifier of identifiers) {
+          if (graphIdentifier === trimIdentifier) {
+            graph.delete(trimIdentifier);
+            this.#events.emit("change", trimIdentifier);
+            continue;
+          }
+          if (node.kind == "type") {
+            for (const param of node.params) {
+              if (param.node.identifier === trimIdentifier) {
+                graph.delete(graphIdentifier);
+                this.#events.emit("change", trimIdentifier);
+                break;
+              }
+            }
+            for (const [_, prop] of Object.entries(node.props)) {
+              if (prop.node.identifier === trimIdentifier) {
+                graph.delete(graphIdentifier);
+                this.#events.emit("change", trimIdentifier);
+                break;
+              }
+            }
+          } else if (node.kind == "factory") {
+            for (const param of node.params) {
+              if (param.node.identifier === trimIdentifier) {
+                graph.delete(graphIdentifier);
+                this.#events.emit("change", trimIdentifier);
+                break;
+              }
+            }
+          }
+        }
+      }
     }
   }
 

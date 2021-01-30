@@ -1,4 +1,3 @@
-import { DiCache } from "../di/di-cache.ts";
 import { SCOPED_CONTAINER, SCOPED_RESOLVER } from "./constants.ts";
 import { ContextAccessor } from "./context-accessor.ts";
 import { ControllerCatalog } from "./controller-catalog.ts";
@@ -10,7 +9,6 @@ import {
 import { DependencyResolver, Scope, Type } from "./deps.ts";
 import { FilterCatalog } from "./filter-catalog.ts";
 import {
-  ActionResult,
   ContentResult,
   OnRequestEnd,
   OnRequestStart,
