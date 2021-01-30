@@ -2,6 +2,7 @@ import {
   DependencyResolver,
   DiCache,
   DiContainer,
+  Reflect,
   Scope,
   Type,
   TypeIdentifier,
@@ -182,7 +183,12 @@ export class ModuleRef {
     if (metadata.providers) {
       for (const provider of metadata.providers) {
         if (!isProvider(provider)) {
-          diContainer.registerFromMetadata(provider);
+          diContainer.registerFromMetadata(
+            provider,
+            Reflect.getMetadata("design:paramtypes", provider),
+            undefined,
+            undefined
+          );
         } else if (isConstructorProvider(provider)) {
           diContainer.registerType(
             provider.provide,
@@ -195,6 +201,7 @@ export class ModuleRef {
           diContainer.registerAlias(provider.useClass, provider.provide);
           diContainer.registerFromMetadata(
             provider.useClass,
+            Reflect.getMetadata("design:paramtypes", provider),
             undefined,
             provider.scope
           );

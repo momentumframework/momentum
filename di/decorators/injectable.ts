@@ -1,5 +1,6 @@
 import { DiContainer, Type, TypeIdentifier } from "../di-container.ts";
 import { Scope } from "../scope.ts";
+import { Reflect } from "../shims/reflect.ts";
 
 export type InjectableOptions =
   | { scope?: Scope; global?: boolean }
@@ -38,7 +39,12 @@ export function Injectable(
       DiContainer.root().registerAlias(target as Type, identifier);
     }
     if (options.global) {
-      DiContainer.root().registerFromMetadata(target as Type, undefined, scope);
+      DiContainer.root().registerFromMetadata(
+        target as Type,
+        Reflect.getMetadata("design:paramtypes", target),
+        undefined,
+        scope
+      );
     }
   };
 }

@@ -1,6 +1,6 @@
 import { ControllerCatalog } from "../controller-catalog.ts";
 import { ControllerClass, ControllerMetadata } from "../controller-metadata.ts";
-import { DiContainer, Scope, Type } from "../deps.ts";
+import { DiContainer, Reflect, Scope, Type } from "../deps.ts";
 
 export function Controller(metadata: ControllerMetadata): ClassDecorator;
 export function Controller(route: string): ClassDecorator;
@@ -11,6 +11,7 @@ export function Controller(
   return function (target: Function) {
     DiContainer.root().registerFromMetadata(
       target as Type,
+      Reflect.getMetadata("design:paramtypes", target),
       undefined,
       Scope.Request
     );
