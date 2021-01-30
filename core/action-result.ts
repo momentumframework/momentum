@@ -1,14 +1,4 @@
-export class ActionResult {
-  static statusCode(statusCode: number) {
-    return new StatusCodeResult(statusCode);
-  }
-  static redirect(location: string, statusCode: 301 | 302 = 302) {
-    return new RedirectResult(location, statusCode);
-  }
-  static content(content: string, statusCode = 200) {
-    return new ContentResult(content, statusCode);
-  }
-}
+export class ActionResult {}
 
 export class StatusCodeResult extends ActionResult {
   readonly #statusCode: number;
@@ -41,4 +31,14 @@ export class RedirectResult extends StatusCodeResult {
   get location() {
     return this.#location;
   }
+}
+
+export function statusCode(statusCode: number) {
+  return new StatusCodeResult(statusCode);
+}
+export function redirect(location: string, statusCode: 301 | 302 = 302) {
+  return new RedirectResult(location, statusCode);
+}
+export function content(content: string, statusCode = 200) {
+  return new ContentResult(content, statusCode);
 }
