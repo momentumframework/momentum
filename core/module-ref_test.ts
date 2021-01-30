@@ -195,7 +195,7 @@ test("ModuleRef.resolve() resolves tokenized from deeply nested modules", async 
     .beginScope(Scope.Injection);
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootModule),
-    DiContainer.root(),
+    DiContainer.root().createChild("test"),
     diCache
   );
 
@@ -282,7 +282,7 @@ test("ModuleRef.resolve() provides parent provider to child", async () => {
     .beginScope(Scope.Injection);
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootModule),
-    DiContainer.root(),
+    DiContainer.root().createChild("test"),
     diCache
   );
 

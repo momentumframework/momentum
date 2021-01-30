@@ -56,7 +56,7 @@ export abstract class Platform {
       this.#container.registerValue(PLATFORM, this);
       this.#module = await ModuleRef.createModuleRef(
         ModuleCatalog.getMetadata(moduleType),
-        this.#container,
+        this.#container.createChild(moduleType.name),
         this.#diCache
       );
       await this.postBootstrap();

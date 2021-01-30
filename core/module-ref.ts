@@ -86,51 +86,59 @@ export class ModuleRef {
   public static async createModuleRef(
     moduleMetadata: ExtendedModuleMetadata,
     diContainer: DiContainer,
-    diCache: DiCache
+    diCache: DiCache,
+    moduleCache: Map<ExtendedModuleMetadata, ModuleRef> = new Map()
   ): Promise<ModuleRef> {
-    const moduleDiContainer = diContainer.createChild(moduleMetadata.type.name);
-    const subModules: ModuleRef[] = [];
-    if (moduleMetadata.imports) {
-      for (const submoduleDefinition of moduleMetadata.imports) {
-        subModules.push(
-          await this.resolveModule(
-            submoduleDefinition,
-            moduleDiContainer,
-            diCache
-          )
-        );
+    let moduleRef = moduleCache.get(moduleMetadata);
+    if (!moduleRef) {
+      const moduleDiContainer = diContainer.createSibling(
+        moduleMetadata.type.name
+      );
+      const subModules: ModuleRef[] = [];
+      if (moduleMetadata.imports) {
+        for (const submoduleDefinition of moduleMetadata.imports) {
+          subModules.push(
+            await this.resolveModule(
+              submoduleDefinition,
+              moduleDiContainer,
+              diCache,
+              moduleCache
+            )
+          );
+        }
       }
-    }
-    const moduleContainer = this.populateDiContainer(
-      moduleMetadata,
-      moduleDiContainer,
-      subModules
-    );
-    moduleContainer.registerType(
-      moduleMetadata.type,
-      moduleMetadata.type,
-      moduleMetadata.params?.map((param) => ({ identifier: param })),
-      {}
-    );
-    let moduleRef: ModuleRef | undefined = undefined;
-    moduleContainer.registerFactory(ModuleRef, () => moduleRef);
-    const moduleResolver = new DependencyResolver(moduleContainer, diCache);
-    const instance = await moduleResolver.resolve(moduleMetadata.type);
+      const moduleContainer = this.populateDiContainer(
+        moduleMetadata,
+        moduleDiContainer,
+        subModules
+      );
+      moduleContainer.registerType(
+        moduleMetadata.type,
+        moduleMetadata.type,
+        moduleMetadata.params?.map((param) => ({ identifier: param })),
+        {}
+      );
+      moduleContainer.registerFactory(ModuleRef, () => moduleRef);
+      const moduleResolver = new DependencyResolver(moduleContainer, diCache);
+      const instance = await moduleResolver.resolve(moduleMetadata.type);
 
-    moduleRef = new ModuleRef(
-      moduleMetadata,
-      moduleDiContainer,
-      diCache,
-      instance,
-      subModules
-    );
+      moduleRef = new ModuleRef(
+        moduleMetadata,
+        moduleDiContainer,
+        diCache,
+        instance,
+        subModules
+      );
+      moduleCache.set(moduleMetadata, moduleRef);
+    }
     return moduleRef;
   }
 
   private static async resolveModule(
     moduleDefinition: ModuleClass | DynamicModule,
     diContainer: DiContainer,
-    diCache: DiCache
+    diCache: DiCache,
+    moduleCache: Map<ExtendedModuleMetadata, ModuleRef> = new Map()
   ) {
     let moduleMetadata: ExtendedModuleMetadata;
     if (isDynamicModule(moduleDefinition)) {
@@ -158,7 +166,12 @@ export class ModuleRef {
     } else {
       moduleMetadata = ModuleCatalog.getMetadata(moduleDefinition);
     }
-    return await this.createModuleRef(moduleMetadata, diContainer, diCache);
+    return await this.createModuleRef(
+      moduleMetadata,
+      diContainer,
+      diCache,
+      moduleCache
+    );
   }
 
   private static populateDiContainer(

@@ -95,7 +95,7 @@ type PartialDependencyGraphNode = Partial<NullableDependencyGraphNode> & {
 export class DiContainer {
   private static rootContainer?: DiContainer;
 
-  #name?: string;
+  #name: string;
   #parent?: DiContainer;
   #events = new EventEmitter<{ change(): void }>();
   #imports = new Map<TypeIdentifier, DiContainer>();
@@ -108,7 +108,7 @@ export class DiContainer {
     Map<TypeIdentifier, NullableDependencyGraphNode>
   >();
 
-  constructor(parent?: DiContainer, name?: string) {
+  constructor(name: string, parent?: DiContainer) {
     this.#parent = parent;
     this.#name = name;
     if (this.#parent) {
@@ -129,13 +129,17 @@ export class DiContainer {
 
   static root() {
     if (!DiContainer.rootContainer) {
-      DiContainer.rootContainer = new DiContainer(undefined, "root");
+      DiContainer.rootContainer = new DiContainer("root");
     }
     return DiContainer.rootContainer;
   }
 
   createChild(name: string) {
-    return new DiContainer(this, name);
+    return new DiContainer(name, this);
+  }
+
+  createSibling(name: string) {
+    return new DiContainer(name, this.#parent);
   }
 
   getDependencyGraph(identifier: TypeIdentifier) {
@@ -201,14 +205,17 @@ export class DiContainer {
     type: Type,
     params?: Parameter[],
     props?: Record<string, Parameter>,
-    scope: Scope | string = defaultScope
+    scope?: Scope | string
   ) {
     this.register(identifier, {
       kind: "type",
       type,
       params,
       props,
-      scope,
+      scope:
+        scope ??
+        DiContainer.root().#definitions.get(identifier)?.scope ??
+        defaultScope,
     });
   }
 
@@ -241,14 +248,17 @@ export class DiContainer {
   registerFromMetadata(
     target: Type,
     identifier?: TypeIdentifier,
-    scope: Scope | string = defaultScope
+    scope?: Scope | string
   ) {
     const paramTypes: Type[] = Reflect.getMetadata("design:paramtypes", target);
     this.register(identifier ?? target, {
       kind: "type",
       type: target,
       params: paramTypes?.map((param) => ({ identifier: param })),
-      scope,
+      scope:
+        scope ??
+        DiContainer.root().#definitions.get(target)?.scope ??
+        defaultScope,
     });
   }
 
@@ -287,12 +297,12 @@ export class DiContainer {
       cloneMap = new Map();
     }
     const clone = new DiContainer(
+      this.#name,
       this.#parent
         ? cloneMap.has(this.#parent)
           ? (cloneMap.get(this.#parent) as DiContainer)
           : this.#parent?.deepClone(cloneMap)
-        : undefined,
-      this.#name
+        : undefined
     );
     cloneMap.set(this, clone);
     clone.#imports = new Map(

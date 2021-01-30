@@ -217,9 +217,9 @@ test("DiContainer.buildDependencyGraph() - can defer dependencies", () => {
 
 test("DiContainer.import() - imports from another container", () => {
   // arrange
-  const container1 = new DiContainer();
-  const container2 = new DiContainer();
-  const container3 = new DiContainer();
+  const container1 = new DiContainer("test1");
+  const container2 = new DiContainer("test2");
+  const container3 = new DiContainer("test3");
 
   container1.registerType(Quark, Quark);
   container1.registerType(Electron, Electron);
@@ -274,9 +274,9 @@ test("DiContainer.import() - imports from another container", () => {
 
 test("DiContainer.import() - does not import non-imported definitions", () => {
   // arrange
-  const container1 = new DiContainer();
-  const container2 = new DiContainer();
-  const container3 = new DiContainer();
+  const container1 = new DiContainer("test1");
+  const container2 = new DiContainer("test2");
+  const container3 = new DiContainer("test3");
 
   container1.registerType(Quark, Quark);
   container1.registerType(Electron, Electron);

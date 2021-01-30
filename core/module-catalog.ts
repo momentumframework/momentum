@@ -25,6 +25,6 @@ export class ModuleCatalog {
     if (!metadata) {
       throw new Error(`Module ${type} is not registered`);
     }
-    return Object.freeze({ ...metadata });
+    return metadata;
   }
 }
