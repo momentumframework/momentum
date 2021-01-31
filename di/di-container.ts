@@ -98,8 +98,8 @@ export class DiContainer {
   #name: string;
   #parent?: DiContainer;
   #events = new EventEmitter<{
-    clearGraph(): void;
-    changeGraph(type: TypeIdentifier): void;
+    invalidateGraph(): void;
+    partialInvalidateGraph(type: TypeIdentifier): void;
   }>();
   #imports = new Map<TypeIdentifier, DiContainer>();
   #aliases = new Map<TypeIdentifier, TypeIdentifier>();
@@ -115,10 +115,10 @@ export class DiContainer {
     this.#parent = parent;
     this.#name = name;
     if (this.#parent) {
-      this.#parent.#events.on("changeGraph", (identifier) =>
+      this.#parent.#events.on("partialInvalidateGraph", (identifier) =>
         this.partialInvalidateDependencyGraph(identifier)
       );
-      this.#parent.#events.on("clearGraph", () =>
+      this.#parent.#events.on("invalidateGraph", () =>
         this.invalidateDependencyGraph()
       );
     }
@@ -332,7 +332,7 @@ export class DiContainer {
   private invalidateDependencyGraph() {
     if (this.#dependencyGraph.size > 0) {
       this.#dependencyGraph.clear();
-      this.#events.emit("clearGraph");
+      this.#events.emit("invalidateGraph");
     }
   }
 
@@ -342,21 +342,21 @@ export class DiContainer {
         for (const trimIdentifier of identifiers) {
           if (graphIdentifier === trimIdentifier) {
             graph.delete(trimIdentifier);
-            this.#events.emit("changeGraph", trimIdentifier);
+            this.#events.emit("partialInvalidateGraph", trimIdentifier);
             continue;
           }
           if (node.kind == "type") {
             for (const param of node.params ?? []) {
               if (param.node.identifier === trimIdentifier) {
                 graph.delete(graphIdentifier);
-                this.#events.emit("changeGraph", trimIdentifier);
+                this.#events.emit("partialInvalidateGraph", trimIdentifier);
                 break;
               }
             }
             for (const [_, prop] of Object.entries(node.props ?? {})) {
               if (prop.node.identifier === trimIdentifier) {
                 graph.delete(graphIdentifier);
-                this.#events.emit("changeGraph", trimIdentifier);
+                this.#events.emit("partialInvalidateGraph", trimIdentifier);
                 break;
               }
             }
@@ -364,7 +364,7 @@ export class DiContainer {
             for (const param of node.params ?? []) {
               if (param.node.identifier === trimIdentifier) {
                 graph.delete(graphIdentifier);
-                this.#events.emit("changeGraph", trimIdentifier);
+                this.#events.emit("partialInvalidateGraph", trimIdentifier);
                 break;
               }
             }

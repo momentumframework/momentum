@@ -14,10 +14,6 @@ import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerController } from "./server-controller.ts";
 
-function isCustomScope(scopeIdentifier: unknown) {
-  return Object.values(Scope).every((scope) => scope !== scopeIdentifier);
-}
-
 export function platformMomentum() {
   return new MomentumPlatform(DiContainer.root().createChild("platform"));
 }

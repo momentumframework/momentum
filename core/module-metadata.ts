@@ -54,22 +54,23 @@ export interface ExtendedModuleMetadata extends ModuleMetadata {
 export type DynamicModule = Omit<ExtendedModuleMetadata, "params" | "props">;
 
 export function isProvider(arg: unknown): arg is Provider {
-  return !!(arg as Provider).provide;
+  return Object.prototype.hasOwnProperty.call(arg, "provide");
 }
 export function isValueProvider(arg: Provider): arg is ValueProvider {
-  return !!(arg as ValueProvider).useValue;
+  return Object.prototype.hasOwnProperty.call(arg, "useValue");
 }
 export function isFactoryProvider(arg: Provider): arg is FactoryProvider {
-  return !!(arg as FactoryProvider).useFactory;
+  return Object.prototype.hasOwnProperty.call(arg, "useFactory");
 }
 export function isClassProvider(arg: Provider): arg is ClassProvider {
-  return !!(arg as ClassProvider).useClass;
+  return Object.prototype.hasOwnProperty.call(arg, "useClass");
 }
 export function isConstructorProvider(
   arg: Provider
 ): arg is ConstructorProvider {
   return (
     isProvider(arg) &&
+    typeof arg.provide === "function" &&
     !isClassProvider(arg) &&
     !isFactoryProvider(arg) &&
     !isValueProvider(arg)
