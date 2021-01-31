@@ -86,24 +86,22 @@ export class ServerController {
         .beginScope(Scope.Injection)
         .beginScope(Scope.Request);
       try {
-        const scopedContainer = this.#platform.container.deepClone();
-        const scopedResolver = new DependencyResolver(scopedContainer, diCache);
+        const { clone, fullSet } = this.#platform.container.deepClone();
+        const scopedResolver = new DependencyResolver(clone, diCache);
         const contextAccessor = new ContextAccessor(context, this.#platform);
-        scopedContainer.registerValue(
-          ContextAccessor,
-          contextAccessor,
-          Scope.Request
-        );
-        scopedContainer.registerValue(
-          SCOPED_CONTAINER,
-          scopedContainer,
-          Scope.Request
-        );
-        scopedContainer.registerValue(
-          SCOPED_RESOLVER,
-          scopedResolver,
-          Scope.Request
-        );
+        fullSet.forEach((container) => {
+          container.registerValue(
+            ContextAccessor,
+            contextAccessor,
+            Scope.Request
+          );
+          container.registerValue(SCOPED_CONTAINER, clone, Scope.Request);
+          container.registerValue(
+            SCOPED_RESOLVER,
+            scopedResolver,
+            Scope.Request
+          );
+        });
         const controllerInstance: Record<
           string,
           (...args: unknown[]) => Promise<unknown>

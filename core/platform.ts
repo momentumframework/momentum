@@ -55,6 +55,7 @@ export abstract class Platform {
         this.#container.createChild(moduleType.name),
         this.#diCache
       );
+      this.#module.diContainer.preCompileDependencyGraph(true);
       await this.postBootstrap();
       return this;
     } catch (err) {
