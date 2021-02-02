@@ -12,4 +12,9 @@ export interface ViewEngine {
   ): Promise<string | undefined>;
 
   resolveFilePath(viewPath: string): string | Promise<string>;
+
+  registerHelper(
+    name: string,
+    helperFunc: (...args: unknown[]) => unknown
+  ): void;
 }

@@ -4,13 +4,19 @@ import {
   ControllerMetadata,
   exists,
   Inject,
+  Injectable,
+  OnPlatformBootstrap,
   Optional,
+  PLATFORM,
+  Scope,
+  ServerPlatform,
   trimSlashes,
   trimTrailingSlashes,
 } from "./deps.ts";
 import { MvcConfig } from "./mvc-config.ts";
 import { ViewCatalog, ViewConfig } from "./view-catalog.ts";
 import { ViewEngine } from "./view-engine.ts";
+import { ViewHelperCatalog } from "./view-helper-catalog.ts";
 
 const defaultConfig = {
   defaultLayout: "main",
@@ -18,18 +24,36 @@ const defaultConfig = {
   cacheTemplates: true,
 };
 
-export class ViewService {
+@Injectable({ scope: Scope.Singleton })
+export class ViewService implements OnPlatformBootstrap {
+  readonly #platform: ServerPlatform;
   readonly #viewEngine: ViewEngine;
   readonly #config: MvcConfig;
   constructor(
+    @Inject(PLATFORM)
+    platform: ServerPlatform,
     @Inject(VIEW_ENGINE)
     viewEngine: ViewEngine,
     @Optional()
     @Inject(MVC_CONFIG)
     config?: Partial<MvcConfig>
   ) {
+    this.#platform = platform;
     this.#viewEngine = viewEngine;
     this.#config = { ...defaultConfig, ...config };
+  }
+
+  async mvOnPlatformBootstrap() {
+    for (const [type, helpers] of ViewHelperCatalog.getHelpers()) {
+      const container = await this.#platform.module.resolve<
+        Record<string, (...args: unknown[]) => unknown>
+      >(type);
+      for (const helper of helpers) {
+        this.#viewEngine.registerHelper(helper, (...args) =>
+          container[helper](...args)
+        );
+      }
+    }
   }
 
   async renderView(

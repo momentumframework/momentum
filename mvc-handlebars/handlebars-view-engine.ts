@@ -64,6 +64,13 @@ export class HandlebarsViewEngine implements ViewEngine {
     return compiledTemplate(model);
   }
 
+  registerHelper(
+    name: string,
+    helperFunc: (...args: unknown[]) => unknown
+  ): void {
+    Handlebars.registerHelper(name, helperFunc);
+  }
+
   private async getCompiledTemplate(
     templateCallback: () => Promise<string | undefined>,
     controllerType: ControllerClass,
