@@ -71,6 +71,14 @@ export class HandlebarsViewEngine implements ViewEngine {
     Handlebars.registerHelper(name, helperFunc);
   }
 
+  loadPartial(name: string, originalFilename: string, template: string) {
+    const ext = originalFilename.substring(originalFilename.lastIndexOf("."));
+    if (ext === this.#config.fileExtension) {
+      const compiledTemplate = Handlebars.compile(template);
+      Handlebars.registerPartial(name, compiledTemplate);
+    }
+  }
+
   private async getCompiledTemplate(
     templateCallback: () => Promise<string | undefined>,
     controllerType: ControllerClass,

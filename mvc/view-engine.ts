@@ -17,4 +17,10 @@ export interface ViewEngine {
     name: string,
     helperFunc: (...args: unknown[]) => unknown
   ): void;
+
+  loadPartial(
+    name: string,
+    originalFilename: string,
+    template: string
+  ): void | Promise<void>;
 }

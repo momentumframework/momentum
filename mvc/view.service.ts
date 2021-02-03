@@ -21,6 +21,8 @@ import { ViewHelperCatalog } from "./view-helper-catalog.ts";
 const defaultConfig = {
   defaultLayout: "main",
   viewFolder: "./src/views",
+  layoutFolder: "./src/views/_layout",
+  partialsFolder: "./src/views/_partials",
   cacheTemplates: true,
 };
 
@@ -51,6 +53,20 @@ export class ViewService implements OnPlatformBootstrap {
       for (const helper of helpers) {
         this.#viewEngine.registerHelper(helper, (...args) =>
           container[helper](...args)
+        );
+      }
+    }
+    if (await exists(this.#config.partialsFolder)) {
+      for await (const file of Deno.readDir(this.#config.partialsFolder)) {
+        if (!file.isFile) {
+          continue;
+        }
+        const fileLocation = [this.#config.partialsFolder, file.name].join("/");
+        const fileContents = await Deno.readTextFile(fileLocation);
+        await this.#viewEngine.loadPartial(
+          file.name.substring(0, file.name.lastIndexOf(".")),
+          file.name,
+          fileContents
         );
       }
     }
