@@ -12,7 +12,7 @@ import { ViewService } from "./view.service.ts";
 export class MvcFilter implements MvFilter {
   constructor(private readonly viewService: ViewService) {}
   async filter(
-    _contextAccessor: ContextAccessor,
+    contextAccessor: ContextAccessor,
     next: NextFilterFunction,
     _parameters: unknown[],
     controllerMetadata?: ControllerMetadata,
@@ -30,6 +30,7 @@ export class MvcFilter implements MvFilter {
     if (!result) {
       return model;
     }
+    contextAccessor.setHeader("Content-Type", "text/html");
     return result;
   }
 }

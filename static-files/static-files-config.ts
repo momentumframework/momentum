@@ -12,7 +12,7 @@ export const defaultConfig = {
     ".ico": "image/x-icon",
     ".html": "text/html",
     ".jpeg": "image/jpeg",
-    ".js": ".application/javascript",
+    ".js": "application/javascript",
     ".json": "application/json",
     ".mp3": "audio/mpeg",
     ".mp4": "video/mp4",
