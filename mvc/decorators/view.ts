@@ -13,7 +13,7 @@ export function View(
       ViewCatalog.registerActionView(
         target.constructor as Type,
         propertyKey.toString(),
-        { name }
+        { name, ...options }
       );
     } else {
       ViewCatalog.registerControllerView(target as Type, { name, ...options });

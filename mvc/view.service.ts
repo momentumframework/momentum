@@ -88,7 +88,9 @@ export class ViewService implements OnPlatformBootstrap {
       model,
       controllerMetadata,
       actionMetadata,
-      viewConfig.layout ?? this.#config.defaultLayout,
+      viewConfig.layout !== undefined
+        ? viewConfig.layout
+        : this.#config.defaultLayout,
       this.#config.cacheTemplates,
       this.createViewCallback(
         viewConfig,
