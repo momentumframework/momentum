@@ -30,21 +30,21 @@ export class ContextAccessor {
     return (await this.#platform.getContextItem(
       "parameter",
       this.#context,
-      name
+      name,
     )) as string;
   }
   async getQuery(name: string) {
     return (await this.#platform.getContextItem(
       "query",
       this.#context,
-      name
+      name,
     )) as string;
   }
   async getCookie(name: string) {
     return (await this.#platform.getContextItem(
       "cookie",
       this.#context,
-      name
+      name,
     )) as string;
   }
   async setCookie(name: string, value: string) {
@@ -54,7 +54,7 @@ export class ContextAccessor {
     return (await this.#platform.getContextItem(
       "header",
       this.#context,
-      name
+      name,
     )) as string;
   }
   async setHeader(name: string, value: string) {

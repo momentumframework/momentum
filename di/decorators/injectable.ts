@@ -5,19 +5,19 @@ import { Reflect } from "../shims/reflect.ts";
 export type InjectableOptions =
   | { scope?: Scope; global?: boolean }
   | {
-      scope: Scope.Custom;
-      scopeIdentifier: unknown;
-    };
+    scope: Scope.Custom;
+    scopeIdentifier: unknown;
+  };
 
 export function Injectable(): ClassDecorator;
 export function Injectable(options: InjectableOptions): ClassDecorator;
 export function Injectable(
   identifier: TypeIdentifier,
-  options?: InjectableOptions
+  options?: InjectableOptions,
 ): ClassDecorator;
 export function Injectable(
   identifierOrOptions?: TypeIdentifier | InjectableOptions,
-  options?: InjectableOptions
+  options?: InjectableOptions,
 ): ClassDecorator {
   // deno-lint-ignore ban-types
   return function (target: Function) {
@@ -43,7 +43,7 @@ export function Injectable(
         target as Type,
         Reflect.getMetadata("design:paramtypes", target),
         undefined,
-        scope
+        scope,
       );
     }
   };

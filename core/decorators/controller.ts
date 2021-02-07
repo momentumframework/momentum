@@ -5,7 +5,7 @@ import { DiContainer, Reflect, Scope, Type } from "../deps.ts";
 export function Controller(metadata: ControllerMetadata): ClassDecorator;
 export function Controller(route: string): ClassDecorator;
 export function Controller(
-  metadataOrRoute: ControllerMetadata | string
+  metadataOrRoute: ControllerMetadata | string,
 ): ClassDecorator {
   // deno-lint-ignore ban-types
   return function (target: Function) {
@@ -13,13 +13,13 @@ export function Controller(
       target as Type,
       Reflect.getMetadata("design:paramtypes", target),
       undefined,
-      Scope.Request
+      Scope.Request,
     );
     ControllerCatalog.registerControllerMetadata(
       target as ControllerClass,
       typeof metadataOrRoute === "string"
         ? { type: target as Type, route: metadataOrRoute }
-        : metadataOrRoute
+        : metadataOrRoute,
     );
   };
 }

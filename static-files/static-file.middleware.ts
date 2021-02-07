@@ -19,7 +19,7 @@ export class StaticFileMiddleware implements MvMiddleware {
   constructor(
     @Optional()
     @Inject(STATIC_FILES_CONFIG)
-    config: StaticFilesConfig
+    config: StaticFilesConfig,
   ) {
     this.#config = {
       ...defaultConfig,
@@ -29,7 +29,7 @@ export class StaticFileMiddleware implements MvMiddleware {
   }
   async execute(
     contextAccessor: ContextAccessor,
-    next: NextMiddlewareFunction
+    next: NextMiddlewareFunction,
   ) {
     const url = await contextAccessor.getUrl();
     if (url.pathname.startsWith(this.#config.serverRoot)) {

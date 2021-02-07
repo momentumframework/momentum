@@ -5,18 +5,18 @@ import { ValueProviderCatalog } from "../value-provider-catalog.ts";
 import { ValueProvider } from "../value-provider.ts";
 
 export function createParameterDecorator(
-  valueProvider?: ValueProvider
+  valueProvider?: ValueProvider,
 ): ParameterDecorator {
   return function (
     // deno-lint-ignore ban-types
     target: Object,
     propertyKey: string | symbol,
-    parameterIndex: number
+    parameterIndex: number,
   ) {
     const parameterType = Reflect.getMetadata(
       "design:paramtypes",
       target,
-      propertyKey
+      propertyKey,
     )?.[parameterIndex] as Type;
     ControllerCatalog.registerParameterMetadata(
       target.constructor as ControllerClass,
@@ -25,14 +25,14 @@ export function createParameterDecorator(
         index: parameterIndex,
         name: propertyKey.toString(),
         type: parameterType,
-      }
+      },
     );
     if (valueProvider) {
       ValueProviderCatalog.registerValueProvider(
         target.constructor as ControllerClass,
         propertyKey.toString(),
         parameterIndex,
-        valueProvider
+        valueProvider,
       );
     }
   };

@@ -53,7 +53,7 @@ export abstract class Platform {
       this.#module = await ModuleRef.createModuleRef(
         ModuleCatalog.getMetadata(moduleType),
         this.#container.createChild(moduleType.name),
-        this.#diCache
+        this.#diCache,
       );
       this.#module.diContainer.preCompileDependencyGraph(true);
       await this.postBootstrap();
@@ -96,11 +96,11 @@ export abstract class ServerPlatform extends Platform {
     route: string,
     controllerMetadata: ControllerMetadata,
     actionMetadata: ActionMetadata,
-    handler: (context: unknown) => unknown
+    handler: (context: unknown) => unknown,
   ): void | Promise<void>;
 
   abstract addMiddlewareHandler(
-    handler: (context: unknown) => Promise<boolean>
+    handler: (context: unknown) => Promise<boolean>,
   ): void | Promise<void>;
 
   abstract getContextItem(
@@ -114,14 +114,14 @@ export abstract class ServerPlatform extends Platform {
       | "request"
       | "response",
     context: unknown,
-    identifier?: unknown
+    identifier?: unknown,
   ): Promise<unknown>;
 
   abstract setContextItem(
     kind: "body" | "status" | "cookie" | "header" | "status",
     context: unknown,
     value: unknown,
-    identifier?: unknown
+    identifier?: unknown,
   ): void | Promise<void>;
 
   abstract sendFile(context: unknown, path: string): void | Promise<void>;

@@ -2,5 +2,5 @@ import { ParameterMetadata } from "./controller-metadata.ts";
 
 export type Transformer = (
   value: unknown,
-  metadata: ParameterMetadata
+  metadata: ParameterMetadata,
 ) => unknown | Promise<unknown>;

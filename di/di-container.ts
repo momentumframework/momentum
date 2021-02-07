@@ -112,11 +112,13 @@ export class DiContainer {
     this.#parent = parent;
     this.#name = name;
     if (this.#parent) {
-      this.#parent.#events.on("partialInvalidateGraph", (identifier) =>
-        this.partialInvalidateDependencyGraph(identifier)
+      this.#parent.#events.on(
+        "partialInvalidateGraph",
+        (identifier) => this.partialInvalidateDependencyGraph(identifier),
       );
-      this.#parent.#events.on("invalidateGraph", () =>
-        this.invalidateDependencyGraph()
+      this.#parent.#events.on(
+        "invalidateGraph",
+        () => this.invalidateDependencyGraph(),
       );
     }
   }
@@ -160,7 +162,7 @@ export class DiContainer {
         identifier,
         [],
         partialNodes,
-        ignoreMissing
+        ignoreMissing,
       );
       if (graph) {
         this.#dependencyGraph.set(identifier, graph);
@@ -180,7 +182,7 @@ export class DiContainer {
   register(identifier: TypeIdentifier, definition: Definition) {
     if (this.#definitions.get(identifier)) {
       throw Error(
-        `Unable to register ${identifier} because it is already registered.`
+        `Unable to register ${identifier} because it is already registered.`,
       );
     }
     this.#definitions.set(identifier, definition);
@@ -196,15 +198,14 @@ export class DiContainer {
     type: Type,
     params?: Parameter[],
     props?: Record<string, Parameter>,
-    scope?: Scope | string
+    scope?: Scope | string,
   ) {
     this.register(identifier, {
       kind: "type",
       type,
       params,
       props,
-      scope:
-        scope ??
+      scope: scope ??
         DiContainer.root().#definitions.get(identifier)?.scope ??
         defaultScope,
     });
@@ -214,7 +215,7 @@ export class DiContainer {
     identifier: TypeIdentifier,
     factory: FactoryFunction,
     params?: TypeIdentifier[],
-    scope: Scope | string = defaultScope
+    scope: Scope | string = defaultScope,
   ) {
     this.register(identifier, {
       kind: "factory",
@@ -227,7 +228,7 @@ export class DiContainer {
   registerValue(
     identifier: TypeIdentifier,
     value: unknown,
-    scope: Scope | string = defaultScope
+    scope: Scope | string = defaultScope,
   ) {
     this.register(identifier, {
       kind: "value",
@@ -240,14 +241,13 @@ export class DiContainer {
     target: Type,
     paramTypes: Type[],
     identifier?: TypeIdentifier,
-    scope?: Scope | string
+    scope?: Scope | string,
   ) {
     this.register(identifier ?? target, {
       kind: "type",
       type: target,
       params: paramTypes?.map((param) => ({ identifier: param })),
-      scope:
-        scope ??
+      scope: scope ??
         DiContainer.root().#definitions.get(target)?.scope ??
         defaultScope,
     });
@@ -284,7 +284,7 @@ export class DiContainer {
   }
 
   deepClone(
-    cloneMap: Map<DiContainer, DiContainer> = new Map()
+    cloneMap: Map<DiContainer, DiContainer> = new Map(),
   ): { clone: DiContainer; fullSet: DiContainer[] } {
     const clone = new DiContainer(
       this.#name,
@@ -292,7 +292,7 @@ export class DiContainer {
         ? cloneMap.has(this.#parent)
           ? (cloneMap.get(this.#parent) as DiContainer)
           : this.#parent?.deepClone(cloneMap).clone
-        : undefined
+        : undefined,
     );
     cloneMap.set(this, clone);
     clone.#imports = new Map(
@@ -301,7 +301,7 @@ export class DiContainer {
         cloneMap?.has(container)
           ? (cloneMap.get(container) as DiContainer)
           : container.deepClone(cloneMap).clone,
-      ])
+      ]),
     );
     clone.#aliases = new Map([...this.#aliases]);
     clone.#definitions = new Map([...this.#definitions]);
@@ -325,9 +325,11 @@ export class DiContainer {
         exporter.partialInvalidateDependencyGraph(invalidatedIdentifier);
         continue;
       }
-      for (const [graphIdentifier, node] of Array.from(
-        this.#dependencyGraph.entries()
-      )) {
+      for (
+        const [graphIdentifier, node] of Array.from(
+          this.#dependencyGraph.entries(),
+        )
+      ) {
         if (graphIdentifier === invalidatedIdentifier) {
           this.#dependencyGraph.delete(invalidatedIdentifier);
           this.#events.emit("partialInvalidateGraph", invalidatedIdentifier);
@@ -339,7 +341,7 @@ export class DiContainer {
               this.#dependencyGraph.delete(graphIdentifier);
               this.#events.emit(
                 "partialInvalidateGraph",
-                invalidatedIdentifier
+                invalidatedIdentifier,
               );
               break;
             }
@@ -349,7 +351,7 @@ export class DiContainer {
               this.#dependencyGraph.delete(graphIdentifier);
               this.#events.emit(
                 "partialInvalidateGraph",
-                invalidatedIdentifier
+                invalidatedIdentifier,
               );
               break;
             }
@@ -360,7 +362,7 @@ export class DiContainer {
               this.#dependencyGraph.delete(graphIdentifier);
               this.#events.emit(
                 "partialInvalidateGraph",
-                invalidatedIdentifier
+                invalidatedIdentifier,
               );
               break;
             }
@@ -374,7 +376,7 @@ export class DiContainer {
     identifier: TypeIdentifier,
     dependencyPath: TypeIdentifier[],
     partialNodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
-    ignoreMissing: boolean
+    ignoreMissing: boolean,
   ): DependencyGraphNode | undefined {
     let node = partialNodes.get(identifier);
     if (node) {
@@ -386,7 +388,7 @@ export class DiContainer {
         identifier,
         [...dependencyPath],
         new Map(exporter.#dependencyGraph),
-        ignoreMissing
+        ignoreMissing,
       );
     }
     const definition = this.getDefinition(identifier);
@@ -395,7 +397,7 @@ export class DiContainer {
         return;
       }
       throw new Error(
-        this.getInjectionErrorMessage(identifier, dependencyPath)
+        this.getInjectionErrorMessage(identifier, dependencyPath),
       );
     }
     switch (definition.kind) {
@@ -405,7 +407,7 @@ export class DiContainer {
           definition,
           partialNodes,
           dependencyPath,
-          ignoreMissing
+          ignoreMissing,
         );
         break;
       case "factory":
@@ -414,7 +416,7 @@ export class DiContainer {
           definition,
           partialNodes,
           dependencyPath,
-          ignoreMissing
+          ignoreMissing,
         );
         break;
       case "value":
@@ -440,7 +442,7 @@ export class DiContainer {
     definition: FactoryDefinition,
     partialNodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
     dependencyPath: TypeIdentifier[],
-    ignoreMissing: boolean
+    ignoreMissing: boolean,
   ) {
     const node: PartialDependencyGraphNode = {
       identifier,
@@ -455,7 +457,7 @@ export class DiContainer {
       definition,
       [...dependencyPath],
       partialNodes,
-      ignoreMissing
+      ignoreMissing,
     );
     if (!params) {
       partialNodes.delete(identifier);
@@ -470,7 +472,7 @@ export class DiContainer {
     definition: TypeDefinition,
     partialNodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
     dependencyPath: TypeIdentifier[],
-    ignoreMissing: boolean
+    ignoreMissing: boolean,
   ) {
     const node: PartialDependencyGraphNode = {
       identifier,
@@ -485,7 +487,7 @@ export class DiContainer {
       definition,
       [...dependencyPath],
       partialNodes,
-      ignoreMissing
+      ignoreMissing,
     );
     if (!params) {
       partialNodes.delete(identifier);
@@ -496,7 +498,7 @@ export class DiContainer {
       definition,
       [...dependencyPath],
       partialNodes,
-      ignoreMissing
+      ignoreMissing,
     );
     if (!props) {
       partialNodes.delete(identifier);
@@ -507,17 +509,18 @@ export class DiContainer {
         ...previous,
         [current.prop]: current,
       }),
-      {}
+      {},
     );
     return node;
   }
 
   private getInjectionErrorMessage(
     identifier: TypeIdentifier,
-    dependencyPath: TypeIdentifier[]
+    dependencyPath: TypeIdentifier[],
   ) {
-    const typeName =
-      typeof identifier === "string" ? identifier : identifier.name;
+    const typeName = typeof identifier === "string"
+      ? identifier
+      : identifier.name;
     const pathString = dependencyPath
       .map(
         (pathIdentifier) =>
@@ -525,7 +528,7 @@ export class DiContainer {
             typeof pathIdentifier === "string"
               ? pathIdentifier
               : pathIdentifier.name
-          } < `
+          } < `,
       )
       .join("");
     return `Error composing ${pathString}${typeName}. ${typeName} is not registered`;
@@ -535,7 +538,7 @@ export class DiContainer {
     definition: TypeDefinition,
     path: TypeIdentifier[],
     nodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
-    ignoreMissing: boolean
+    ignoreMissing: boolean,
   ) {
     const ctorParams = this.getCtorOverrides(definition.type);
     if (!definition.params && !ctorParams.size) {
@@ -546,7 +549,7 @@ export class DiContainer {
         params[index] = { ...params[index], ...param };
         return params;
       },
-      definition.params ?? []
+      definition.params ?? [],
     );
     const parameters = [];
     for (let i = 0; i < mergedCtorParams.length; i++) {
@@ -567,7 +570,7 @@ export class DiContainer {
         mergedCtorParams[i].identifier,
         path,
         nodes,
-        ignoreMissing
+        ignoreMissing,
       );
       if (!node) {
         return;
@@ -584,7 +587,7 @@ export class DiContainer {
     definition: TypeDefinition,
     path: TypeIdentifier[],
     nodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
-    ignoreMissing: boolean
+    ignoreMissing: boolean,
   ) {
     const props = this.getPropOverrides(definition.type);
     if (!definition.props && !props.size) {
@@ -594,7 +597,7 @@ export class DiContainer {
       Array.from(props).reduce((props, [propName, param]) => {
         props[propName] = { ...props[propName], ...param };
         return props;
-      }, definition.props ?? {})
+      }, definition.props ?? {}),
     ).map(([name, parameter]) => {
       if (parameter.isOptional && !this.getDefinition(parameter.identifier)) {
         return {
@@ -611,7 +614,7 @@ export class DiContainer {
           parameter.identifier,
           path,
           nodes,
-          ignoreMissing
+          ignoreMissing,
         ),
       };
     });
@@ -621,7 +624,7 @@ export class DiContainer {
     defintion: FactoryDefinition,
     path: TypeIdentifier[],
     nodes: Map<TypeIdentifier, PartialDependencyGraphNode>,
-    ignoreMissing: boolean
+    ignoreMissing: boolean,
   ) {
     if (!defintion.params) {
       return [];
@@ -632,7 +635,7 @@ export class DiContainer {
         paramDefinition,
         path,
         nodes,
-        ignoreMissing
+        ignoreMissing,
       );
       if (!node) {
         return;
@@ -644,7 +647,7 @@ export class DiContainer {
 
   private detectCircularDependencies(
     node: NullableDependencyGraphNode,
-    ancestors: NullableDependencyGraphNode[] = []
+    ancestors: NullableDependencyGraphNode[] = [],
   ) {
     const circular = ancestors.includes(node);
     ancestors.push(node);
@@ -714,7 +717,7 @@ export class DiContainer {
     this.#ctorOverrides.get(type)?.forEach((ctorOverrides, paramIndex) => {
       const merged = ctorOverrides.reduce(
         (ctorOverride, definition) => ({ ...ctorOverride, ...definition }),
-        {}
+        {},
       );
       definition.set(paramIndex, merged);
     });
@@ -726,7 +729,7 @@ export class DiContainer {
     this.#propOverrides.get(type)?.forEach((propOverrides, paramName) => {
       const merged = propOverrides.reduce(
         (propOverride, definition) => ({ ...propOverride, ...definition }),
-        {}
+        {},
       );
       definition.set(paramName, merged);
     });

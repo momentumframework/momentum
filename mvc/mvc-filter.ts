@@ -16,7 +16,7 @@ export class MvcFilter implements MvFilter {
     next: NextFilterFunction,
     _parameters: unknown[],
     controllerMetadata?: ControllerMetadata,
-    actionMetadata?: ActionMetadata
+    actionMetadata?: ActionMetadata,
   ): Promise<unknown> {
     const model = await next();
     if (!controllerMetadata || !actionMetadata) {
@@ -25,7 +25,7 @@ export class MvcFilter implements MvFilter {
     const result = await this.viewService.renderView(
       controllerMetadata,
       actionMetadata,
-      model
+      model,
     );
     if (!result) {
       return model;

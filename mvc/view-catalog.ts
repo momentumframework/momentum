@@ -20,7 +20,7 @@ export class ViewCatalog {
 
   static registerControllerView(
     type: ControllerClass,
-    registration: ViewConfig
+    registration: ViewConfig,
   ) {
     this.getControllerRegistration(type).controller = {
       ...this.getControllerRegistration(type).controller,
@@ -31,7 +31,7 @@ export class ViewCatalog {
   static registerActionView(
     type: ControllerClass,
     action: string,
-    registration: ViewConfig
+    registration: ViewConfig,
   ) {
     this.getControllerRegistration(type).actions[action] = {
       ...this.getControllerRegistration(type).actions[action],

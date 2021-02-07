@@ -39,7 +39,7 @@ test("ModuleRef.createModuleRef() creates module ref", async () => {
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootTestModule),
     DiContainer.root(),
-    diCache
+    diCache,
   );
 
   // assert
@@ -57,7 +57,7 @@ test("ModuleRef.createModuleRef() creates module with parameterized constructor"
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootTestModule),
     DiContainer.root(),
-    diCache
+    diCache,
   );
 
   // assert
@@ -73,7 +73,7 @@ test("ModuleRef.resolve() resolves dependency", async () => {
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootTestModule),
     DiContainer.root(),
-    diCache
+    diCache,
   );
 
   // act
@@ -91,7 +91,7 @@ test("ModuleRef.resolve() only resolves exported dependency", async () => {
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootTestModule),
     DiContainer.root(),
-    diCache
+    diCache,
   );
 
   try {
@@ -100,7 +100,7 @@ test("ModuleRef.resolve() only resolves exported dependency", async () => {
   } catch (err) {
     if (
       err.message ==
-      "Error composing TestSubService. TestSubService is not registered"
+        "Error composing TestSubService. TestSubService is not registered"
     ) {
       return;
     }
@@ -146,7 +146,7 @@ test("ModuleRef.resolve() resolves from deeply nested exports", async () => {
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootModule),
     DiContainer.root(),
-    diCache
+    diCache,
   );
 
   // act
@@ -196,7 +196,7 @@ test("ModuleRef.resolve() resolves tokenized from deeply nested modules", async 
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootModule),
     DiContainer.root().createChild("test"),
-    diCache
+    diCache,
   );
 
   // act
@@ -241,7 +241,7 @@ test("ModuleRef.resolve() does not resolve non-exported", async () => {
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootModule),
     DiContainer.root(),
-    diCache
+    diCache,
   );
 
   let errorMessage = undefined;
@@ -254,7 +254,7 @@ test("ModuleRef.resolve() does not resolve non-exported", async () => {
   // assert
   assertEquals(
     errorMessage,
-    "Error composing Service. Service is not registered"
+    "Error composing Service. Service is not registered",
   );
 });
 
@@ -283,7 +283,7 @@ test("ModuleRef.resolve() provides parent provider to child", async () => {
   const testModule = await ModuleRef.createModuleRef(
     ModuleCatalog.getMetadata(RootModule),
     DiContainer.root().createChild("test"),
-    diCache
+    diCache,
   );
 
   // act

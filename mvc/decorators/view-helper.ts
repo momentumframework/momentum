@@ -6,7 +6,7 @@ export function ViewHelper(): MethodDecorator {
   return function (target: Object, propertyKey?: string | symbol) {
     ViewHelperCatalog.registerViewHelper(
       target.constructor as Type,
-      propertyKey?.toString() as string
+      propertyKey?.toString() as string,
     );
   };
 }

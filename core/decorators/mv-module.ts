@@ -1,4 +1,4 @@
-import { Type, Reflect, Scope } from "../deps.ts";
+import { Reflect, Scope, Type } from "../deps.ts";
 import { ModuleCatalog } from "../module-catalog.ts";
 import { ModuleClass, ModuleMetadata } from "../module-metadata.ts";
 
@@ -10,7 +10,7 @@ export function MvModule(metadata: ModuleMetadata): ClassDecorator {
       target as ModuleClass,
       paramTypes,
       {},
-      metadata
+      metadata,
     );
   };
 }

@@ -2,16 +2,16 @@ import { FactoryFunction, Scope, Type, TypeIdentifier } from "./deps.ts";
 
 type ScopedProvider =
   | {
-      scope?:
-        | Scope.Injection
-        | Scope.Request
-        | Scope.Singleton
-        | Scope.Transient;
-    }
+    scope?:
+      | Scope.Injection
+      | Scope.Request
+      | Scope.Singleton
+      | Scope.Transient;
+  }
   | {
-      scope: Scope.Custom;
-      scopeIdentifier?: unknown;
-    };
+    scope: Scope.Custom;
+    scopeIdentifier?: unknown;
+  };
 type ConstructorProvider = {
   provide: Type;
   deps?: TypeIdentifier[];
@@ -66,7 +66,7 @@ export function isClassProvider(arg: Provider): arg is ClassProvider {
   return Object.prototype.hasOwnProperty.call(arg, "useClass");
 }
 export function isConstructorProvider(
-  arg: Provider
+  arg: Provider,
 ): arg is ConstructorProvider {
   return (
     isProvider(arg) &&

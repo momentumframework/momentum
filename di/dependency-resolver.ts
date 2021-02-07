@@ -24,14 +24,14 @@ export class DependencyResolver {
   private async resolveDependency(
     identifier: TypeIdentifier,
     node: NullableDependencyGraphNode | undefined,
-    deferred?: boolean
+    deferred?: boolean,
   ) {
     const resolveFunc = async () => {
       if (!node) {
         throw Error(
           `Unknown type ${
             typeof identifier === "string" ? identifier : identifier.name
-          }`
+          }`,
         );
       }
       // deno-lint-ignore no-explicit-any
@@ -58,7 +58,7 @@ export class DependencyResolver {
 
   private async buildTypeNode(
     node: TypeDependencyGraphNode,
-    identifier: TypeIdentifier<unknown>
+    identifier: TypeIdentifier<unknown>,
   ) {
     const params = [];
     for (const paramNode of node.params) {
@@ -66,8 +66,8 @@ export class DependencyResolver {
         await this.resolveDependency(
           paramNode.node.identifier,
           paramNode.node,
-          paramNode.defer
-        )
+          paramNode.defer,
+        ),
       );
     }
     // deno-lint-ignore no-explicit-any
@@ -77,7 +77,7 @@ export class DependencyResolver {
       value[prop] = await this.resolveDependency(
         propNode.node.identifier,
         propNode.node,
-        propNode.defer
+        propNode.defer,
       );
     }
     return value;
@@ -85,12 +85,12 @@ export class DependencyResolver {
 
   private async buildFactoryNode(
     node: FactoryDependencyGraphNode,
-    identifier: TypeIdentifier
+    identifier: TypeIdentifier,
   ) {
     const params = [];
     for (const paramNode of node.params) {
       params.push(
-        await this.resolveDependency(paramNode.node.identifier, paramNode.node)
+        await this.resolveDependency(paramNode.node.identifier, paramNode.node),
       );
     }
     // deno-lint-ignore no-explicit-any

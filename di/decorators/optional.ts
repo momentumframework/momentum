@@ -5,13 +5,13 @@ export function Optional(): PropertyDecorator & ParameterDecorator {
     // deno-lint-ignore ban-types
     target: Object,
     propName?: string | symbol,
-    paramIndex?: number
+    paramIndex?: number,
   ) {
     if (propName) {
       DiContainer.root().registerProperty(
         target.constructor as Type,
         propName.toString(),
-        { isOptional: true }
+        { isOptional: true },
       );
     }
     if (paramIndex || paramIndex === 0) {

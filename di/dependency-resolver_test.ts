@@ -21,7 +21,7 @@ test("DependencyResolver.resolve() - resolves dependency", async () => {
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection),
   );
 
   // act
@@ -41,7 +41,7 @@ test("DependencyResolver.resolve() - allows optional dependencies", async () => 
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection),
   );
 
   // act
@@ -56,7 +56,7 @@ test("DependencyResolver.resolve() - resolves property dependencies", async () =
   // arrange
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection),
   );
 
   // act
@@ -80,7 +80,7 @@ test("DependencyResolver.resolve() - resolves factory dependencies", async () =>
 
   const resolver = new DependencyResolver(
     container,
-    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection),
   );
 
   // act
@@ -103,7 +103,7 @@ test("DependencyResolver.resolve() - resolves value dependencies", async () => {
 
   const resolver = new DependencyResolver(
     container,
-    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection),
   );
 
   // act
@@ -119,20 +119,18 @@ test("DependencyResolver.resolve() - resolves deferred dependencies", async () =
   @Injectable("A")
   class A {
     constructor(
-      @Inject("B", { defer: true })
-      public b: Deferred<B>
+      @Inject("B", { defer: true }) public b: Deferred<B>,
     ) {}
   }
   @Injectable("B")
   class B {
     constructor(
-      @Inject("A", { defer: true })
-      public a: Deferred<A>
+      @Inject("A", { defer: true }) public a: Deferred<A>,
     ) {}
   }
   const resolver = new DependencyResolver(
     DiContainer.root(),
-    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection)
+    new DiCache().beginScope(Scope.Singleton).beginScope(Scope.Injection),
   );
 
   // act

@@ -14,7 +14,7 @@ import {
 
 export function platformOak(
   app: Application = new Application(),
-  router: Router = new Router()
+  router: Router = new Router(),
 ) {
   return new OakPlatform(DiContainer.root(), app, router);
 }
@@ -25,7 +25,7 @@ export class OakPlatform extends ServerPlatform {
   constructor(
     container: DiContainer,
     application: Application,
-    router: Router
+    router: Router,
   ) {
     super(container);
     this.#app = application;
@@ -44,7 +44,7 @@ export class OakPlatform extends ServerPlatform {
     _controllerMetadata: ControllerMetadata,
     actionMetadata: ActionMetadata,
     // deno-lint-ignore no-explicit-any
-    handler: (context: RouterContext) => any
+    handler: (context: RouterContext) => any,
   ) {
     const routeHandler = async (context: RouterContext) => {
       const result = await handler(context);
@@ -93,7 +93,7 @@ export class OakPlatform extends ServerPlatform {
       | "request"
       | "response",
     context: RouterContext,
-    identifier: string
+    identifier: string,
   ) {
     switch (kind) {
       case "url":
@@ -111,7 +111,7 @@ export class OakPlatform extends ServerPlatform {
             case "form-data":
               return this.parseFormDataBody(
                 await body.value.read(),
-                identifier
+                identifier,
               );
             case "json":
               return this.parseJsonBody(await body.value, identifier);
@@ -139,7 +139,7 @@ export class OakPlatform extends ServerPlatform {
     // deno-lint-ignore no-explicit-any
     value: any,
     // deno-lint-ignore no-explicit-any
-    identifier?: any
+    identifier?: any,
   ) {
     switch (kind) {
       case "body":
@@ -178,7 +178,7 @@ export class OakPlatform extends ServerPlatform {
             : [prev[currKey], currValue]
           : currValue,
       }),
-      {} as Record<string, unknown>
+      {} as Record<string, unknown>,
     );
   }
 

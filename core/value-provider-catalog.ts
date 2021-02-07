@@ -18,7 +18,7 @@ export class ValueProviderCatalog {
     type: ControllerClass,
     action: string,
     parameterIndex: number,
-    valueProvider: ValueProvider
+    valueProvider: ValueProvider,
   ) {
     let controllerRegistration = this.catalog.get(type);
     if (!controllerRegistration) {
@@ -36,7 +36,7 @@ export class ValueProviderCatalog {
   static getValueProvider(
     type: ControllerClass,
     action: string,
-    parameterIndex: number
+    parameterIndex: number,
   ) {
     return this.catalog.get(type)?.actions[action].valueProviders[
       parameterIndex

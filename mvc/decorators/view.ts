@@ -5,7 +5,7 @@ export function View(
   name: string,
   options?: {
     layout: string | false;
-  }
+  },
 ): ClassDecorator & MethodDecorator {
   // deno-lint-ignore ban-types
   return function (target: Function | Object, propertyKey?: string | symbol) {
@@ -13,7 +13,7 @@ export function View(
       ViewCatalog.registerActionView(
         target.constructor as Type,
         propertyKey.toString(),
-        { name, ...options }
+        { name, ...options },
       );
     } else {
       ViewCatalog.registerControllerView(target as Type, { name, ...options });
