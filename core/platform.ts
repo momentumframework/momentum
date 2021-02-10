@@ -14,10 +14,26 @@ import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerController } from "./server-controller.ts";
 
+/**
+ * Creates a new basic momentum platform
+ * 
+ * @returns {MomentumPlatform}
+ * 
+ * @remarks
+ * ## Example
+ * 
+ * ```typescript
+ * const platform = await platformMomentum().bootstrapModule(AppModule)
+ * ```
+ */
 export function platformMomentum() {
   return new MomentumPlatform(DiContainer.root().createChild("platform"));
 }
 
+/**
+ * The Momentum platform is the entry point for every Momentum application. 
+ * Each application has exactly one platform and services are bound the scope of the platform.
+ */
 export abstract class Platform {
   readonly #diCache = new DiCache().beginScope(Scope.Singleton);
   readonly #container: DiContainer;
@@ -27,25 +43,60 @@ export abstract class Platform {
     this.#container = container;
   }
 
+  /**
+   * Get the platforms entry module
+   * 
+   * @returns {ModuleRef}
+   */
   get module() {
-    this.ensureInitalized();
+    this.ensureInitialized();
     return this.#module as ModuleRef;
   }
 
+  /**
+   * Get the platforms root dependency injection container
+   * 
+   * @returns {DiContainer}
+   */
   get container() {
-    this.ensureInitalized();
+    this.ensureInitialized();
     return this.module.diContainer;
   }
 
+  /**
+   * Get the platforms dependency injection cache
+   * 
+   * @returns {DiCache}
+   */
   get diCache() {
     return this.#diCache;
   }
 
-  resolve<T = unknown>(identifier: TypeIdentifier) {
-    this.ensureInitalized();
-    return this.module.resolve<T>(identifier, this.diCache);
+  /**
+   * Resolves an instance of @see TReturn
+   * 
+   * @param identifier type identifer to create an instance of
+   * 
+   * @typeParam TReturn - return type
+   * 
+   * @returns {TReturn}
+   */
+  resolve<TReturn = unknown>(identifier: TypeIdentifier) {
+    this.ensureInitialized();
+    return this.module.resolve<TReturn>(identifier, this.diCache);
   }
 
+  /**
+   * Bootstrap a Momentum application on a given platform.
+   * 
+   * @param moduleType Module type to bootstrap
+   * 
+   * @remarks
+   * ## Example
+   * ```typescript
+   * const platform = await platformMomentum().bootstrapModule(AppModule);
+   * ```
+   */
   async bootstrapModule(moduleType: ModuleClass) {
     try {
       await this.preBootstrap();
@@ -53,7 +104,7 @@ export abstract class Platform {
       this.#module = await ModuleRef.createModuleRef(
         ModuleCatalog.getMetadata(moduleType),
         this.#container.createChild(moduleType.name),
-        this.#diCache
+        this.#diCache,
       );
       this.#module.diContainer.preCompileDependencyGraph(true);
       await this.postBootstrap();
@@ -70,13 +121,16 @@ export abstract class Platform {
     }
   }
 
-  private ensureInitalized() {
+  private ensureInitialized() {
     if (!this.#module) {
       throw new Error("Platform has not been bootstrapped");
     }
   }
 }
 
+/**
+ * Momentum platform for server applications such as APIs and web applications.
+ */
 export abstract class ServerPlatform extends Platform {
   #serverController: ServerController;
 
@@ -96,11 +150,11 @@ export abstract class ServerPlatform extends Platform {
     route: string,
     controllerMetadata: ControllerMetadata,
     actionMetadata: ActionMetadata,
-    handler: (context: unknown) => unknown
+    handler: (context: unknown) => unknown,
   ): void | Promise<void>;
 
   abstract addMiddlewareHandler(
-    handler: (context: unknown) => Promise<boolean>
+    handler: (context: unknown) => Promise<boolean>,
   ): void | Promise<void>;
 
   abstract getContextItem(
@@ -114,23 +168,39 @@ export abstract class ServerPlatform extends Platform {
       | "request"
       | "response",
     context: unknown,
-    identifier?: unknown
+    identifier?: unknown,
   ): Promise<unknown>;
 
   abstract setContextItem(
     kind: "body" | "status" | "cookie" | "header" | "status",
     context: unknown,
     value: unknown,
-    identifier?: unknown
+    identifier?: unknown,
   ): void | Promise<void>;
 
   abstract sendFile(context: unknown, path: string): void | Promise<void>;
 
+  /**
+   * Provide middleware into the application. 
+   * The middleware can either be an instance of a @see MvMiddleware or a type that 
+   * implements @see MvMiddleware which will be resolved by the platform resolver. 
+   * 
+   * @remarks
+   * Middleware will be executed immediately before a request.
+   */
   use(middleware: MvMiddleware | Type<MvMiddleware>) {
     this.#serverController.registerMiddleware(middleware);
     return this;
   }
 
+  /**
+   * Register a filter globally. The filter can either be an instance 
+   * of @see MvFilter or a type that implements @see MvFilter which will be resolved by the platform resolver. 
+   * 
+   * @remarks
+   * Filters are executed within the request pipeline and can be used to 
+   * modify or cancel the results of a request, or simply hook into the pipeline. 
+   */
   registerGlobalFilter(filter: MvFilter | Type<MvFilter>) {
     this.#serverController.registerGlobalFilter(filter);
     return this;

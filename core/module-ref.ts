@@ -9,22 +9,25 @@ import {
 } from "./deps.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import {
+  DynamicModule,
+  ExtendedModuleMetadata,
   isClassProvider,
   isConstructorProvider,
   isFactoryProvider,
   isProvider,
   isValueProvider,
-  ExtendedModuleMetadata,
   ModuleClass,
-  DynamicModule,
 } from "./module-metadata.ts";
 
 function isDynamicModule(
-  module: ModuleClass | DynamicModule
+  module: ModuleClass | DynamicModule,
 ): module is DynamicModule {
   return typeof module !== "function";
 }
 
+/**
+ * Represents a reference to an initialized Momentum module
+ */
 export class ModuleRef {
   readonly #metadata: ExtendedModuleMetadata;
   readonly #diContainer: DiContainer;
@@ -37,7 +40,7 @@ export class ModuleRef {
     diContainer: DiContainer,
     diCache: DiCache,
     instance: unknown,
-    modules: ModuleRef[]
+    modules: ModuleRef[],
   ) {
     this.#metadata = metadata;
     this.#diContainer = diContainer;
@@ -69,11 +72,33 @@ export class ModuleRef {
     ];
   }
 
-  resolve<T = unknown>(identifier: TypeIdentifier): Promise<T>;
-  resolve<T = unknown>(identifier: TypeIdentifier, cache: DiCache): Promise<T>;
+  /**
+   * Resolves an instance of @see TReturn
+   * 
+   * @param identifier type identifer to create an instance of
+   * 
+   * @typeParam TReturn - return type
+   * 
+   * @returns {TReturn}
+   */
+  resolve<TReturn = unknown>(identifier: TypeIdentifier): Promise<TReturn>;
+  /**
+   * Resolves an instance of @see TReturn using a custom @see DiCache
+   * 
+   * @param identifier Type identifer to create an instance of
+   * @param cache The @see DiCache to use for resolution
+   * 
+   * @typeParam TReturn - return type
+   * 
+   * @returns {TReturn}
+   */
+  resolve<TReturn = unknown>(
+    identifier: TypeIdentifier,
+    cache: DiCache,
+  ): Promise<TReturn>;
   async resolve<T = unknown>(
     identifier: TypeIdentifier,
-    cache = this.#diCache
+    cache = this.#diCache,
   ) {
     const scopedCache = cache.createChild().beginScope(Scope.Injection);
     try {
@@ -88,12 +113,12 @@ export class ModuleRef {
     moduleMetadata: ExtendedModuleMetadata,
     diContainer: DiContainer,
     diCache: DiCache,
-    moduleCache: Map<ExtendedModuleMetadata, ModuleRef> = new Map()
+    moduleCache: Map<ExtendedModuleMetadata, ModuleRef> = new Map(),
   ): Promise<ModuleRef> {
     let moduleRef = moduleCache.get(moduleMetadata);
     if (!moduleRef) {
       const moduleDiContainer = diContainer.createSibling(
-        moduleMetadata.type.name
+        moduleMetadata.type.name,
       );
       const subModules: ModuleRef[] = [];
       if (moduleMetadata.imports) {
@@ -103,21 +128,21 @@ export class ModuleRef {
               submoduleDefinition,
               moduleDiContainer,
               diCache,
-              moduleCache
-            )
+              moduleCache,
+            ),
           );
         }
       }
       const moduleContainer = this.populateDiContainer(
         moduleMetadata,
         moduleDiContainer,
-        subModules
+        subModules,
       );
       moduleContainer.registerType(
         moduleMetadata.type,
         moduleMetadata.type,
         moduleMetadata.params?.map((param) => ({ identifier: param })),
-        {}
+        {},
       );
       moduleContainer.registerFactory(ModuleRef, () => moduleRef);
       const moduleResolver = new DependencyResolver(moduleContainer, diCache);
@@ -128,7 +153,7 @@ export class ModuleRef {
         moduleDiContainer,
         diCache,
         instance,
-        subModules
+        subModules,
       );
       moduleCache.set(moduleMetadata, moduleRef);
     }
@@ -139,7 +164,7 @@ export class ModuleRef {
     moduleDefinition: ModuleClass | DynamicModule,
     diContainer: DiContainer,
     diCache: DiCache,
-    moduleCache: Map<ExtendedModuleMetadata, ModuleRef> = new Map()
+    moduleCache: Map<ExtendedModuleMetadata, ModuleRef> = new Map(),
   ) {
     let moduleMetadata: ExtendedModuleMetadata;
     if (isDynamicModule(moduleDefinition)) {
@@ -171,14 +196,14 @@ export class ModuleRef {
       moduleMetadata,
       diContainer,
       diCache,
-      moduleCache
+      moduleCache,
     );
   }
 
   private static populateDiContainer(
     metadata: ExtendedModuleMetadata,
     diContainer: DiContainer,
-    importedModules: ModuleRef[]
+    importedModules: ModuleRef[],
   ) {
     if (metadata.providers) {
       for (const provider of metadata.providers) {
@@ -187,7 +212,7 @@ export class ModuleRef {
             provider,
             Reflect.getMetadata("design:paramtypes", provider),
             undefined,
-            undefined
+            undefined,
           );
         } else if (isConstructorProvider(provider)) {
           diContainer.registerType(
@@ -195,7 +220,7 @@ export class ModuleRef {
             provider.provide,
             provider.deps?.map((dep) => ({ identifier: dep })),
             undefined,
-            provider.scope
+            provider.scope,
           );
         } else if (isClassProvider(provider)) {
           diContainer.registerAlias(provider.useClass, provider.provide);
@@ -203,20 +228,20 @@ export class ModuleRef {
             provider.useClass,
             Reflect.getMetadata("design:paramtypes", provider),
             undefined,
-            provider.scope
+            provider.scope,
           );
         } else if (isFactoryProvider(provider)) {
           diContainer.registerFactory(
             provider.provide,
             provider.useFactory,
             provider.deps,
-            provider.scope
+            provider.scope,
           );
         } else if (isValueProvider(provider)) {
           diContainer.registerValue(
             provider.provide,
             provider.useValue,
-            provider.scope
+            provider.scope,
           );
         }
       }
@@ -229,10 +254,12 @@ export class ModuleRef {
         ) {
           continue;
         }
-        for (const exportedIdentifier of [
-          ...(moduleRef.metadata?.exports ?? []),
-          ...(moduleRef.metadata?.controllers ?? []),
-        ]) {
+        for (
+          const exportedIdentifier of [
+            ...(moduleRef.metadata?.exports ?? []),
+            ...(moduleRef.metadata?.controllers ?? []),
+          ]
+        ) {
           diContainer.import(exportedIdentifier, moduleRef.diContainer);
         }
       }

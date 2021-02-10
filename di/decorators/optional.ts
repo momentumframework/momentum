@@ -1,17 +1,20 @@
 import { DiContainer, Type } from "../di-container.ts";
 
+/**
+ * Mark an injected type as optional. If the type is not able to be resolved, the argument will be undefined
+ */
 export function Optional(): PropertyDecorator & ParameterDecorator {
   return function (
     // deno-lint-ignore ban-types
     target: Object,
     propName?: string | symbol,
-    paramIndex?: number
+    paramIndex?: number,
   ) {
     if (propName) {
       DiContainer.root().registerProperty(
         target.constructor as Type,
         propName.toString(),
-        { isOptional: true }
+        { isOptional: true },
       );
     }
     if (paramIndex || paramIndex === 0) {

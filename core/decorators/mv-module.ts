@@ -1,7 +1,10 @@
-import { Type, Reflect, Scope } from "../deps.ts";
+import { Reflect, Scope, Type } from "../deps.ts";
 import { ModuleCatalog } from "../module-catalog.ts";
 import { ModuleClass, ModuleMetadata } from "../module-metadata.ts";
 
+/**
+ * Decorator that marks a class as an MvModule and supplies configuration metadata.
+ */
 export function MvModule(metadata: ModuleMetadata): ClassDecorator {
   // deno-lint-ignore ban-types
   return function (target: Function) {
@@ -10,7 +13,7 @@ export function MvModule(metadata: ModuleMetadata): ClassDecorator {
       target as ModuleClass,
       paramTypes,
       {},
-      metadata
+      metadata,
     );
   };
 }
