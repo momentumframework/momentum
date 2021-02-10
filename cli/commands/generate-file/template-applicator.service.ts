@@ -17,13 +17,21 @@ export class TemplateApplicatorService {
     commandParameters: GenerateFileCommandParameters,
     schematicFileContents: string,
   ) {
-    return schematicFileContents
+    const templated = schematicFileContents
       .replaceAll("__name__", commandParameters.name)
       .replaceAll("__className__", commandParameters.className)
+      .replaceAll(
+        "__injectableOptions__",
+        Object.keys(commandParameters.injectableOptions).length
+          ? JSON.stringify(commandParameters.injectableOptions)
+          : "",
+      )
       .replaceAll(
         "__depsPath__",
         this.fileIOService.recursiveFileSearch("deps.ts"),
       );
+
+    return templated;
   }
 
   /**

@@ -31,8 +31,9 @@ export class GenerateFileCommandHandler
     );
 
     if (
-      commandParameters.schematicType === "service" ||
-      commandParameters.schematicType === "controller"
+      !commandParameters.skipImport &&
+      (commandParameters.isGlobalService ||
+        commandParameters.schematicType === "controller")
     ) {
       await this.templateApplicator.addGeneratedFileToModule(
         commandParameters,
