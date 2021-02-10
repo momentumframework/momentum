@@ -12,8 +12,8 @@ export class NewProjectCommandHandler
   }
 
   handle(commandParameters: NewProjectCommandParameters) {
-    // TODO: Pull git repo
-    // TODO: Apply templating
-    throw new Error("Method not implemented.");
+    this.systemService.executeCommand(
+      `git clone ${commandParameters.repositoryUrl} ./${commandParameters.name}`,
+    );
   }
 }

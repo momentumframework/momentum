@@ -2,7 +2,11 @@ import { Injectable } from "../../deps.ts";
 
 @Injectable()
 export class SystemService {
-  async executeCommand(cmd: string[]) {
+  async executeCommand(cmd: string[] | string) {
+    if (typeof cmd === "string") {
+      cmd = cmd.split(" ");
+    }
+
     const p = Deno.run({ cmd, stderr: "piped", stdout: "piped" });
 
     const [status, stdoutBytes, stderrBytes] = await Promise.all([

@@ -11,19 +11,23 @@ export class NewProjectCommandController implements CommandController {
   }
 
   createCommand(): Command {
-    const command = new Command("new");
-    command.arguments("<name>");
-    command.option(
-      "-r, --repository-url <repositoryUrl>",
+    const newProjectCommand = new Command("new");
+    newProjectCommand.arguments("<name>");
+    newProjectCommand.option(
+      "-r, --repository-url [repositoryUrl]",
       "full URL of the repository to clone",
     );
-    command.action((name: string, repositoryUrl: string) => {
+    newProjectCommand.action((name: string, command: Command) => {
+      const defaultRepositoryUrl =
+        "https://github.com/KerryRitter/momentum-api-starter";
+
       const commandParameters = new NewProjectCommandParameters({
-        name,
-        repositoryUrl,
+        providedName: name,
+        repositoryUrl: command.repositoryUrl ?? defaultRepositoryUrl,
       });
+
       return this.commandHandler.handle(commandParameters);
     });
-    return command;
+    return newProjectCommand;
   }
 }
