@@ -22,7 +22,7 @@ export class ControllerCatalog {
 
   static registerControllerMetadata(
     type: ControllerClass,
-    metadata: Omit<ControllerMetadata, "type">
+    metadata: Omit<ControllerMetadata, "type">,
   ) {
     this.getControllerRegistration(type).metadata = {
       ...metadata,
@@ -33,7 +33,7 @@ export class ControllerCatalog {
   static registerActionMetadata(
     type: ControllerClass,
     action: string,
-    metadata: Omit<ActionMetadata, "action">
+    metadata: Omit<ActionMetadata, "action">,
   ) {
     this.getActionRegistration(type, action).metadata = {
       ...metadata,
@@ -44,7 +44,7 @@ export class ControllerCatalog {
   static registerParameterMetadata(
     type: ControllerClass,
     action: string,
-    metadata: ParameterMetadata
+    metadata: ParameterMetadata,
   ) {
     this.getActionRegistration(type, action).parameters?.push(metadata);
   }
@@ -54,14 +54,16 @@ export class ControllerCatalog {
     if (!registration) {
       return;
     }
-    for (const [method, actionRegistration] of Object.entries(
-      registration.actions
-    )) {
+    for (
+      const [method, actionRegistration] of Object.entries(
+        registration.actions,
+      )
+    ) {
       yield {
         action: method,
         route: ControllerCatalog.constructRoute(
           registration.metadata,
-          actionRegistration.metadata
+          actionRegistration.metadata,
         ),
         controllerMetadata: registration.metadata,
         actionMetadata: actionRegistration.metadata,
@@ -95,7 +97,7 @@ export class ControllerCatalog {
 
   private static constructRoute(
     controllerMetadata: ControllerMetadata | undefined,
-    actionMetadata: ActionMetadata | undefined
+    actionMetadata: ActionMetadata | undefined,
   ) {
     const parts = [];
     const controllerRoute = trimSlashes(controllerMetadata?.route);

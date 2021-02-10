@@ -3,7 +3,7 @@ import { ControllerClass } from "../controller-metadata.ts";
 
 export function createActionDecorator(
   method: "get" | "post" | "put" | "delete" | "head" | "patch",
-  route?: string
+  route?: string,
 ): MethodDecorator {
   // deno-lint-ignore ban-types
   return function (target: Object, propertyKey: string | symbol) {
@@ -13,7 +13,7 @@ export function createActionDecorator(
       {
         method,
         route: route ?? "/",
-      }
+      },
     );
   };
 }

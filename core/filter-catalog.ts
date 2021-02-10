@@ -23,7 +23,7 @@ export class FilterCatalog {
 
   static registerGlobalFilter(
     filter: Type<MvFilter> | MvFilter,
-    priority?: number
+    priority?: number,
   ) {
     this.globalCatalog.push({ filter, priority });
   }
@@ -31,7 +31,7 @@ export class FilterCatalog {
   static registerControllerFilter(
     type: ControllerClass,
     filter: Type<MvFilter> | MvFilter,
-    priority?: number
+    priority?: number,
   ) {
     this.getControllerRegistration(type).registrations.push({
       filter,
@@ -43,7 +43,7 @@ export class FilterCatalog {
     type: ControllerClass,
     action: string,
     filter: Type<MvFilter> | MvFilter,
-    priority?: number
+    priority?: number,
   ) {
     this.getActionRegistration(type, action).registrations.push({
       filter,

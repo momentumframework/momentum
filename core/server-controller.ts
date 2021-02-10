@@ -33,26 +33,28 @@ export class ServerController {
     this.#platform.addMiddlewareHandler(async (context) => {
       try {
         return await this.executeMiddleware(
-          new ContextAccessor(context, this.#platform)
+          new ContextAccessor(context, this.#platform),
         );
       } catch (err) {
         throw err;
       }
     });
     for (const controller of this.#platform.module.controllers) {
-      for (const {
-        action,
-        route,
-        controllerMetadata,
-        actionMetadata,
-        parameterMetadata,
-      } of ControllerCatalog.getMetadataByRoute(controller)) {
+      for (
+        const {
+          action,
+          route,
+          controllerMetadata,
+          actionMetadata,
+          parameterMetadata,
+        } of ControllerCatalog.getMetadataByRoute(controller)
+      ) {
         if (!controllerMetadata) {
           throw new Error(`Controller ${controller} is not registered`);
         }
         if (!actionMetadata) {
           throw new Error(
-            `Controller action ${controller}.${action} is not registered`
+            `Controller action ${controller}.${action} is not registered`,
           );
         }
         await this.#platform.addRouteHandler(
@@ -66,8 +68,8 @@ export class ServerController {
             action,
             controllerMetadata,
             actionMetadata,
-            parameterMetadata
-          )
+            parameterMetadata,
+          ),
         );
       }
     }
@@ -78,7 +80,7 @@ export class ServerController {
     action: string,
     controllerMetadata: ControllerMetadata,
     actionMetadata: ActionMetadata,
-    parameterMetadatas?: ParameterMetadata[]
+    parameterMetadatas?: ParameterMetadata[],
   ): (context: unknown) => unknown {
     return async (context) => {
       const diCache = this.#platform.diCache
@@ -93,13 +95,13 @@ export class ServerController {
           container.registerValue(
             ContextAccessor,
             contextAccessor,
-            Scope.Request
+            Scope.Request,
           );
           container.registerValue(SCOPED_CONTAINER, clone, Scope.Request);
           container.registerValue(
             SCOPED_RESOLVER,
             scopedResolver,
-            Scope.Request
+            Scope.Request,
           );
         });
         const controllerInstance: Record<
@@ -108,14 +110,14 @@ export class ServerController {
         > = await scopedResolver.resolve(controller);
         for (const item of new Set(diCache.items)) {
           await (item as Partial<OnRequestStart>)?.mvOnRequestStart?.(
-            contextAccessor
+            contextAccessor,
           );
         }
         const parameters = await this.buildParameters(
           context,
           controllerMetadata,
           actionMetadata,
-          parameterMetadatas
+          parameterMetadatas,
         );
         const result = await this.executeFilters(
           context,
@@ -124,11 +126,11 @@ export class ServerController {
           parameters,
           controllerMetadata,
           actionMetadata,
-          parameterMetadatas
+          parameterMetadatas,
         );
         for (const item of new Set(diCache.items)) {
           await (item as Partial<OnRequestEnd>)?.mvOnRequestEnd?.(
-            contextAccessor
+            contextAccessor,
           );
         }
         if (result instanceof StatusCodeResult) {
@@ -193,17 +195,17 @@ export class ServerController {
     parameters: unknown[],
     controllerMetadata: ControllerMetadata,
     actionMetadata: ActionMetadata,
-    parameterMetadatas?: ParameterMetadata[]
+    parameterMetadatas?: ParameterMetadata[],
   ) {
     const filters = await Promise.all(
       FilterCatalog.getFilters(
         controllerMetadata.type,
-        actionMetadata.action
+        actionMetadata.action,
       ).map(async (filter) =>
         typeof filter === "function"
           ? await scopedResolver.resolve<MvFilter>(filter)
           : filter
-      )
+      ),
     );
     let next = executor;
     for (const filter of filters.reverse()) {
@@ -226,7 +228,7 @@ export class ServerController {
             index: parmeterMetadata.index,
             name: parmeterMetadata.name,
             type: parmeterMetadata.type,
-          }))
+          })),
         );
     }
     return await next();
@@ -236,14 +238,14 @@ export class ServerController {
     context: unknown,
     controllerMetadata: ControllerMetadata,
     actionMetadata: ActionMetadata,
-    parameterMetadatas?: ParameterMetadata[]
+    parameterMetadatas?: ParameterMetadata[],
   ) {
     const parameters: unknown[] = [];
     for (const parameterMetadata of parameterMetadatas ?? []) {
       const valueProvider = ValueProviderCatalog.getValueProvider(
         controllerMetadata.type,
         actionMetadata.action,
-        parameterMetadata.index
+        parameterMetadata.index,
       );
       if (!valueProvider) {
         continue;
@@ -251,7 +253,7 @@ export class ServerController {
       parameters[parameterMetadata.index] = await valueProvider(
         new ContextAccessor(context, this.#platform),
         parameterMetadata,
-        this.#platform
+        this.#platform,
       );
     }
     return parameters;

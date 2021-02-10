@@ -1,4 +1,4 @@
-import { Injectable, Inject } from "./deps.ts";
+import { Inject, Injectable } from "./deps.ts";
 import { assert, assertEquals, test } from "./test_deps.ts";
 
 import { ModuleRef, MvModule, platformMomentum } from "./mod.ts";

@@ -8,7 +8,7 @@ export function InlineView(template: string): ClassDecorator & MethodDecorator {
       ViewCatalog.registerActionView(
         target.constructor as Type,
         propertyKey.toString(),
-        { template }
+        { template },
       );
     } else {
       ViewCatalog.registerControllerView(target as Type, { template });

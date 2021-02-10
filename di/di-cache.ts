@@ -37,7 +37,7 @@ export class DiCache {
     scope: Scope | string,
     diContainer: DiContainer,
     typeIdentifier: TypeIdentifier,
-    value: unknown
+    value: unknown,
   ) {
     const scopeCache = this.#cache.get(scope);
     if (scopeCache) {
@@ -54,7 +54,7 @@ export class DiCache {
 
   get<T = unknown>(
     diContainer: DiContainer,
-    typeIdentifier: TypeIdentifier
+    typeIdentifier: TypeIdentifier,
   ): T | undefined {
     for (const [_, scopeCache] of this.#cache.entries()) {
       const diContextCache = scopeCache.get(diContainer);

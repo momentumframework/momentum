@@ -6,7 +6,7 @@ export class MultikeyMap<TKey1, TKey2, TValue> {
   get size() {
     return Array.from(this.#map.values()).reduce(
       (accum, map) => accum + map.size,
-      0
+      0,
     );
   }
   has(key1: TKey1, key2: TKey2) {

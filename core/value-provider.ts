@@ -5,5 +5,5 @@ import { ServerPlatform } from "./platform.ts";
 export type ValueProvider = (
   contextAccessor: ContextAccessor,
   metadata: ParameterMetadata,
-  platform: ServerPlatform
+  platform: ServerPlatform,
 ) => Promise<unknown>;

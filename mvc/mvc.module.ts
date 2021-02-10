@@ -37,13 +37,15 @@ export class MvcModule {
     };
   }
   static registerAsync(
-    options: {
-      configFactory: FactoryFunction<
-        Partial<MvcConfig> | Promise<Partial<MvcConfig>>
-      >;
-    } & Pick<FactoryProvider, "deps"> &
-      Pick<ModuleMetadata, "imports"> &
-      Pick<MvcModuleOptions, "viewEngineModule">
+    options:
+      & {
+        configFactory: FactoryFunction<
+          Partial<MvcConfig> | Promise<Partial<MvcConfig>>
+        >;
+      }
+      & Pick<FactoryProvider, "deps">
+      & Pick<ModuleMetadata, "imports">
+      & Pick<MvcModuleOptions, "viewEngineModule">,
   ): DynamicModule {
     return {
       type: MvcModule,
@@ -58,9 +60,8 @@ export class MvcModule {
     };
   }
   constructor(
-    @Inject(PLATFORM)
-    platform: ServerPlatform,
-    mvcFilter: MvcFilter
+    @Inject(PLATFORM) platform: ServerPlatform,
+    mvcFilter: MvcFilter,
   ) {
     platform.registerGlobalFilter(mvcFilter);
   }

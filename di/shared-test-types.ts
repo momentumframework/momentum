@@ -21,7 +21,7 @@ export class Atom {
   constructor(
     public proton?: Proton,
     public neutron?: Neutron,
-    public electron?: Electron
+    public electron?: Electron,
   ) {}
 }
 
@@ -35,7 +35,7 @@ export class Person {
   constructor(
     @Inject("PANTS")
     @Optional()
-    public pants?: string
+    public pants?: string,
   ) {}
 }
 

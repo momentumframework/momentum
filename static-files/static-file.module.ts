@@ -26,9 +26,8 @@ export class StaticFileModule {
   }
 
   constructor(
-    @Inject(PLATFORM)
-    platform: ServerPlatform,
-    staticFileMiddleware: StaticFileMiddleware
+    @Inject(PLATFORM) platform: ServerPlatform,
+    staticFileMiddleware: StaticFileMiddleware,
   ) {
     platform.use(staticFileMiddleware);
   }

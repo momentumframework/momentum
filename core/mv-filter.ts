@@ -14,6 +14,6 @@ export interface MvFilter {
     parameters: unknown[],
     controllerMetadata?: ControllerMetadata,
     actionMetadata?: ActionMetadata,
-    parameterMetadatas?: ParameterMetadata[]
+    parameterMetadatas?: ParameterMetadata[],
   ): Promise<unknown>;
 }

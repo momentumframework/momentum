@@ -6,7 +6,7 @@ import {
 } from "./test_deps.ts";
 
 import { TypeDependencyGraphNode } from "./di-container.ts";
-import { DiContainer, Injectable, Inject, Deferred } from "./mod.ts";
+import { Deferred, DiContainer, Inject, Injectable } from "./mod.ts";
 import {
   Atom,
   Electron,
@@ -38,7 +38,7 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
         param.node.kind === "type" ? param.node : undefined
       )
       .map((node) => node?.ctor) ?? [],
-    [Quark]
+    [Quark],
   );
   assertArrayContains(
     (root as TypeDependencyGraphNode).params
@@ -52,7 +52,7 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
         param.node.kind === "type" ? param.node : undefined
       )
       .map((node) => node?.ctor) ?? [],
-    [Quark]
+    [Quark],
   );
   assertEquals(
     (root as TypeDependencyGraphNode).params
@@ -62,7 +62,7 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
         param.node.kind === "type" ? param.node : undefined
       )
       .find((node) => node?.ctor === Electron)?.params ?? [],
-    []
+    [],
   );
   assertEquals(
     (root as TypeDependencyGraphNode).params
@@ -76,7 +76,7 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
         param.node.kind === "type" ? param.node : undefined
       )
       .find((node) => node?.ctor === Quark)?.params ?? [],
-    []
+    [],
   );
   assertEquals(
     (root as TypeDependencyGraphNode).params
@@ -90,7 +90,7 @@ test("DiContainer.buildDependencyGraph() - builds dependency graph", () => {
         param.node.kind === "type" ? param.node : undefined
       )
       .find((node) => node?.ctor === Quark)?.params ?? [],
-    []
+    [],
   );
 });
 
@@ -113,7 +113,7 @@ test("DiContainer.buildDependencyGraph() - fails on unknown dependency", () => {
       DiContainer.root().getDependencyGraph(Car);
     },
     undefined,
-    "Error composing Car < Engine < Piston. Piston is not registered"
+    "Error composing Car < Engine < Piston. Piston is not registered",
   );
 });
 
@@ -149,7 +149,7 @@ test("DiContainer.buildDependencyGraph() - fails on circular dependency", () => 
       DiContainer.root().getDependencyGraph(Money);
     },
     undefined,
-    "Circular dependency detected: Money > JOB > College > Money"
+    "Circular dependency detected: Money > JOB > College > Money",
   );
 });
 
@@ -162,12 +162,12 @@ test("DiContainer.buildDependencyGraph() - allows circular property dependencies
   assertEquals(
     (thingOneGraph as TypeDependencyGraphNode).props["otherThing"].node
       .identifier,
-    "THING_TWO"
+    "THING_TWO",
   );
   assertEquals(
     (thingTwoGraph as TypeDependencyGraphNode).props["otherThing"].node
       .identifier,
-    ThingOne
+    ThingOne,
   );
 });
 
@@ -185,11 +185,11 @@ test("DiContainer.buildDependencyGraph() - child container can override parent",
   // assert
   assertEquals(
     (childPersonGraph as TypeDependencyGraphNode).params[0].node.kind,
-    "value"
+    "value",
   );
   assertEquals(
     (globalPersonGraph as TypeDependencyGraphNode).params[0].node.kind,
-    "null"
+    "null",
   );
 });
 
@@ -198,16 +198,14 @@ test("DiContainer.buildDependencyGraph() - can defer dependencies", () => {
   @Injectable("FOO")
   class Foo {
     constructor(
-      @Inject("BAR")
-      _bar: Deferred<Bar>
+      @Inject("BAR") _bar: Deferred<Bar>,
     ) {}
   }
 
   @Injectable("BAR")
   class Bar {
     constructor(
-      @Inject("FOO", { defer: true })
-      _foo: Deferred<Foo>
+      @Inject("FOO", { defer: true }) _foo: Deferred<Foo>,
     ) {}
   }
 
@@ -247,7 +245,7 @@ test("DiContainer.import() - imports from another container", () => {
         param.node.kind === "type" ? param.node : undefined
       )
       .map((node) => node?.ctor) ?? [],
-    [Quark]
+    [Quark],
   );
   assertArrayContains(
     (atomGraph as TypeDependencyGraphNode).params
@@ -257,18 +255,18 @@ test("DiContainer.import() - imports from another container", () => {
         param.node.kind === "type" ? param.node : undefined
       )
       .map((node) => node?.ctor) ?? [],
-    [Quark]
+    [Quark],
   );
   assertArrayContains(
     (atomGraph as TypeDependencyGraphNode).params
       .map((param) => (param.node.kind === "type" ? param.node : undefined))
       .map((node) => node?.ctor) ?? [],
-    [Electron]
+    [Electron],
   );
   assertThrows(
     () => container3.getDependencyGraph(Neutron),
     undefined,
-    "Error composing Neutron. Neutron is not registered"
+    "Error composing Neutron. Neutron is not registered",
   );
 });
 
@@ -299,6 +297,6 @@ test("DiContainer.import() - does not import non-imported definitions", () => {
       container3.getDependencyGraph(Neutron);
     },
     undefined,
-    "Error composing Neutron. Neutron is not registered"
+    "Error composing Neutron. Neutron is not registered",
   );
 });

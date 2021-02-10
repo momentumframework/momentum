@@ -53,7 +53,7 @@ declare namespace Handlebars {
       arg3?: any,
       arg4?: any,
       arg5?: any,
-      options?: HelperOptions
+      options?: HelperOptions,
     ): any;
   }
   export interface HelperDeclareSpec {
@@ -86,18 +86,18 @@ declare namespace Handlebars {
   export function parse(input: string, options?: ParseOptions): hbs.AST.Program;
   export function parseWithoutProcessing(
     input: string,
-    options?: ParseOptions
+    options?: ParseOptions,
   ): hbs.AST.Program;
   export function compile<T = any>(
     input: any,
-    options?: CompileOptions
+    options?: CompileOptions,
   ): HandlebarsTemplateDelegate<T>;
   export function precompile(
     input: any,
-    options?: PrecompileOptions
+    options?: PrecompileOptions,
   ): TemplateSpecification;
   export function template<T = any>(
-    precompilation: TemplateSpecification
+    precompilation: TemplateSpecification,
   ): HandlebarsTemplateDelegate<T>;
 
   export function create(): typeof Handlebars;
@@ -209,7 +209,7 @@ declare namespace Handlebars {
     export function resolvePartial<T = any>(
       partial: HandlebarsTemplateDelegate<T> | undefined,
       context: any,
-      options: ResolvePartialOptions
+      options: ResolvePartialOptions,
     ): HandlebarsTemplateDelegate<T>;
   }
 }
@@ -286,7 +286,7 @@ interface Logger {
   log(level: number, obj: string): void;
 }
 
-type CompilerInfo = [number /* revision */, string /* versions */];
+type CompilerInfo = [number, /* revision */ string /* versions */];
 
 declare namespace hbs {
   namespace AST {

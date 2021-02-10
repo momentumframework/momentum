@@ -15,7 +15,7 @@ export class ModuleCatalog {
     type: ModuleClass,
     params: TypeIdentifier[],
     props: Record<string, TypeIdentifier>,
-    config: ModuleMetadata
+    config: ModuleMetadata,
   ) {
     this.catalog.set(type, { ...config, type, params, props });
   }

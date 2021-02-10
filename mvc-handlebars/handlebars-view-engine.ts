@@ -27,7 +27,7 @@ export class HandlebarsViewEngine implements ViewEngine {
   constructor(
     @Optional()
     @Inject(MVC_HANDLEBARS_CONFIG)
-    config?: MvcHandlebarsConfig
+    config?: MvcHandlebarsConfig,
   ) {
     this.#config = { ...defaultConfig, ...config };
   }
@@ -39,13 +39,13 @@ export class HandlebarsViewEngine implements ViewEngine {
     layout: string | false,
     cacheTemplate: boolean,
     templateCallback: () => Promise<string | undefined>,
-    layoutCallback: () => Promise<string | undefined>
+    layoutCallback: () => Promise<string | undefined>,
   ) {
     const compiledTemplate = await this.getCompiledTemplate(
       templateCallback,
       controllerMetadata.type,
       actionMetadata.action,
-      cacheTemplate
+      cacheTemplate,
     );
     if (!compiledTemplate) {
       return;
@@ -54,7 +54,7 @@ export class HandlebarsViewEngine implements ViewEngine {
       const compiledLayoutTemplate = await this.getCompiledLayout(
         layoutCallback,
         layout,
-        cacheTemplate
+        cacheTemplate,
       );
       Handlebars.registerHelper("renderBody", () => compiledTemplate(model));
       const result = compiledLayoutTemplate();
@@ -66,7 +66,7 @@ export class HandlebarsViewEngine implements ViewEngine {
 
   registerHelper(
     name: string,
-    helperFunc: (...args: unknown[]) => unknown
+    helperFunc: (...args: unknown[]) => unknown,
   ): void {
     Handlebars.registerHelper(name, helperFunc);
   }
@@ -83,7 +83,7 @@ export class HandlebarsViewEngine implements ViewEngine {
     templateCallback: () => Promise<string | undefined>,
     controllerType: ControllerClass,
     action: string,
-    cacheTemplate: boolean
+    cacheTemplate: boolean,
   ) {
     let controllerTemplateCache = this.#templateCache.get(controllerType);
     if (!controllerTemplateCache) {
@@ -107,7 +107,7 @@ export class HandlebarsViewEngine implements ViewEngine {
   private async getCompiledLayout(
     layoutCallback: () => Promise<string | undefined>,
     layout: string,
-    cacheTemplate: boolean
+    cacheTemplate: boolean,
   ) {
     let compiledLayoutTemplate = this.#layoutCache[layout];
     if (!compiledLayoutTemplate || !cacheTemplate) {
