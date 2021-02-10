@@ -63,6 +63,10 @@ https://momentumframework.org
 
 `deno fmt` should be run before submitting a PR.
 
+## Linting
+
+`deno lint` should be run before submitting a PR.
+
 ## Documentation
 
 Changes to a publicly exposed component should include
