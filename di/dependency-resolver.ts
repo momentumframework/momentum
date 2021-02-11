@@ -8,6 +8,9 @@ import {
   TypeIdentifier,
 } from "./di-container.ts";
 
+/**
+ * Resolves dependencies
+ */
 export class DependencyResolver {
   readonly #container: DiContainer;
   readonly #cache: DiCache;
@@ -16,9 +19,18 @@ export class DependencyResolver {
     this.#cache = cache;
   }
 
-  async resolve<T>(identifier: TypeIdentifier) {
+  /**
+   * Resolves an instance of @see TReturn
+   * 
+   * @param identifier type identifer to create an instance of
+   * 
+   * @typeParam TReturn - return type
+   * 
+   * @returns {Promise<TReturn>}
+   */
+  async resolve<TReturn>(identifier: TypeIdentifier) {
     const rootNode = this.#container.getDependencyGraph(identifier);
-    return (await this.resolveDependency(identifier, rootNode)) as T;
+    return (await this.resolveDependency(identifier, rootNode)) as TReturn;
   }
 
   private async resolveDependency(

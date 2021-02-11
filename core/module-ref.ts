@@ -11,13 +11,15 @@ import { ModuleCatalog } from "./module-catalog.ts";
 import {
   DynamicModule,
   ExtendedModuleMetadata,
+  ModuleClass,
+} from "./module-metadata.ts";
+import {
   isClassProvider,
   isConstructorProvider,
   isFactoryProvider,
   isProvider,
   isValueProvider,
-  ModuleClass,
-} from "./module-metadata.ts";
+} from "./type-guards.ts";
 
 function isDynamicModule(
   module: ModuleClass | DynamicModule,
@@ -26,7 +28,7 @@ function isDynamicModule(
 }
 
 /**
- * Represents a reference to an initialized Momentum module
+ * Represents a reference to an bootstrapped Momentum module
  */
 export class ModuleRef {
   readonly #metadata: ExtendedModuleMetadata;
@@ -49,22 +51,37 @@ export class ModuleRef {
     this.#modules = modules;
   }
 
+  /**
+   * Get the module metadata
+   */
   get metadata() {
     return Object.freeze({ ...this.#metadata });
   }
 
+  /**
+   * Get the module dependency injection container
+   */
   get diContainer() {
     return this.#diContainer;
   }
 
+  /**
+   * Get the module instance
+   */
   get instance() {
     return this.#instance;
   }
 
+  /**
+   * Get the sub-modules of the module
+   */
   get modules() {
     return [...this.#modules];
   }
 
+  /**
+   * Get the controllers associated with the module
+   */
   get controllers(): Type<unknown>[] {
     return [
       ...(this.#metadata.controllers ?? []),

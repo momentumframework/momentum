@@ -9,6 +9,9 @@ import {
 import { StaticFileMiddleware } from "./static-file.middleware.ts";
 import { StaticFilesConfig } from "./static-files-config.ts";
 
+/**
+ * Include this module in your application to enable serving static files
+ */
 @MvModule({
   providers: [StaticFileMiddleware],
 })

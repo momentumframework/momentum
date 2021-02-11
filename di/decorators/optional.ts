@@ -1,7 +1,7 @@
 import { DiContainer, Type } from "../di-container.ts";
 
 /**
- * Mark an injected type as optional. If the type is not able to be resolved, the argument will be undefined
+ * Decorator use to mark an injected type as optional. If the type is not able to be resolved, the argument will be undefined
  */
 export function Optional(): PropertyDecorator & ParameterDecorator {
   return function (

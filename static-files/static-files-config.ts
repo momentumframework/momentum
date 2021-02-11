@@ -1,6 +1,15 @@
 export interface StaticFilesConfig {
+  /**
+   * Path from which to serve static files. By default this is /content
+   */
   contentRoot: string;
+  /**
+   * Path on the server where the static files are located. By default this is /src/content
+   */
   serverRoot: string;
+  /**
+   * Map of custom mime types by file extension
+   */
   mimeMap?: Record<string, string>;
 }
 

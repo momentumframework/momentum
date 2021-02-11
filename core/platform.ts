@@ -79,7 +79,7 @@ export abstract class Platform {
    * 
    * @typeParam TReturn - return type
    * 
-   * @returns {TReturn}
+   * @returns {Promise<TReturn>}
    */
   resolve<TReturn = unknown>(identifier: TypeIdentifier) {
     this.ensureInitialized();
@@ -186,7 +186,7 @@ export abstract class ServerPlatform extends Platform {
    * implements @see MvMiddleware which will be resolved by the platform resolver. 
    * 
    * @remarks
-   * Middleware will be executed immediately before a request.
+   * Middleware will be executed immediately before a request is processed.
    */
   use(middleware: MvMiddleware | Type<MvMiddleware>) {
     this.#serverController.registerMiddleware(middleware);

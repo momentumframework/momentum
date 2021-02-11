@@ -1,7 +1,7 @@
 import { createParameterDecorator } from "./create-parameter-decorator.ts";
 
 /**
- * Extract an action argument from a route parameter
+ * Decorator that extracts an action argument from a route parameter
  * 
  * @param name Name of the parameter
  */

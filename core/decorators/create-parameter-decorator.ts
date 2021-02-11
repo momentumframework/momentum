@@ -7,7 +7,7 @@ import { ValueProvider } from "../value-provider.ts";
 /**
  * Creates a parameter decorator
  * 
- * @param valueProvider Optionally set a @see ValueProvider to to extract a value from the request.
+ * @param valueProvider Optionally set a @see ValueProvider to extract a value from the context.
  */
 export function createParameterDecorator(
   valueProvider?: ValueProvider,

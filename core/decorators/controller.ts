@@ -3,11 +3,11 @@ import { ControllerClass, ControllerMetadata } from "../controller-metadata.ts";
 import { DiContainer, Reflect, Scope, Type } from "../deps.ts";
 
 /**
- * Marks a class as a controller
+ * Decorator that marks a class as a controller
  */
 export function Controller(metadata: ControllerMetadata): ClassDecorator;
 /**
- * Marks a class as a controller
+ * Decorator that marks a class as a controller with a route
  * 
  * @param route base route for actions in the controller
  */

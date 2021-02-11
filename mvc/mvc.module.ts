@@ -15,10 +15,19 @@ import { MvcFilter } from "./mvc-filter.ts";
 import { ViewService } from "./view.service.ts";
 
 interface MvcModuleOptions {
+  /**
+   * Module which will provide the view engine
+   * 
+   * @remarks
+   * No default view engine is provided, so a view engine module must be supplied in order to render views. 
+   */
   viewEngineModule: ModuleClass | DynamicModule;
   config?: Partial<MvcConfig>;
 }
 
+/**
+ * Include this module in your application to enable MVC (model-view-controller)
+ */
 @MvModule({
   providers: [MvcFilter, ViewService],
   exports: [ViewService],

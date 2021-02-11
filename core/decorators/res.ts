@@ -1,7 +1,7 @@
 import { createParameterDecorator } from "./create-parameter-decorator.ts";
 
 /**
- * Get the underlying platforms response object as a action argument
+ * Decorator that gets the underlying platform response object as a action argument
  */
 export function Res() {
   return createParameterDecorator(

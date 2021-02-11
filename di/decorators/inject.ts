@@ -1,8 +1,18 @@
 import { DiContainer, Type, TypeIdentifier } from "../di-container.ts";
 
 /**
- * Inject a type using a type identifier
+ * Decorator used to inject a type using a type identifier
  */
+export function Inject<T = unknown>(
+  identifier: TypeIdentifier<T>,
+  options?: {
+    /**
+     * When a dependency is marked as deferred, Deferred will be injected instead of the type.
+     * The type can be resolved later by calling the value property
+     */
+    defer: boolean;
+  },
+): PropertyDecorator & ParameterDecorator;
 export function Inject<T = unknown>(
   identifier: TypeIdentifier<T>,
   options?: { defer: boolean },

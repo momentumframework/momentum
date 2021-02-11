@@ -1,7 +1,7 @@
 import { createParameterDecorator } from "./create-parameter-decorator.ts";
 
 /**
- * Extract an action argument from a cookie on the request
+ * Decorator that extracts an action argument from a cookie on the request
  * 
  * @param name Name of the cookie
  */
