@@ -32,14 +32,14 @@ class AppModule {}
 
 ## Packages
 
-- [momentum/di](https://deno.land/x/momentum/di) - Momentum dependency injection
-- [momentum/core](https://deno.land/x/momentum/core) - Core framework, including
+- [momentum/di](https://doc.deno.land/https/deno.land/x/momentum/di/mod.ts) - Momentum dependency injection
+- [momentum/core](https://doc.deno.land/https/deno.land/x/momentum/core/mod.ts) - Core framework, including
   module system, and decorators
-- [momentum/mvc](https://deno.land/x/momentum/mvc) - Module for creating MVC
+- [momentum/mvc](https://doc.deno.land/https/deno.land/x/momentum/mvc/mod.ts) - Module for creating MVC
   (Model-View-Controller) applications
-- [momentum/static-files](https://deno.land/x/momentum/static-files) - Module
+- [momentum/static-files](https://doc.deno.land/https/deno.land/x/momentum/static-files/mod.ts) - Module
   for serving static files from a Momentum application
-- [momentum/platform-oak](https://deno.land/x/momentum/platform-oak) - Oak
+- [momentum/platform-oak](https://doc.deno.land/https/deno.land/x/momentum/platform-oak/mod.ts) - Oak
   Platform. Allows Momentum applications to run on top of
   [Oak](https://github.com/oakserver/oak)
 
