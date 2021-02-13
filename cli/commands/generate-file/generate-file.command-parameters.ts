@@ -27,8 +27,10 @@ export class GenerateFileCommandParameters {
     return (this.injectableOptions as { global?: boolean }).global;
   }
 
-  readonly schematicType!: SchematicType;
   readonly providedName!: string;
+  readonly providedSchematic!: string;
+
+  readonly schematicType!: SchematicType;
   readonly skipImport!: boolean;
   readonly injectableOptions!: InjectableOptions;
 
@@ -41,5 +43,24 @@ export class GenerateFileCommandParameters {
 
   constructor(data?: Partial<GenerateFileCommandParameters>) {
     Object.assign(this, data);
+
+    this.schematicType = this.convertShorthandSchematic();
+  }
+
+  private convertShorthandSchematic(): SchematicType {
+    const isProvidedInput = (strs: string[]) =>
+      strs.includes(this.providedSchematic?.toLocaleLowerCase()?.trim() ?? "");
+
+    if (isProvidedInput(["s", "service"])) {
+      return "service";
+    }
+    if (isProvidedInput(["c", "controller"])) {
+      return "controller";
+    }
+    if (isProvidedInput(["mo", "module"])) {
+      return "module";
+    }
+
+    throw new Error("Could not determine schematic.");
   }
 }

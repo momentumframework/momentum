@@ -87,21 +87,30 @@ export class FileFinderService {
   }
 
   getAppModuleFile(commandParameters: GenerateFileCommandParameters): FileInfo {
-    return this.searchForFileInfoByExactName(commandParameters, "app.module.ts");
+    return this.searchForFileInfoByExactName(
+      commandParameters,
+      "app.module.ts",
+    );
   }
 
   private searchForFileInfoByExactName(
     commandParameters: GenerateFileCommandParameters,
     fileOrDirectoryName: string,
   ) {
-    let file = this.downwardFileInfoSearch(commandParameters, fileOrDirectoryName);
+    let file = this.downwardFileInfoSearch(
+      commandParameters,
+      fileOrDirectoryName,
+    );
     if (!file.exists) {
       file = this.upwardFileInfoSearch(fileOrDirectoryName, 5);
     }
     return file;
   }
 
-  private downwardFileInfoSearch(commandParameters: GenerateFileCommandParameters, fileOrDirectoryName: string) {
+  private downwardFileInfoSearch(
+    commandParameters: GenerateFileCommandParameters,
+    fileOrDirectoryName: string,
+  ) {
     let file = this.fileIOService.getFileInfo(
       `src/${commandParameters.name}/${fileOrDirectoryName}`,
     );
@@ -119,8 +128,11 @@ export class FileFinderService {
     return file;
   }
 
-  private upwardFileInfoSearch(fileOrDirectoryName: string, maxIterations: number) {
-    const tree = ['./'];
+  private upwardFileInfoSearch(
+    fileOrDirectoryName: string,
+    maxIterations: number,
+  ) {
+    const tree = ["./"];
 
     for (let i = 0; i < maxIterations; i++) {
       const file = this.fileIOService.getFileInfo(
@@ -129,7 +141,7 @@ export class FileFinderService {
       if (file.exists) {
         return file;
       }
-      tree.push('../');
+      tree.push("../");
     }
 
     return new FileInfo();

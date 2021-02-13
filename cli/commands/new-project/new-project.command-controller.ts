@@ -11,13 +11,15 @@ export class NewProjectCommandController implements CommandController {
   }
 
   createCommand(): Command {
-    const newProjectCommand = new Command("new");
-    newProjectCommand.arguments("<name>");
-    newProjectCommand.option(
+    const command = new Command("new");
+    command.alias("n");
+    command.description("Creates a new Momentum project.");
+    command.arguments("<name>");
+    command.option(
       "-r, --repository-url [repositoryUrl]",
       "full URL of the repository to clone",
     );
-    newProjectCommand.action((name: string, command: Command) => {
+    command.action((name: string, command: Command) => {
       const defaultRepositoryUrl =
         "https://github.com/KerryRitter/momentum-api-starter";
 
@@ -28,6 +30,6 @@ export class NewProjectCommandController implements CommandController {
 
       return this.commandHandler.handle(commandParameters);
     });
-    return newProjectCommand;
+    return command;
   }
 }

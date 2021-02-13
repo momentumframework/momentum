@@ -11,8 +11,8 @@ export class NewProjectCommandHandler
   ) {
   }
 
-  handle(commandParameters: NewProjectCommandParameters) {
-    this.systemService.executeCommand(
+  async handle(commandParameters: NewProjectCommandParameters) {
+    await this.systemService.executeCommand(
       `git clone ${commandParameters.repositoryUrl} ./${commandParameters.name}`,
     );
   }

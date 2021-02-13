@@ -13,7 +13,6 @@ export class CliService {
     program.version("0.0.1");
 
     program
-      .option("-c, --config <FILE>", "load configuration file")
       .option("-v, --verbose", "enable verbose mode");
 
     this.commands.forEach((c) => program.addCommand(c));

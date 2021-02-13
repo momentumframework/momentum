@@ -16,6 +16,8 @@ export class GenerateFileCommandController implements CommandController {
 
   createCommand(): Command {
     const command = new Command("generate");
+    command.description("Generates a new file from a schematic.");
+    command.alias("g");
     command.arguments("<schematic> <name>");
     command.option(
       "-gl, --global [global]",
@@ -26,14 +28,14 @@ export class GenerateFileCommandController implements CommandController {
       "Prevent auto-importing into the nearest module",
     );
     command.action(
-      (schematicType: SchematicType, name: string, command: Command) => {
+      (schematicType: string, name: string, command: Command) => {
         const injectableOptions: InjectableOptions = {};
         if (command.global === "false" || command.global === false) {
           injectableOptions.global = false;
         }
 
         const commandParameters = new GenerateFileCommandParameters({
-          schematicType,
+          providedSchematic: schematicType,
           providedName: name,
           injectableOptions,
           skipImport: command.skipImport === "true" ||

@@ -3,26 +3,43 @@ import { CommandController } from "./command-controller.interface.ts";
 import {
   GenerateFileCommandController,
   GenerateFileCommandModule,
-} from "./generate-file/index.ts";
+} from "./generate-file/mod.ts";
 import {
   NewProjectCommandController,
   NewProjectCommandModule,
-} from "./new-project/index.ts";
+} from "./new-project/mod.ts";
+import {
+  ToolCommandController,
+  ToolCommandModule,
+  ToolManagerService,
+} from "./tool/mod.ts";
 
 @MvModule({
   imports: [
     GenerateFileCommandModule,
     NewProjectCommandModule,
+    ToolCommandModule,
   ],
   providers: [
     {
       provide: "MVF_COMMANDS",
       deps: [
+        ToolManagerService,
         GenerateFileCommandController,
         NewProjectCommandController,
+        ToolCommandController,
       ],
-      useFactory: (...controllers: CommandController[]) => {
-        return controllers.map((c) => c.createCommand());
+      useFactory: async (
+        toolManager: ToolManagerService,
+        ...controllers: CommandController[]
+      ) => {
+        const tools = await toolManager.createToolCommands();
+        const cliCommands = controllers.map((c) => c.createCommand());
+
+        return [
+          ...cliCommands,
+          ...tools,
+        ];
       },
     },
   ],
