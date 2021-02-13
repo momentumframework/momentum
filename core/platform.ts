@@ -7,6 +7,7 @@ import {
 } from "./controller-metadata.ts";
 import { DiContainer, Scope, Type, TypeIdentifier } from "./deps.ts";
 import { OnPlatformBootstrap } from "./lifecycle-events.ts";
+import { MvTransformer } from "./mod.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
@@ -203,6 +204,15 @@ export abstract class ServerPlatform extends Platform {
    */
   registerGlobalFilter(filter: MvFilter | Type<MvFilter>) {
     this.#serverController.registerGlobalFilter(filter);
+    return this;
+  }
+
+  /**
+   * Register a transformer globally. The transformer can either be an instance 
+   * of @see MvFilter or a type that implements @see MvFilter which will be resolved by the request scoped resolver.    * 
+   */
+  registerGlobalTransformer(transformer: MvTransformer | Type<MvTransformer>) {
+    this.#serverController.registerGlobalTransformer(transformer);
     return this;
   }
 }

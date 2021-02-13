@@ -10,6 +10,7 @@ import { DependencyResolver, Scope, Type } from "./deps.ts";
 import { FilterCatalog } from "./filter-catalog.ts";
 import {
   ContentResult,
+  MvTransformer,
   OnRequestEnd,
   OnRequestStart,
   RedirectResult,
@@ -18,6 +19,7 @@ import {
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerPlatform } from "./platform.ts";
+import { TransformerCatalog } from "./transformer-catalog.ts";
 import { ValueProviderCatalog } from "./value-provider-catalog.ts";
 
 export class ServerController {
@@ -114,7 +116,8 @@ export class ServerController {
           );
         }
         const parameters = await this.buildParameters(
-          context,
+          scopedResolver,
+          contextAccessor,
           controllerMetadata,
           actionMetadata,
           parameterMetadatas,
@@ -188,6 +191,10 @@ export class ServerController {
     FilterCatalog.registerGlobalFilter(filter);
   }
 
+  registerGlobalTransformer(transformer: MvTransformer | Type<MvTransformer>) {
+    TransformerCatalog.registerGlobalTransformer(transformer);
+  }
+
   private async executeFilters(
     context: unknown,
     scopedResolver: DependencyResolver,
@@ -224,10 +231,10 @@ export class ServerController {
             route: actionMetadata.route,
             method: actionMetadata.method,
           },
-          parameterMetadatas?.map((parmeterMetadata) => ({
-            index: parmeterMetadata.index,
-            name: parmeterMetadata.name,
-            type: parmeterMetadata.type,
+          parameterMetadatas?.map((parameterMetadata) => ({
+            index: parameterMetadata.index,
+            name: parameterMetadata.name,
+            type: parameterMetadata.type,
           })),
         );
     }
@@ -235,7 +242,8 @@ export class ServerController {
   }
 
   private async buildParameters(
-    context: unknown,
+    scopedResolver: DependencyResolver,
+    contextAccessor: ContextAccessor,
     controllerMetadata: ControllerMetadata,
     actionMetadata: ActionMetadata,
     parameterMetadatas?: ParameterMetadata[],
@@ -247,14 +255,37 @@ export class ServerController {
         actionMetadata.action,
         parameterMetadata.index,
       );
+      const transformers = TransformerCatalog.getTransformers(
+        controllerMetadata.type,
+        actionMetadata.action,
+        parameterMetadata.index,
+      );
       if (!valueProvider) {
         continue;
       }
-      parameters[parameterMetadata.index] = await valueProvider(
-        new ContextAccessor(context, this.#platform),
+      let value = await valueProvider(
+        contextAccessor,
         parameterMetadata,
         this.#platform,
       );
+      for (const transformerType of transformers) {
+        let transformer: MvTransformer;
+        if (typeof transformerType === "function") {
+          transformer = await scopedResolver.resolve<MvTransformer>(
+            transformerType,
+          );
+        } else {
+          transformer = transformerType;
+        }
+        value = transformer.transform(
+          value,
+          contextAccessor,
+          parameterMetadata,
+          actionMetadata,
+          controllerMetadata,
+        );
+      }
+      parameters[parameterMetadata.index] = value;
     }
     return parameters;
   }
