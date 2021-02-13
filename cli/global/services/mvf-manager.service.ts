@@ -21,14 +21,15 @@ export class MvfManagerService {
   /**
    * Updates the local installation of `mvf`.
    *
-   * @param version The requested version in the format of #.#.# (no v prefix)
+   * @param requestedVerson The requested version in the format of #.#.# (no v prefix)
    */
-  async update(version: string | null) {
+  async update(requestedVerson: string | null) {
     let installUrl = "https://deno.land/x/momentum/cli/main.ts";
+    const versionInfo = await this.getVersionInfoFromDenoLand();
 
-    if (version?.length) {
-      const { versions } = await this.getVersionInfoFromDenoLand();
-      if (!versions.find((v) => v === `v${version}`)) {
+    let version = versionInfo.latest;
+    if (requestedVerson?.length) {
+      if (!versionInfo.versions.find((v) => v === `v${version}`)) {
         throw new Error("Could not find specified version.");
       }
 
@@ -41,6 +42,16 @@ export class MvfManagerService {
 
     await this.runInstall(
       installUrl,
+    );
+
+    const {
+      mvfFileAbsolutePath,
+    } = await this.getMvInstallationPaths();
+    this.writeToFile(
+      mvfFileAbsolutePath,
+      JSON.stringify({
+        version: await this.getRequestedVersion(),
+      } as MvfFile),
     );
   }
 
@@ -129,7 +140,7 @@ export class MvfManagerService {
       tsConfigAbsolutePath,
     } = await this.getMvInstallationPaths();
 
-    await this.executeCommand([
+    const results = await this.executeCommand([
       "deno",
       "install",
       "-A",
@@ -137,16 +148,24 @@ export class MvfManagerService {
       `-c ${tsConfigAbsolutePath}`,
       cliMainTsUrl,
     ]);
+
+    if (results.status.success) {
+      console.log("Installed successfully!");
+    } else {
+      console.error(`Error installing: ${results.stderror}`);
+    }
   }
 
   private async getVersionInfoFromDenoLand() {
     const response = await fetch(
       "https://cdn.deno.land/momentum/meta/versions.json",
     );
+
     const body: {
       latest: string;
       versions: string[];
     } = await response.json();
+
     return body;
   }
 
@@ -182,7 +201,7 @@ export class MvfManagerService {
 
   private createFileIfNotExists(absolutePath: string, contents: string) {
     if (!existsSync(absolutePath)) {
-      Deno.writeFileSync(absolutePath, new TextEncoder().encode(contents));
+      this.writeToFile(absolutePath, contents);
     }
   }
 

@@ -38,9 +38,7 @@ export class UpgradeCommandController implements CommandController {
         version,
       });
 
-      console.log({ commandParameters });
-
-      // return this.commandHandler.handle(commandParameters);
+      return this.commandHandler.handle(commandParameters);
     });
     return command;
   }
