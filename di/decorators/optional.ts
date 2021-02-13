@@ -1,5 +1,8 @@
 import { DiContainer, Type } from "../di-container.ts";
 
+/**
+ * Decorator use to mark an injected type as optional. If the type is not able to be resolved, the argument will be undefined
+ */
 export function Optional(): PropertyDecorator & ParameterDecorator {
   return function (
     // deno-lint-ignore ban-types

@@ -4,6 +4,11 @@ import { Reflect, Type } from "../deps.ts";
 import { ValueProviderCatalog } from "../value-provider-catalog.ts";
 import { ValueProvider } from "../value-provider.ts";
 
+/**
+ * Creates a parameter decorator
+ * 
+ * @param valueProvider Optionally set a @see ValueProvider to extract a value from the context.
+ */
 export function createParameterDecorator(
   valueProvider?: ValueProvider,
 ): ParameterDecorator {

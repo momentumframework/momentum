@@ -12,6 +12,43 @@ import {
   ServerPlatform,
 } from "./deps.ts";
 
+/**
+ * Creates a new Oak platform
+ * 
+ * @returns {OakPlatform}
+ * 
+ * @remarks
+ * ## Example
+ * 
+ * ```typescript
+ * await platformOak()
+ *   .bootstrapModule(AppModule)
+ *   .then((platform) => platform.listen({ port: 3000 }));
+ * ```
+ */
+export function platformOak(): OakPlatform;
+/**
+ * Creates a new oak platform with customizable application and router
+ * 
+ * @param app The Oak Application. Provide this parameter to register Oak middleware
+ * @param router The Oak Router. Provide this parameter to customize routing
+ * 
+ * @returns {OakPlatform}
+ * 
+ * @remarks
+ * ## Example
+ * ```typescript
+ * const application = new Application();
+ * const router = new Router();
+ * 
+ * // Install middleware of set up custom routes
+ * 
+ * await platformOak(application, router)
+ *   .bootstrapModule(AppModule)
+ *   .then((platform) => platform.listen({ port: 3000 }));
+ * ```
+ */
+export function platformOak(app: Application, router: Router): OakPlatform;
 export function platformOak(
   app: Application = new Application(),
   router: Router = new Router(),
@@ -161,6 +198,9 @@ export class OakPlatform extends ServerPlatform {
     context.response.body = await Deno.readFile(path);
   }
 
+  /**
+   * Start listening for requests
+   */
   async listen(options: ListenOptions) {
     return await this.#app.listen(options);
   }

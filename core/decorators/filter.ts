@@ -2,6 +2,13 @@ import { Type } from "../deps.ts";
 import { FilterCatalog } from "../filter-catalog.ts";
 import { MvFilter } from "../mv-filter.ts";
 
+/**
+ * Decorator that applies a filter to a controller or action
+ * 
+ * The filter can either be an instance of @see MvFilter 
+ * or a type that implements @see MvFilter which will be resolved
+ * by the platform resolver. 
+ */
 export function Filter(
   filter: MvFilter | Type<MvFilter>,
 ): ClassDecorator & MethodDecorator {

@@ -1,6 +1,5 @@
 import { EventEmitter } from "./deps.ts";
 import { Scope } from "./scope.ts";
-import { Reflect } from "./shims/reflect.ts";
 
 export type Token = string;
 // deno-lint-ignore no-explicit-any ban-types
@@ -92,6 +91,10 @@ type PartialDependencyGraphNode = Partial<NullableDependencyGraphNode> & {
   kind: DependencyNodeKind;
 };
 
+/**
+ * Dependency injection container which registers dependencies 
+ * and creates dependency graphs represent the dependency tree. 
+ */
 export class DiContainer {
   private static rootContainer?: DiContainer;
 

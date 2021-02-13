@@ -3,14 +3,39 @@ import { Scope } from "../scope.ts";
 import { Reflect } from "../shims/reflect.ts";
 
 export type InjectableOptions =
-  | { scope?: Scope; global?: boolean }
   | {
+    /**
+     * Determines the scope the service will be bound to. 
+     */
+    scope?: Scope;
+    /**
+     * Determines whether to make the service available globally. If false, the type must be set as a provider in a DI container.
+     */
+    global?: boolean;
+  }
+  | {
+    /**
+     * Determines the scope the service will be bound to. 
+     */
     scope: Scope.Custom;
+    /**
+     * For custom scopes, this value must be provided to act as identifier for a custom scope
+     */
     scopeIdentifier: unknown;
   };
 
+/**
+ * Decorator used to mark a type as available for dependency injection globally.
+ * 
+ */
 export function Injectable(): ClassDecorator;
+/**
+ * Decorator used to mark a type as available for dependency injection with options.
+ */
 export function Injectable(options: InjectableOptions): ClassDecorator;
+/**
+ * Decorator used to mark a type as available for dependency injection using a identifier token
+ */
 export function Injectable(
   identifier: TypeIdentifier,
   options?: InjectableOptions,

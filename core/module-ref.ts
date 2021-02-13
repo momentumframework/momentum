@@ -11,13 +11,15 @@ import { ModuleCatalog } from "./module-catalog.ts";
 import {
   DynamicModule,
   ExtendedModuleMetadata,
+  ModuleClass,
+} from "./module-metadata.ts";
+import {
   isClassProvider,
   isConstructorProvider,
   isFactoryProvider,
   isProvider,
   isValueProvider,
-  ModuleClass,
-} from "./module-metadata.ts";
+} from "./type-guards.ts";
 
 function isDynamicModule(
   module: ModuleClass | DynamicModule,
@@ -25,6 +27,9 @@ function isDynamicModule(
   return typeof module !== "function";
 }
 
+/**
+ * Represents a reference to an bootstrapped Momentum module
+ */
 export class ModuleRef {
   readonly #metadata: ExtendedModuleMetadata;
   readonly #diContainer: DiContainer;
@@ -46,22 +51,37 @@ export class ModuleRef {
     this.#modules = modules;
   }
 
+  /**
+   * Get the module metadata
+   */
   get metadata() {
     return Object.freeze({ ...this.#metadata });
   }
 
+  /**
+   * Get the module dependency injection container
+   */
   get diContainer() {
     return this.#diContainer;
   }
 
+  /**
+   * Get the module instance
+   */
   get instance() {
     return this.#instance;
   }
 
+  /**
+   * Get the sub-modules of the module
+   */
   get modules() {
     return [...this.#modules];
   }
 
+  /**
+   * Get the controllers associated with the module
+   */
   get controllers(): Type<unknown>[] {
     return [
       ...(this.#metadata.controllers ?? []),
@@ -69,8 +89,30 @@ export class ModuleRef {
     ];
   }
 
-  resolve<T = unknown>(identifier: TypeIdentifier): Promise<T>;
-  resolve<T = unknown>(identifier: TypeIdentifier, cache: DiCache): Promise<T>;
+  /**
+   * Resolves an instance of @see TReturn
+   * 
+   * @param identifier type identifer to create an instance of
+   * 
+   * @typeParam TReturn - return type
+   * 
+   * @returns {TReturn}
+   */
+  resolve<TReturn = unknown>(identifier: TypeIdentifier): Promise<TReturn>;
+  /**
+   * Resolves an instance of @see TReturn using a custom @see DiCache
+   * 
+   * @param identifier Type identifer to create an instance of
+   * @param cache The @see DiCache to use for resolution
+   * 
+   * @typeParam TReturn - return type
+   * 
+   * @returns {TReturn}
+   */
+  resolve<TReturn = unknown>(
+    identifier: TypeIdentifier,
+    cache: DiCache,
+  ): Promise<TReturn>;
   async resolve<T = unknown>(
     identifier: TypeIdentifier,
     cache = this.#diCache,

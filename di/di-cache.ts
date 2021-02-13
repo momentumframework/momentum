@@ -1,6 +1,9 @@
 import { DiContainer, TypeIdentifier } from "./di-container.ts";
 import { Scope } from "./scope.ts";
 
+/**
+ * Hierarchical cache used to hold resolved dependencies based on scope lifetime
+ */
 export class DiCache {
   readonly #parent?: DiCache;
   readonly #cache = new Map<
