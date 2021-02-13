@@ -1,9 +1,10 @@
 import { Injectable } from "../../deps.ts";
-import { FileIOService } from "../../global/index.ts";
+import { FileIOService } from "../../global/mod.ts";
 import { GenerateFileCommandParameters } from "./generate-file.command-parameters.ts";
 import { SchematicsService } from "./schematics.service.ts";
 import { TemplateApplicatorService } from "./template-applicator.service.ts";
 import { CommandHandler } from "../command-handler.interface.ts";
+import { FileFinderService } from "./file-finder.service.ts";
 
 @Injectable({ global: false })
 export class GenerateFileCommandHandler
@@ -11,7 +12,7 @@ export class GenerateFileCommandHandler
   constructor(
     private readonly schematicsService: SchematicsService,
     private readonly templateApplicator: TemplateApplicatorService,
-    private readonly fileIOService: FileIOService,
+    private readonly fileFinderService: FileFinderService,
   ) {
   }
 
@@ -19,40 +20,48 @@ export class GenerateFileCommandHandler
     const { schematicFileContents, schematicFileName } = this.schematicsService
       .getSchematicDetails(commandParameters.schematicType);
 
-    const generatedFileContents = this.templateApplicator
-      .applySchematicTemplating(commandParameters, schematicFileContents);
-
     const generatedFileName = this.templateApplicator
       .applySchematicNameTemplating(commandParameters, schematicFileName);
 
-    const generatedFilePath = this.writeGeneratedFile(
-      generatedFileName,
+    commandParameters.files.destinationFile = this.fileFinderService
+      .getDestinationFile(commandParameters, generatedFileName);
+
+    if (commandParameters.files.destinationFile.exists) {
+      throw new Error(
+        `Could not generate: File found at ${commandParameters.files.destinationFile.pathAbsolute}`,
+      );
+    }
+
+    commandParameters.files.depsFile = this.fileFinderService.getDepsFile(
+      commandParameters,
+    );
+    commandParameters.files.appModuleFile = this.fileFinderService
+      .getAppModuleFile(commandParameters);
+    commandParameters.files.containingModuleFile = this.fileFinderService
+      .getContainingModuleFile(commandParameters);
+
+    const generatedFileContents = this.templateApplicator
+      .applySchematicTemplating(commandParameters, schematicFileContents);
+
+    await this.templateApplicator.writeGeneratedFile(
+      commandParameters,
       generatedFileContents,
     );
 
-    if (
-      !commandParameters.skipImport &&
-      (commandParameters.isGlobalService ||
-        commandParameters.schematicType === "controller")
-    ) {
+    if (commandParameters.schematicType === "controller") {
       await this.templateApplicator.addGeneratedFileToModule(
         commandParameters,
-        generatedFilePath,
+      );
+    } else if (commandParameters.schematicType === "service") {
+      if (!commandParameters.skipImport && !commandParameters.isGlobalService) {
+        await this.templateApplicator.addGeneratedFileToModule(
+          commandParameters,
+        );
+      }
+    } else if (commandParameters.schematicType === "module") {
+      await this.templateApplicator.addGeneratedFileToModule(
+        commandParameters,
       );
     }
-  }
-
-  private writeGeneratedFile(fileName: string, fileContents: string) {
-    const path = this.fileIOService.getUserWorkingDirectoryPath(fileName);
-
-    if (this.fileIOService.doesPathExist(path)) {
-      throw new Error(
-        `A file already exists at ${path}. Could not write file.`,
-      );
-    }
-
-    this.fileIOService.writeFile(path, fileContents);
-
-    return path;
   }
 }

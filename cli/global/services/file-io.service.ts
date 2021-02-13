@@ -1,15 +1,21 @@
-import * as path from "https://deno.land/std@0.85.0/path/mod.ts";
+import {
+  dirname,
+  fromFileUrl,
+  join,
+  relative,
+  SEP,
+} from "https://deno.land/std@0.85.0/path/mod.ts";
 import { existsSync, Injectable } from "../../deps.ts";
+import { FileInfo } from "../models/file-info.dto.ts";
 
 @Injectable()
 export class FileIOService {
   get pathDelimiter() {
-    return path.SEP;
+    return SEP;
   }
 
   getCliWorkingDirectoryPath(subpath?: string | string[]) {
-    let pathParts = path
-      .dirname(path.fromFileUrl(import.meta.url))
+    let pathParts = dirname(fromFileUrl(import.meta.url))
       .split(this.pathDelimiter);
 
     // remove the `global/services/` part of the path
@@ -22,7 +28,7 @@ export class FileIOService {
       );
     }
 
-    return path.join(...pathParts);
+    return join(...pathParts);
   }
 
   getUserWorkingDirectoryPath(subpath?: string | string[]) {
@@ -34,76 +40,77 @@ export class FileIOService {
       );
     }
 
-    return path.join(...pathParts);
+    return join(...pathParts);
   }
 
-  getRelativePathBetween(from: string, to: string) {
-    return path.relative(from, to);
+  getRelativePathBetween(fromFile: string, toFile: string) {
+    const fromFileArr = fromFile.split(this.pathDelimiter);
+    const toFileArr = toFile.split(this.pathDelimiter);
+
+    fromFileArr.pop();
+    const toFileName = toFileArr.pop();
+
+    fromFile = this.joinPaths(...fromFileArr);
+    toFile = this.joinPaths(...toFileArr);
+
+    const relativePath = relative(fromFile, toFile).replaceAll(`\\`, `/`);
+
+    if (relativePath === "") {
+      return `./${toFileName}`;
+    }
+
+    if (relativePath.startsWith(".")) {
+      return `${relativePath}/${toFileName}`;
+    }
+
+    return `./${relativePath}/${toFileName}`;
   }
 
-  getDirectoryContents(path: string) {
-    const dirEntries = [];
-    for (const dirEntry of Deno.readDirSync(path)) {
+  getDirectoryContents(dirPath: string) {
+    const dirEntries: Deno.DirEntry[] = [];
+
+    if (!existsSync(dirPath)) {
+      return dirEntries;
+    }
+
+    for (const dirEntry of Deno.readDirSync(dirPath)) {
       dirEntries.push(dirEntry);
     }
+
     return dirEntries;
   }
 
-  recursiveFileSearch(fileName: string, options?: {
-    maxDirectoryAttempts?: number;
-    findType?: "equals" | "endsWith";
-  }) {
-    let attempts = 0;
-
-    if (!options) {
-      options = {
-        maxDirectoryAttempts: 1,
-        findType: "equals",
-      };
-    }
-    if (!options.maxDirectoryAttempts) {
-      options.maxDirectoryAttempts = 1;
-    }
-    if (!options.findType) {
-      options.findType = "equals";
-    }
-
-    while (attempts < options.maxDirectoryAttempts) {
-      const folderPath = [];
-      for (let i = 0; i < attempts; i++) {
-        folderPath.push("..");
-      }
-
-      const files = this.getDirectoryContents(
-        this.getUserWorkingDirectoryPath(
-          path.join(...folderPath),
-        ),
-      );
-
-      const file = options.findType === "equals"
-        ? files.find((f) => f.name === fileName)
-        : files.find((f) => f.name.endsWith(fileName));
-
-      if (file) {
-        return attempts >= 1
-          ? [folderPath, file.name].join("/")
-          : `./${file.name}`;
-      }
-      attempts++;
-    }
-
-    return `./${fileName}`;
+  readFile(filePath: string) {
+    return Deno.readTextFileSync(filePath);
   }
 
-  readFile(path: string) {
-    return Deno.readTextFileSync(path);
+  writeFile(filePath: string, contents: string) {
+    return Deno.writeTextFileSync(filePath, contents);
   }
 
-  writeFile(path: string, contents: string) {
-    return Deno.writeTextFileSync(path, contents);
+  createDirectory(dirPath: string) {
+    return Deno.mkdirSync(dirPath);
   }
 
-  doesPathExist(path: string) {
-    return existsSync(path);
+  joinPaths(...paths: string[]) {
+    return join(...paths);
+  }
+
+  getFileInfo(pathRelativeToUserDirectory: string) {
+    const pathAbsolute = this.getUserWorkingDirectoryPath(
+      pathRelativeToUserDirectory,
+    );
+    const exists = existsSync(pathAbsolute);
+    const details: Deno.FileInfo | null = exists
+      ? Deno.statSync(pathAbsolute)
+      : null;
+
+    return new FileInfo({
+      pathRelativeToUserDirectory,
+      pathAbsolute,
+      exists,
+      isFile: details?.isFile ?? false,
+      isDirectory: details?.isDirectory ?? false,
+    });
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from "../../deps.ts";
-import { FileIOService, SystemService } from "../../global/index.ts";
+import { FileInfo, FileIOService, SystemService } from "../../global/mod.ts";
 import { GenerateFileCommandParameters } from "./generate-file.command-parameters.ts";
 
 @Injectable({ global: false })
@@ -17,6 +17,14 @@ export class TemplateApplicatorService {
     commandParameters: GenerateFileCommandParameters,
     schematicFileContents: string,
   ) {
+    let depsPath = "./deps.ts";
+    if (commandParameters.files.depsFile.exists) {
+      depsPath = this.fileIOService.getRelativePathBetween(
+        commandParameters.files.destinationFile.pathAbsolute,
+        commandParameters.files.depsFile.pathAbsolute,
+      );
+    }
+
     const templated = schematicFileContents
       .replaceAll("__name__", commandParameters.name)
       .replaceAll("__className__", commandParameters.className)
@@ -28,7 +36,7 @@ export class TemplateApplicatorService {
       )
       .replaceAll(
         "__depsPath__",
-        this.fileIOService.recursiveFileSearch("deps.ts"),
+        depsPath,
       );
 
     return templated;
@@ -49,20 +57,36 @@ export class TemplateApplicatorService {
       );
   }
 
-  async addGeneratedFileToModule(
+  async writeGeneratedFile(
     commandParameters: GenerateFileCommandParameters,
-    generatedFilePath: string,
+    fileContents: string,
   ) {
-    const moduleFilePath = this.fileIOService.recursiveFileSearch(
-      ".module.ts",
-      {
-        findType: "endsWith",
-        maxDirectoryAttempts: 5,
-      },
+    this.fileIOService.writeFile(
+      commandParameters.files.destinationFile.pathAbsolute,
+      fileContents,
     );
 
+    await this.applyDenoFmt(
+      commandParameters.files.destinationFile.pathAbsolute,
+    );
+  }
+
+  async addGeneratedFileToModule(
+    commandParameters: GenerateFileCommandParameters,
+  ) {
+    let moduleFile = commandParameters.files.containingModuleFile;
+    if (
+      !commandParameters.files.containingModuleFile.exists ||
+      commandParameters.schematicType === "module"
+    ) {
+      moduleFile = commandParameters.files.appModuleFile;
+    }
+    if (!moduleFile.exists) {
+      return;
+    }
+
     const originalModuleFileContents = this.fileIOService.readFile(
-      moduleFilePath,
+      moduleFile.pathAbsolute,
     );
 
     if (!originalModuleFileContents.includes("@MvModule")) {
@@ -70,32 +94,40 @@ export class TemplateApplicatorService {
     }
 
     try {
-      await this.applyDenoFmt(moduleFilePath);
-      let updatedModuleFileContents = this.injectItemIntoModuleFile(
+      await this.applyDenoFmt(moduleFile.pathAbsolute);
+      let updatedModuleFileContents = this.injectItemIntoModuleOptions(
         commandParameters,
         originalModuleFileContents,
       );
       updatedModuleFileContents = this.injectImportIntoModuleFile(
-        updatedModuleFileContents,
         commandParameters,
-        moduleFilePath,
-        generatedFilePath,
+        moduleFile,
+        updatedModuleFileContents,
       );
-      this.fileIOService.writeFile(moduleFilePath, updatedModuleFileContents);
-      await this.applyDenoFmt(moduleFilePath);
+      this.fileIOService.writeFile(
+        moduleFile.pathAbsolute,
+        updatedModuleFileContents,
+      );
+      await this.applyDenoFmt(moduleFile.pathAbsolute);
     } catch (ex) {
-      this.fileIOService.writeFile(moduleFilePath, originalModuleFileContents);
+      this.fileIOService.writeFile(
+        moduleFile.pathAbsolute,
+        originalModuleFileContents,
+      );
       throw ex;
     }
   }
 
-  private injectItemIntoModuleFile(
+  private injectItemIntoModuleOptions(
     commandParameters: GenerateFileCommandParameters,
     originalModuleFileContents: string,
   ) {
-    const arrayProperty = commandParameters.schematicType === "controller"
-      ? "controllers"
-      : "providers";
+    let arrayProperty = "providers";
+    if (commandParameters.schematicType === "controller") {
+      arrayProperty = "controllers";
+    } else if (commandParameters.schematicType === "module") {
+      arrayProperty = "imports";
+    }
 
     const lines = originalModuleFileContents.split(/\r?\n/);
 
@@ -124,15 +156,15 @@ export class TemplateApplicatorService {
   }
 
   private injectImportIntoModuleFile(
-    updatedModuleFileContents: string,
     commandParameters: GenerateFileCommandParameters,
-    moduleFile: string,
-    generatedFilePath: string,
+    moduleFile: FileInfo,
+    updatedModuleFileContents: string,
   ) {
     const importPath = this.fileIOService.getRelativePathBetween(
-      this.fileIOService.getUserWorkingDirectoryPath(moduleFile),
-      generatedFilePath,
-    ).replaceAll("..\\", "./").replaceAll("\\", "./");
+      moduleFile.pathAbsolute,
+      commandParameters.files.destinationFile.pathAbsolute,
+    );
+
     return [
       `import { ${commandParameters.className} } from "${importPath}";`,
       updatedModuleFileContents,

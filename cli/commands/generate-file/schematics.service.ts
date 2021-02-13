@@ -1,5 +1,5 @@
 import { Injectable } from "../../deps.ts";
-import { FileIOService } from "../../global/index.ts";
+import { FileIOService } from "../../global/mod.ts";
 import { SchematicType } from "./generate-file.command-parameters.ts";
 
 export interface SchematicDetails {
@@ -22,7 +22,7 @@ export class SchematicsService {
       schematicsDirectoryPath,
     );
 
-    const file = files.find((f) =>
+    const file = files.find((f: Deno.DirEntry) =>
       f.isFile && f.name.endsWith(`.${type}.ts.tpl`)
     );
 

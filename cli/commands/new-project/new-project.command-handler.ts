@@ -1,5 +1,5 @@
 import { Injectable } from "../../deps.ts";
-import { SystemService } from "../../global/index.ts";
+import { SystemService } from "../../global/mod.ts";
 import { CommandHandler } from "../command-handler.interface.ts";
 import { NewProjectCommandParameters } from "./new-project.command-parameters.ts";
 
