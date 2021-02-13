@@ -1,4 +1,5 @@
 import { MvModule } from "../deps.ts";
+import { MVF_COMMANDS } from "../tokens.ts";
 import { CommandController } from "./command-controller.interface.ts";
 import {
   GenerateFileCommandController,
@@ -13,21 +14,27 @@ import {
   ToolCommandModule,
   ToolManagerService,
 } from "./tool/mod.ts";
+import {
+  UpgradeCommandController,
+  UpgradeCommandModule,
+} from "./upgrade/mod.ts";
 
 @MvModule({
   imports: [
     GenerateFileCommandModule,
     NewProjectCommandModule,
     ToolCommandModule,
+    UpgradeCommandModule,
   ],
   providers: [
     {
-      provide: "MVF_COMMANDS",
+      provide: MVF_COMMANDS,
       deps: [
         ToolManagerService,
         GenerateFileCommandController,
         NewProjectCommandController,
         ToolCommandController,
+        UpgradeCommandController,
       ],
       useFactory: async (
         toolManager: ToolManagerService,

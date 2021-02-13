@@ -1,7 +1,5 @@
 import { Injectable } from "../../../deps.ts";
 import { CommandHandler } from "../../command-handler.interface.ts";
-import { Tool } from "../base.tool.ts";
-import { ToolConfig } from "../tool-config.interface.ts";
 import { ToolManagerService } from "../tool-manager.service.ts";
 import { ToolInstallCommandParameters } from "./tool-install.command-parameters.ts";
 

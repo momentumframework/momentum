@@ -1,7 +1,5 @@
 import { Injectable } from "../../../deps.ts";
-import { getMvInstallationPaths } from "../../../install/mod.ts";
 import { CommandHandler } from "../../command-handler.interface.ts";
-import { ToolConfig } from "../tool-config.interface.ts";
 import { ToolManagerService } from "../tool-manager.service.ts";
 import { ToolListCommandParameters } from "./tool-list.command-parameters.ts";
 

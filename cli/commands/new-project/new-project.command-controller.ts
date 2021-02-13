@@ -21,7 +21,7 @@ export class NewProjectCommandController implements CommandController {
     );
     command.action((name: string, command: Command) => {
       const defaultRepositoryUrl =
-        "https://github.com/KerryRitter/momentum-api-starter";
+        "https://github.com/momentumframework/momentum-api-starter";
 
       const commandParameters = new NewProjectCommandParameters({
         providedName: name,

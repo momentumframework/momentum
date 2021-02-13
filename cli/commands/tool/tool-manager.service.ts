@@ -1,25 +1,30 @@
 import { Command, Injectable } from "../../deps.ts";
-import { FileIOService } from "../../global/mod.ts";
-import { getMvInstallationPaths } from "../../install/mod.ts";
+import {
+  FileIOService,
+  MvfManagerService,
+  ToolConfig,
+} from "../../global/mod.ts";
 import { Tool } from "./base.tool.ts";
-import { ToolConfig } from "./tool-config.interface.ts";
 
 @Injectable({ global: false })
 export class ToolManagerService {
   constructor(
+    private readonly mvfManager: MvfManagerService,
     private readonly fileIOService: FileIOService,
   ) {
   }
 
   async getToolConfigs() {
-    const { toolsFileAbsolutePath } = await getMvInstallationPaths();
+    const { toolsFileAbsolutePath } = await this.mvfManager
+      .getMvInstallationPaths();
     const toolsConfigJson = this.fileIOService.readFile(toolsFileAbsolutePath);
     const toolsConfig: ToolConfig[] = JSON.parse(toolsConfigJson);
     return toolsConfig;
   }
 
   async installTools(toolConfigs: ToolConfig[]) {
-    const { toolsFileAbsolutePath } = await getMvInstallationPaths();
+    const { toolsFileAbsolutePath } = await this.mvfManager
+      .getMvInstallationPaths();
 
     const currentTools = await this.getToolConfigs();
 
@@ -41,7 +46,8 @@ export class ToolManagerService {
   }
 
   async uninstallTools(names: string[]) {
-    const { toolsFileAbsolutePath } = await getMvInstallationPaths();
+    const { toolsFileAbsolutePath } = await this.mvfManager
+      .getMvInstallationPaths();
     const currentTools = await this.getToolConfigs();
     const currentToolsFiltered = currentTools.filter((t) =>
       !names.includes(t.name)
