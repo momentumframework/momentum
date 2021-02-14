@@ -27,7 +27,7 @@ export class MvfManagerService {
     let installUrl = "https://deno.land/x/momentum/cli/main.ts";
     const versionInfo = await this.getVersionInfoFromDenoLand();
 
-    let version = versionInfo.latest;
+    const version = versionInfo.latest;
     if (requestedVerson?.length) {
       if (!versionInfo.versions.find((v) => v === `v${version}`)) {
         throw new Error("Could not find specified version.");
@@ -42,6 +42,7 @@ export class MvfManagerService {
 
     await this.runInstall(
       installUrl,
+      true,
     );
 
     const {
@@ -64,6 +65,7 @@ export class MvfManagerService {
     await this.initializeMvDirectory();
     await this.runInstall(
       `./main.ts`,
+      false,
     );
   }
 
@@ -135,7 +137,7 @@ export class MvfManagerService {
     return denoLandVersions.latest.replace("v", "");
   }
 
-  private async runInstall(cliMainTsUrl: string) {
+  private async runInstall(cliMainTsUrl: string, force: boolean) {
     const {
       tsConfigAbsolutePath,
     } = await this.getMvInstallationPaths();
@@ -143,16 +145,18 @@ export class MvfManagerService {
     const results = await this.executeCommand([
       "deno",
       "install",
-      "-A",
       "--unstable",
-      `-c ${tsConfigAbsolutePath}`,
+      "-A",
+      "-f",
+      `-c`,
+      tsConfigAbsolutePath,
       cliMainTsUrl,
     ]);
 
-    if (results.status.success) {
-      console.log("Installed successfully!");
-    } else {
+    if (!results.status.success) {
       console.error(`Error installing: ${results.stderror}`);
+    } else {
+      console.log("Successfully installed mvf! Run `mvf --version` to validate.");   
     }
   }
 
