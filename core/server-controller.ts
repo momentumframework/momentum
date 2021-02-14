@@ -23,16 +23,16 @@ import { ServerException } from "./server-exception.ts";
 import { TransformerCatalog } from "./transformer-catalog.ts";
 import { ValueProviderCatalog } from "./value-provider-catalog.ts";
 
-type ErrorHandler = (
+export type ErrorHandler = (
   error: unknown,
   contextAccessor: ContextAccessor,
-) => void | Promise<void>;
+) => ({ handled: true } | Promise<{ handled: true }>) | (void | Promise<void>);
 
 export class ServerController {
   readonly #platform: ServerPlatform;
   readonly #middlewareRegistry: (MvMiddleware | Type<MvMiddleware>)[] = [];
   #middlewareCache?: MvMiddleware[];
-  #globalErrorHandler?: ErrorHandler;
+  #globalErrorHandlers: ErrorHandler[] = [];
 
   constructor(platform: ServerPlatform) {
     this.#platform = platform;
@@ -40,12 +40,14 @@ export class ServerController {
 
   async initialize() {
     this.#platform.addMiddlewareHandler(async (context) => {
+      const contextAccessor = new ContextAccessor(context, this.#platform);
       try {
         return await this.executeMiddleware(
-          new ContextAccessor(context, this.#platform),
+          contextAccessor,
         );
       } catch (err) {
-        throw err;
+        await this.handleError(err, contextAccessor);
+        return true;
       }
     });
     for (const controller of this.#platform.module.controllers) {
@@ -156,35 +158,7 @@ export class ServerController {
         }
         return result;
       } catch (err) {
-        if (this.#globalErrorHandler) {
-          try {
-            this.#globalErrorHandler(err, contextAccessor);
-            return;
-            // deno-lint-ignore no-empty
-          } catch {}
-        }
-        if (err instanceof ServerException) {
-          try {
-            let content: string;
-            if (err.content) {
-              content = JSON.stringify(err.content);
-            } else {
-              content = JSON.stringify({
-                errorCode: err.errorCode,
-                description: err.errorDescription,
-                message: err.message,
-              });
-            }
-            contextAccessor.setBody(content);
-            contextAccessor.setStatus(err.errorCode);
-            contextAccessor.setHeader("Content-Type", "application/json");
-            return;
-            // deno-lint-ignore no-empty
-          } catch {}
-        }
-        contextAccessor.setBody("An unknown error occurred");
-        contextAccessor.setStatus(500);
-        contextAccessor.setHeader("Content-Type", "text/plain");
+        await this.handleError(err, contextAccessor);
       } finally {
         diCache.endScope(Scope.Injection);
         diCache.endScope(Scope.Request);
@@ -197,7 +171,15 @@ export class ServerController {
   }
 
   registerGlobalErrorHandler(errorHandler: ErrorHandler) {
-    this.#globalErrorHandler = errorHandler;
+    this.#globalErrorHandlers.push(errorHandler);
+  }
+
+  registerGlobalFilter(filter: MvFilter | Type<MvFilter>) {
+    FilterCatalog.registerGlobalFilter(filter);
+  }
+
+  registerGlobalTransformer(transformer: MvTransformer | Type<MvTransformer>) {
+    TransformerCatalog.registerGlobalTransformer(transformer);
   }
 
   private async executeMiddleware(contextAccessor: ContextAccessor) {
@@ -215,22 +197,6 @@ export class ServerController {
     }
     await next();
     return complete;
-  }
-
-  private getMiddleware() {
-    return this.#middlewareRegistry.map((registration) =>
-      typeof registration === "function"
-        ? this.#platform.resolve<MvMiddleware>(registration)
-        : registration
-    );
-  }
-
-  registerGlobalFilter(filter: MvFilter | Type<MvFilter>) {
-    FilterCatalog.registerGlobalFilter(filter);
-  }
-
-  registerGlobalTransformer(transformer: MvTransformer | Type<MvTransformer>) {
-    TransformerCatalog.registerGlobalTransformer(transformer);
   }
 
   private async executeFilters(
@@ -277,6 +243,48 @@ export class ServerController {
         );
     }
     return await next();
+  }
+
+  private async handleError(err: unknown, contextAccessor: ContextAccessor) {
+    for (const handler of this.#globalErrorHandlers) {
+      try {
+        const result = await handler(err, contextAccessor);
+        if (result && result.handled) {
+          return;
+        }
+        // deno-lint-ignore no-empty
+      } catch {}
+    }
+    if (err instanceof ServerException) {
+      try {
+        let content: string;
+        if (err.content) {
+          content = JSON.stringify(err.content);
+        } else {
+          content = JSON.stringify({
+            errorCode: err.errorCode,
+            description: err.errorDescription,
+            message: err.message,
+          });
+        }
+        contextAccessor.setBody(content);
+        contextAccessor.setHeader("Content-Type", "application/json");
+        contextAccessor.setStatus(err.errorCode);
+        return;
+        // deno-lint-ignore no-empty
+      } catch {}
+    }
+    contextAccessor.setBody("An unknown error occurred");
+    contextAccessor.setHeader("Content-Type", "text/plain");
+    contextAccessor.setStatus(500);
+  }
+
+  private getMiddleware() {
+    return this.#middlewareRegistry.map((registration) =>
+      typeof registration === "function"
+        ? this.#platform.resolve<MvMiddleware>(registration)
+        : registration
+    );
   }
 
   private async buildParameters(

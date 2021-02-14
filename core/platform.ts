@@ -13,7 +13,7 @@ import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
-import { ServerController } from "./server-controller.ts";
+import { ErrorHandler, ServerController } from "./server-controller.ts";
 
 /**
  * Creates a new basic momentum platform
@@ -214,6 +214,17 @@ export abstract class ServerPlatform extends Platform {
   registerGlobalTransformer(transformer: MvTransformer | Type<MvTransformer>) {
     this.#serverController.registerGlobalTransformer(transformer);
     return this;
+  }
+
+  /**
+   * Register a global error handler.
+   * 
+   * @remarks
+   * This will execute when a unhandled exception occurs within the request pipeline. 
+   * An error handler can return ```{handled: true}``` to stop the processing of subsequent error handlers.
+   */
+  registerGlobalErrorHandler(errorHandler: ErrorHandler) {
+    this.#serverController.registerGlobalErrorHandler(errorHandler);
   }
 }
 

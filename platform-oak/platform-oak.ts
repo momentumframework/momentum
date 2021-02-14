@@ -53,7 +53,11 @@ export function platformOak(
   app: Application = new Application(),
   router: Router = new Router(),
 ) {
-  return new OakPlatform(DiContainer.root(), app, router);
+  return new OakPlatform(
+    DiContainer.root().createChild("platform"),
+    app,
+    router,
+  );
 }
 
 export class OakPlatform extends ServerPlatform {
