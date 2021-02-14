@@ -19,13 +19,20 @@ import {
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
 import { ServerPlatform } from "./platform.ts";
+import { ServerException } from "./server-exception.ts";
 import { TransformerCatalog } from "./transformer-catalog.ts";
 import { ValueProviderCatalog } from "./value-provider-catalog.ts";
+
+type ErrorHandler = (
+  error: unknown,
+  contextAccessor: ContextAccessor,
+) => void | Promise<void>;
 
 export class ServerController {
   readonly #platform: ServerPlatform;
   readonly #middlewareRegistry: (MvMiddleware | Type<MvMiddleware>)[] = [];
   #middlewareCache?: MvMiddleware[];
+  #globalErrorHandler?: ErrorHandler;
 
   constructor(platform: ServerPlatform) {
     this.#platform = platform;
@@ -85,6 +92,7 @@ export class ServerController {
     parameterMetadatas?: ParameterMetadata[],
   ): (context: unknown) => unknown {
     return async (context) => {
+      const contextAccessor = new ContextAccessor(context, this.#platform);
       const diCache = this.#platform.diCache
         .createChild()
         .beginScope(Scope.Injection)
@@ -92,7 +100,6 @@ export class ServerController {
       try {
         const { clone, fullSet } = this.#platform.container.deepClone();
         const scopedResolver = new DependencyResolver(clone, diCache);
-        const contextAccessor = new ContextAccessor(context, this.#platform);
         fullSet.forEach((container) => {
           container.registerValue(
             ContextAccessor,
@@ -149,8 +156,35 @@ export class ServerController {
         }
         return result;
       } catch (err) {
-        console.log(err);
-        throw err;
+        if (this.#globalErrorHandler) {
+          try {
+            this.#globalErrorHandler(err, contextAccessor);
+            return;
+            // deno-lint-ignore no-empty
+          } catch {}
+        }
+        if (err instanceof ServerException) {
+          try {
+            let content: string;
+            if (err.content) {
+              content = JSON.stringify(err.content);
+            } else {
+              content = JSON.stringify({
+                errorCode: err.errorCode,
+                description: err.errorDescription,
+                message: err.message,
+              });
+            }
+            contextAccessor.setBody(content);
+            contextAccessor.setStatus(err.errorCode);
+            contextAccessor.setHeader("Content-Type", "application/json");
+            return;
+            // deno-lint-ignore no-empty
+          } catch {}
+        }
+        contextAccessor.setBody("An unknown error occurred");
+        contextAccessor.setStatus(500);
+        contextAccessor.setHeader("Content-Type", "text/plain");
       } finally {
         diCache.endScope(Scope.Injection);
         diCache.endScope(Scope.Request);
@@ -160,6 +194,10 @@ export class ServerController {
 
   registerMiddleware(middleware: MvMiddleware | Type<MvMiddleware>) {
     this.#middlewareRegistry.push(middleware);
+  }
+
+  registerGlobalErrorHandler(errorHandler: ErrorHandler) {
+    this.#globalErrorHandler = errorHandler;
   }
 
   private async executeMiddleware(contextAccessor: ContextAccessor) {
