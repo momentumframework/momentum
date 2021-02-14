@@ -20,4 +20,8 @@ export interface MvcConfig {
    * Indicates whether the cache templates. When set to true the templates will be read from disk and pre-compiled once.
    */
   cacheTemplates: boolean;
+  /**
+   * Error view. This view will be rendered when an unhandled error occurs.
+   */
+  errorView?: string;
 }

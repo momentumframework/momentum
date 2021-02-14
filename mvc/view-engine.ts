@@ -3,10 +3,9 @@ import { ActionMetadata, ControllerMetadata } from "./deps.ts";
 export interface ViewEngine {
   renderTemplate(
     model: unknown,
-    controllerMetadata: ControllerMetadata,
-    actionMetadata: ActionMetadata,
     layout: string | false,
     cacheTemplate: boolean,
+    templateKey: string,
     templateCallback: () => Promise<string | undefined>,
     layoutCallback: () => Promise<string | undefined>,
   ): Promise<string | undefined>;

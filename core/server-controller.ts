@@ -26,13 +26,14 @@ import { ValueProviderCatalog } from "./value-provider-catalog.ts";
 export type ErrorHandler = (
   error: unknown,
   contextAccessor: ContextAccessor,
-) => ({ handled: true } | Promise<{ handled: true }>) | (void | Promise<void>);
+) => void | { handled: true } | Promise<void | { handled: true }>;
 
 export class ServerController {
   readonly #platform: ServerPlatform;
   readonly #middlewareRegistry: (MvMiddleware | Type<MvMiddleware>)[] = [];
   #middlewareCache?: MvMiddleware[];
-  #globalErrorHandlers: ErrorHandler[] = [];
+  #globalErrorHandlers: { errorHandler: ErrorHandler; priority?: number }[] =
+    [];
 
   constructor(platform: ServerPlatform) {
     this.#platform = platform;
@@ -170,8 +171,8 @@ export class ServerController {
     this.#middlewareRegistry.push(middleware);
   }
 
-  registerGlobalErrorHandler(errorHandler: ErrorHandler) {
-    this.#globalErrorHandlers.push(errorHandler);
+  registerGlobalErrorHandler(errorHandler: ErrorHandler, priority?: number) {
+    this.#globalErrorHandlers.push({ errorHandler, priority });
   }
 
   registerGlobalFilter(filter: MvFilter | Type<MvFilter>) {
@@ -246,7 +247,7 @@ export class ServerController {
   }
 
   private async handleError(err: unknown, contextAccessor: ContextAccessor) {
-    for (const handler of this.#globalErrorHandlers) {
+    for (const handler of this.getGlobalErrorHandlers()) {
       try {
         const result = await handler(err, contextAccessor);
         if (result && result.handled) {
@@ -277,6 +278,14 @@ export class ServerController {
     contextAccessor.setBody("An unknown error occurred");
     contextAccessor.setHeader("Content-Type", "text/plain");
     contextAccessor.setStatus(500);
+  }
+
+  private getGlobalErrorHandlers() {
+    const handlers = Array.from(this.#globalErrorHandlers);
+
+    handlers.sort((a, b) => a.priority ?? 0 - (b.priority ?? 0));
+
+    return handlers.map((h) => h.errorHandler);
   }
 
   private getMiddleware() {

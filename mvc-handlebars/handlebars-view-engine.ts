@@ -2,13 +2,7 @@
 import Handlebars from "https://dev.jspm.io/handlebars@4.7.6";
 import { Inject, Optional } from "../di/mod.ts";
 import { MVC_HANDLEBARS_CONFIG } from "./constants.ts";
-import {
-  ActionMetadata,
-  ControllerClass,
-  ControllerMetadata,
-  Injectable,
-  ViewEngine,
-} from "./deps.ts";
+import { ControllerClass, Injectable, ViewEngine } from "./deps.ts";
 import { MvcHandlebarsConfig } from "./mvc-handlebars-config.ts";
 
 const defaultConfig = { fileExtension: ".hbs" };
@@ -16,12 +10,11 @@ const defaultConfig = { fileExtension: ".hbs" };
 @Injectable()
 export class HandlebarsViewEngine implements ViewEngine {
   readonly #config: MvcHandlebarsConfig;
-  readonly #templateCache = new Map<
-    ControllerClass,
-    { [action: string]: Handlebars.HandlebarsTemplateDelegate }
-  >();
+  readonly #templateCache: {
+    [key: string]: Handlebars.HandlebarsTemplateDelegate;
+  } = {};
   readonly #layoutCache: {
-    [layout: string]: Handlebars.HandlebarsTemplateDelegate;
+    [key: string]: Handlebars.HandlebarsTemplateDelegate;
   } = {};
 
   constructor(
@@ -34,17 +27,15 @@ export class HandlebarsViewEngine implements ViewEngine {
 
   async renderTemplate(
     model: unknown,
-    controllerMetadata: ControllerMetadata,
-    actionMetadata: ActionMetadata,
     layout: string | false,
     cacheTemplate: boolean,
+    templateKey: string,
     templateCallback: () => Promise<string | undefined>,
     layoutCallback: () => Promise<string | undefined>,
   ) {
     const compiledTemplate = await this.getCompiledTemplate(
       templateCallback,
-      controllerMetadata.type,
-      actionMetadata.action,
+      templateKey,
       cacheTemplate,
     );
     if (!compiledTemplate) {
@@ -56,10 +47,12 @@ export class HandlebarsViewEngine implements ViewEngine {
         layout,
         cacheTemplate,
       );
-      Handlebars.registerHelper("renderBody", () => compiledTemplate(model));
-      const result = compiledLayoutTemplate();
-      Handlebars.unregisterHelper("renderBody");
-      return result;
+      if (compiledLayoutTemplate) {
+        Handlebars.registerHelper("renderBody", () => compiledTemplate(model));
+        const result = compiledLayoutTemplate();
+        Handlebars.unregisterHelper("renderBody");
+        return result;
+      }
     }
     return compiledTemplate(model);
   }
@@ -81,16 +74,10 @@ export class HandlebarsViewEngine implements ViewEngine {
 
   private async getCompiledTemplate(
     templateCallback: () => Promise<string | undefined>,
-    controllerType: ControllerClass,
-    action: string,
+    templateKey: string,
     cacheTemplate: boolean,
   ) {
-    let controllerTemplateCache = this.#templateCache.get(controllerType);
-    if (!controllerTemplateCache) {
-      controllerTemplateCache = {};
-      this.#templateCache.set(controllerType, controllerTemplateCache);
-    }
-    let compiledTemplate = controllerTemplateCache[action];
+    let compiledTemplate = this.#templateCache[templateKey];
     if (!compiledTemplate || !cacheTemplate) {
       const template = await templateCallback();
       if (template == null) {
@@ -98,7 +85,7 @@ export class HandlebarsViewEngine implements ViewEngine {
       }
       compiledTemplate = Handlebars.compile(template);
       if (cacheTemplate) {
-        controllerTemplateCache[action] = compiledTemplate;
+        compiledTemplate[templateKey] = compiledTemplate;
       }
     }
     return compiledTemplate;

@@ -1,7 +1,5 @@
 import { MVC_CONFIG, VIEW_ENGINE } from "./constants.ts";
 import {
-  ActionMetadata,
-  ControllerMetadata,
   exists,
   Inject,
   Injectable,
@@ -14,7 +12,7 @@ import {
   trimTrailingSlashes,
 } from "./deps.ts";
 import { MvcConfig } from "./mvc-config.ts";
-import { ViewCatalog, ViewConfig } from "./view-catalog.ts";
+import { ViewConfig } from "./view-catalog.ts";
 import { ViewEngine } from "./view-engine.ts";
 import { ViewHelperCatalog } from "./view-helper-catalog.ts";
 
@@ -69,41 +67,45 @@ export class ViewService implements OnPlatformBootstrap {
         );
       }
     }
+    this.#platform.registerGlobalErrorHandler(async (error, context) => {
+      if (!this.#config.errorView) {
+        return;
+      }
+
+      const view = await this.renderView("MVC_ERROR_VIEW", {
+        name: this.#config.errorView,
+      }, {
+        error,
+      });
+
+      context.setBody(view);
+      context.setStatus(500);
+      context.setHeader("Content-Type", "text/html");
+
+      return { handled: true };
+    }, 99999);
   }
 
   async renderView(
-    controllerMetadata: ControllerMetadata,
-    actionMetadata: ActionMetadata,
+    templateKey: string,
+    viewConfig: ViewConfig,
     model: unknown,
   ) {
-    const viewConfig = ViewCatalog.getView(
-      controllerMetadata.type,
-      actionMetadata.action,
-    );
-    if (!viewConfig) {
-      return;
-    }
     return await this.#viewEngine.renderTemplate(
       model,
-      controllerMetadata,
-      actionMetadata,
       viewConfig.layout !== undefined
         ? viewConfig.layout
         : this.#config.defaultLayout,
       this.#config.cacheTemplates,
-      this.createViewCallback(
-        viewConfig,
-        controllerMetadata.type.name,
-        actionMetadata.action,
-      ),
+      templateKey,
+      this.createViewCallback(viewConfig, templateKey),
       this.createLayoutCallback(viewConfig),
     );
   }
 
   createViewCallback(
     viewConfig: ViewConfig,
-    controller: string,
-    action: string,
+    templateKey: string,
   ) {
     return async () => {
       if (viewConfig.template) {
@@ -122,7 +124,7 @@ export class ViewService implements OnPlatformBootstrap {
       );
       if (!(await exists(templatePath))) {
         throw new Error(
-          `No template found for action ${action} on controller ${controller}`,
+          `No template found for ${templateKey}`,
         );
       }
       const template = await Deno.readTextFile(templatePath);
@@ -140,7 +142,7 @@ export class ViewService implements OnPlatformBootstrap {
         ),
       );
       if (!(await exists(layoutPath))) {
-        throw new Error(`Layout template ${layout} not found`);
+        return;
       }
       const layoutTemplate = await Deno.readTextFile(layoutPath);
 

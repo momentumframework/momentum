@@ -219,12 +219,15 @@ export abstract class ServerPlatform extends Platform {
   /**
    * Register a global error handler.
    * 
+   * @param errorHandler error handler callback function
+   * @param priority execution priority of the handler
+   * 
    * @remarks
    * This will execute when a unhandled exception occurs within the request pipeline. 
    * An error handler can return ```{handled: true}``` to stop the processing of subsequent error handlers.
    */
-  registerGlobalErrorHandler(errorHandler: ErrorHandler) {
-    this.#serverController.registerGlobalErrorHandler(errorHandler);
+  registerGlobalErrorHandler(errorHandler: ErrorHandler, priority?: number) {
+    this.#serverController.registerGlobalErrorHandler(errorHandler, priority);
   }
 }
 
