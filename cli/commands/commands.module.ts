@@ -51,7 +51,7 @@ import {
     },
   ],
   exports: [
-    "MVF_COMMANDS",
+    MVF_COMMANDS,
   ],
 })
 export class CommandsModule {
