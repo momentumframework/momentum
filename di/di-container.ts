@@ -680,11 +680,11 @@ export class DiContainer {
     if (alias) {
       identifier = alias;
     }
-    let definiton = this.#definitions.get(identifier);
-    if (!definiton && this.#parent) {
-      definiton = this.#parent.getDefinition(identifier);
+    let definition = this.#definitions.get(identifier);
+    if (!definition && this.#parent) {
+      definition = this.#parent.getDefinition(identifier);
     }
-    return definiton;
+    return definition;
   }
 
   private getAlias(identifier: TypeIdentifier): TypeIdentifier | undefined {

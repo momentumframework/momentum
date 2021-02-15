@@ -1,5 +1,12 @@
 import { DiCache } from "../di/di-cache.ts";
-import { PLATFORM } from "./constants.ts";
+import {
+  LOGGER_NAME,
+  LOGGER_NAMESPACE,
+  LOGGING_FILTER,
+  LOGGING_FORMATTER,
+  LOGGING_PROVIDER,
+  PLATFORM,
+} from "./constants.ts";
 import {
   ActionMetadata,
   ControllerClass,
@@ -7,12 +14,15 @@ import {
 } from "./controller-metadata.ts";
 import { DiContainer, Scope, Type, TypeIdentifier } from "./deps.ts";
 import { OnPlatformBootstrap } from "./lifecycle-events.ts";
-import { MvTransformer } from "./mod.ts";
+import { LoggingFilter } from "./logging-filter.ts";
+import { LoggingProvider } from "./logging-provider.ts";
+import { LoggingFormatter } from "./mod.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
 import { MvFilter } from "./mv-filter.ts";
 import { MvMiddleware } from "./mv-middleware.ts";
+import { MvTransformer } from "./mv-transformer.ts";
 import { ErrorHandler, ServerController } from "./server-controller.ts";
 
 /**
@@ -102,6 +112,8 @@ export abstract class Platform {
     try {
       await this.preBootstrap();
       this.#container.registerValue(PLATFORM, this);
+      this.#container.registerValue(LOGGER_NAMESPACE, "Momentum");
+      this.#container.registerValue(LOGGER_NAME, "Internal");
       this.#module = await ModuleRef.createModuleRef(
         ModuleCatalog.getMetadata(moduleType),
         this.#container.createChild(moduleType.name),
@@ -112,6 +124,45 @@ export abstract class Platform {
       return this;
     } catch (err) {
       throw err;
+    }
+  }
+
+  /**
+   * Register a global logging provider. 
+   */
+  registerGlobalLoggingProvider(
+    loggingProvider: LoggingProvider | Type<LoggingProvider>,
+  ) {
+    if (typeof loggingProvider === "function") {
+      this.#container.registerAlias(loggingProvider, LOGGING_PROVIDER);
+    } else {
+      this.#container.registerValue(LOGGING_PROVIDER, loggingProvider);
+    }
+  }
+
+  /**
+   * Register a global logging filter. 
+   */
+  registerGlobalLoggingFilter(
+    loggingFilter: LoggingFilter | Type<LoggingFilter>,
+  ) {
+    if (typeof loggingFilter === "function") {
+      this.#container.registerAlias(loggingFilter, LOGGING_FILTER);
+    } else {
+      this.#container.registerValue(LOGGING_FILTER, loggingFilter);
+    }
+  }
+
+  /**
+   * Register a global logging formatter. 
+   */
+  registerGlobalLoggingFormatter(
+    loggingFormatter: LoggingFormatter | Type<LoggingFormatter>,
+  ) {
+    if (typeof loggingFormatter === "function") {
+      this.#container.registerAlias(loggingFormatter, LOGGING_FORMATTER);
+    } else {
+      this.#container.registerValue(LOGGING_FORMATTER, loggingFormatter);
     }
   }
 

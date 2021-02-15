@@ -1,3 +1,4 @@
+import { LOGGER_NAME, LOGGER_NAMESPACE } from "./constants.ts";
 import {
   DependencyResolver,
   DiCache,
@@ -161,6 +162,8 @@ export class ModuleRef {
         moduleMetadata.params?.map((param) => ({ identifier: param })),
         {},
       );
+      moduleContainer.registerValue(LOGGER_NAMESPACE, moduleMetadata.type.name);
+      moduleContainer.registerValue(LOGGER_NAME, undefined);
       moduleContainer.registerFactory(ModuleRef, () => moduleRef);
       const moduleResolver = new DependencyResolver(moduleContainer, diCache);
       const instance = await moduleResolver.resolve(moduleMetadata.type);
