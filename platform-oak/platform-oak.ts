@@ -206,7 +206,13 @@ export class OakPlatform extends ServerPlatform {
    * Start listening for requests
    */
   async listen(options: ListenOptions) {
-    return await this.#app.listen(options);
+    const listenPromise = this.#app.listen(options);
+    this.logger.info(
+      `PlatformOak listening on ${
+        options.hostname ? options.hostname + ":" : "port "
+      }${options.port}`,
+    );
+    await listenPromise;
   }
 
   private parseFormBody(form: URLSearchParams, identifier: string) {

@@ -10,6 +10,7 @@ import { DependencyResolver, Scope, Type } from "./deps.ts";
 import { FilterCatalog } from "./filter-catalog.ts";
 import {
   ContentResult,
+  Log,
   MvTransformer,
   OnRequestEnd,
   OnRequestStart,
@@ -34,12 +35,14 @@ export class ServerController {
   #middlewareCache?: MvMiddleware[];
   #globalErrorHandlers: { errorHandler: ErrorHandler; priority?: number }[] =
     [];
+  #logger!: Log;
 
   constructor(platform: ServerPlatform) {
     this.#platform = platform;
   }
 
-  async initialize() {
+  async initialize(logger: Log) {
+    this.#logger = logger;
     this.#platform.addMiddlewareHandler(async (context) => {
       const contextAccessor = new ContextAccessor(context, this.#platform);
       try {
@@ -69,6 +72,11 @@ export class ServerController {
             `Controller action ${controller}.${action} is not registered`,
           );
         }
+        this.#logger.info(
+          `Mapping route ${route} (${
+            actionMetadata.method?.toUpperCase()
+          }) to action ${controller.name}.${action}`,
+        );
         await this.#platform.addRouteHandler(
           controller,
           action,
@@ -247,6 +255,7 @@ export class ServerController {
   }
 
   private async handleError(err: unknown, contextAccessor: ContextAccessor) {
+    this.#logger.error(err, "An unhandled exception occurred");
     for (const handler of this.getGlobalErrorHandlers()) {
       try {
         const result = await handler(err, contextAccessor);

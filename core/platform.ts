@@ -14,9 +14,10 @@ import {
 } from "./controller-metadata.ts";
 import { DiContainer, Scope, Type, TypeIdentifier } from "./deps.ts";
 import { OnPlatformBootstrap } from "./lifecycle-events.ts";
+import { Log } from "./log.ts";
 import { LoggingFilter } from "./logging-filter.ts";
+import { LoggingFormatter } from "./logging-formatter.ts";
 import { LoggingProvider } from "./logging-provider.ts";
-import { LoggingFormatter } from "./mod.ts";
 import { ModuleCatalog } from "./module-catalog.ts";
 import { ModuleClass } from "./module-metadata.ts";
 import { ModuleRef } from "./module-ref.ts";
@@ -49,6 +50,8 @@ export abstract class Platform {
   readonly #diCache = new DiCache().beginScope(Scope.Singleton);
   readonly #container: DiContainer;
   #module?: ModuleRef;
+
+  protected logger!: Log;
 
   constructor(container: DiContainer) {
     this.#container = container;
@@ -109,22 +112,21 @@ export abstract class Platform {
    * ```
    */
   async bootstrapModule(moduleType: ModuleClass) {
-    try {
-      await this.preBootstrap();
-      this.#container.registerValue(PLATFORM, this);
-      this.#container.registerValue(LOGGER_NAMESPACE, "Momentum");
-      this.#container.registerValue(LOGGER_NAME, "Internal");
-      this.#module = await ModuleRef.createModuleRef(
-        ModuleCatalog.getMetadata(moduleType),
-        this.#container.createChild(moduleType.name),
-        this.#diCache,
-      );
-      this.#module.diContainer.preCompileDependencyGraph(true);
-      await this.postBootstrap();
-      return this;
-    } catch (err) {
-      throw err;
-    }
+    await this.preBootstrap();
+    this.#container.registerValue(PLATFORM, this);
+    this.#module = await ModuleRef.createModuleRef(
+      ModuleCatalog.getMetadata(moduleType),
+      this.#container.createChild(moduleType.name),
+      this.#diCache,
+    );
+    this.logger = await this.resolve(Log);
+    this.logger.namespace = "Momentum";
+    this.logger.loggerName = "Internal";
+    this.logger.info(`Initializing platform`);
+    this.#module.diContainer.preCompileDependencyGraph(true);
+    await this.postBootstrap();
+    this.logger.info(`Completed initializing platform`);
+    return this;
   }
 
   /**
@@ -192,7 +194,7 @@ export abstract class ServerPlatform extends Platform {
   }
 
   async postBootstrap() {
-    await this.#serverController.initialize();
+    await this.#serverController.initialize(this.logger);
     await super.postBootstrap();
   }
 
