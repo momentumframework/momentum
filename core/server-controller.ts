@@ -10,7 +10,7 @@ import { DependencyResolver, Scope, Type } from "./deps.ts";
 import { FilterCatalog } from "./filter-catalog.ts";
 import {
   ContentResult,
-  Log,
+  Logger,
   MvTransformer,
   OnRequestEnd,
   OnRequestStart,
@@ -35,13 +35,13 @@ export class ServerController {
   #middlewareCache?: MvMiddleware[];
   #globalErrorHandlers: { errorHandler: ErrorHandler; priority?: number }[] =
     [];
-  #logger!: Log;
+  #logger!: Logger;
 
   constructor(platform: ServerPlatform) {
     this.#platform = platform;
   }
 
-  async initialize(logger: Log) {
+  async initialize(logger: Logger) {
     this.#logger = logger;
     this.#platform.addMiddlewareHandler(async (context) => {
       const contextAccessor = new ContextAccessor(context, this.#platform);

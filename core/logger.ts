@@ -12,7 +12,7 @@ import { LoggingFormatter } from "./logging-formatter.ts";
 import { LoggingProvider } from "./logging-provider.ts";
 
 @Injectable()
-export class Log {
+export class Logger {
   @Optional()
   @Inject(LOGGER_NAMESPACE)
   namespace?: string;

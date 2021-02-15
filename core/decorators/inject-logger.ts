@@ -1,4 +1,3 @@
-import { Reflect } from "../../di/shims/reflect.ts";
 import {
   LOGGER_NAMESPACE,
   LOGGING_FILTER,
@@ -6,12 +5,12 @@ import {
   LOGGING_PROVIDER,
 } from "../constants.ts";
 import { DiContainer, Type } from "../deps.ts";
-import { Log } from "../log.ts";
+import { Logger } from "../logger.ts";
 
 /**
  * Decorator used to inject a logger
  */
-export function Logger(
+export function InjectLogger(
   name?: string,
 ): PropertyDecorator & ParameterDecorator {
   return function (
@@ -20,7 +19,7 @@ export function Logger(
     propName?: string | symbol,
     paramIndex?: number,
   ) {
-    const logger = class extends Log {};
+    const logger = class extends Logger {};
     let loggerName = name;
 
     if (propName) {

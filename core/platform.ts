@@ -12,7 +12,7 @@ import {
 } from "./controller-metadata.ts";
 import { DiContainer, Scope, Type, TypeIdentifier } from "./deps.ts";
 import { OnPlatformBootstrap } from "./lifecycle-events.ts";
-import { Log } from "./log.ts";
+import { Logger } from "./logger.ts";
 import { LoggingFilter } from "./logging-filter.ts";
 import { LoggingFormatter } from "./logging-formatter.ts";
 import { LoggingProvider } from "./logging-provider.ts";
@@ -49,7 +49,7 @@ export abstract class Platform {
   readonly #container: DiContainer;
   #module?: ModuleRef;
 
-  protected logger!: Log;
+  protected logger!: Logger;
 
   constructor(container: DiContainer) {
     this.#container = container;
@@ -117,7 +117,7 @@ export abstract class Platform {
       this.#container.createChild(moduleType.name),
       this.#diCache,
     );
-    this.logger = await this.resolve(Log);
+    this.logger = await this.resolve(Logger);
     this.logger.namespace = "Momentum";
     this.logger.loggerName = "Internal";
     this.logger.info(`Initializing platform`);

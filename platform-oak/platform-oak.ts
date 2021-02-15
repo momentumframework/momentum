@@ -75,6 +75,14 @@ export class OakPlatform extends ServerPlatform {
 
   async postBootstrap() {
     this.#app.use(this.#router.routes());
+    this.#app.addEventListener("listen", ({ hostname, port, secure }) => {
+      this.logger.log([
+        `PlatformOak listening on `,
+        secure ? "https://" : "http://",
+        hostname ?? "localhost",
+        `:${port}`,
+      ].join(""));
+    });
     await super.postBootstrap();
   }
 
@@ -206,13 +214,7 @@ export class OakPlatform extends ServerPlatform {
    * Start listening for requests
    */
   async listen(options: ListenOptions) {
-    const listenPromise = this.#app.listen(options);
-    this.logger.info(
-      `PlatformOak listening on ${
-        options.hostname ? options.hostname + ":" : "port "
-      }${options.port}`,
-    );
-    await listenPromise;
+    await this.#app.listen(options);
   }
 
   private parseFormBody(form: URLSearchParams, identifier: string) {
