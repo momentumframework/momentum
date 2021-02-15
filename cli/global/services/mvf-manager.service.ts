@@ -160,7 +160,9 @@ export class MvfManagerService {
       "--unstable",
       "-A",
       "-f",
-      `-c`,
+      "-n",
+      "mvf",
+      "-c",
       tsConfigAbsolutePath,
       cliMainTsUrl,
     ]);
