@@ -21,24 +21,10 @@ export class MvfManagerService {
   /**
    * Updates the local installation of `mvf`.
    *
-   * @param requestedVerson The requested version in the format of #.#.# (no v prefix)
+   * @param requestedVersion The requested version in the format of #.#.# (no v prefix)
    */
-  async update(requestedVerson: string | null) {
-    let installUrl = "https://deno.land/x/momentum/cli/main.ts";
-    const versionInfo = await this.getVersionInfoFromDenoLand();
-
-    const version = versionInfo.latest;
-    if (requestedVerson?.length) {
-      if (!versionInfo.versions.find((v) => v === `v${version}`)) {
-        throw new Error("Could not find specified version.");
-      }
-
-      installUrl = [
-        "https://deno.land/x/momentum@v",
-        version,
-        "cli/main.ts",
-      ].join("/");
-    }
+  async update(requestedVersion: string | null) {
+    const installUrl = await this.getInstallUrlForRequestedVersion(requestedVersion);
 
     await this.runInstall(
       installUrl,
@@ -63,9 +49,10 @@ export class MvfManagerService {
    */
   async install() {
     await this.initializeMvDirectory();
+    const installUrl = await this.getInstallUrlForRequestedVersion(null);
     await this.runInstall(
-      `./main.ts`,
-      false,
+      installUrl,
+      true,
     );
   }
 
@@ -92,6 +79,27 @@ export class MvfManagerService {
       tsConfigAbsolutePath,
       mvfFileAbsolutePath,
     };
+  }
+
+  private async getInstallUrlForRequestedVersion(requestedVersion: string | null) {
+    let installUrl = "https://deno.land/x/momentum/cli/main.ts";
+    
+    const versionInfo = await this.getVersionInfoFromDenoLand();
+
+    const version = versionInfo.latest;
+    if (requestedVersion?.length) {
+      if (!versionInfo.versions.find((v) => v === `v${version}`)) {
+        throw new Error("Could not find specified version.");
+      }
+
+      installUrl = [
+        "https://deno.land/x/momentum@v",
+        version,
+        "cli/main.ts",
+      ].join("/");
+    }
+
+    return installUrl;
   }
 
   private async initializeMvDirectory() {
