@@ -16,7 +16,11 @@ import { TemplateApplicatorService } from "./template-applicator.service.ts";
     GenerateFileCommandHandler,
     {
       provide: SchematicsService,
-      useValue: new SchematicsService([CONTROLLER_SCHEMATIC, MODULE_SCHEMATIC, SERVICE_SCHEMATIC]),
+      useValue: new SchematicsService([
+        CONTROLLER_SCHEMATIC,
+        MODULE_SCHEMATIC,
+        SERVICE_SCHEMATIC,
+      ]),
     },
   ],
   exports: [

@@ -20,7 +20,10 @@ export class GenerateFileCommandHandler
       .getSchematicDetails(commandParameters.schematicType);
 
     const generatedFileName = this.templateApplicator
-      .applySchematicNameTemplating(commandParameters, schematic.fileNameTemplate);
+      .applySchematicNameTemplating(
+        commandParameters,
+        schematic.fileNameTemplate,
+      );
 
     commandParameters.files.destinationFile = this.fileFinderService
       .getDestinationFile(commandParameters, generatedFileName);
