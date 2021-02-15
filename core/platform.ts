@@ -138,6 +138,7 @@ export abstract class Platform {
     } else {
       this.#container.registerValue(LOGGING_PROVIDER, loggingProvider);
     }
+    return this;
   }
 
   /**
@@ -151,6 +152,7 @@ export abstract class Platform {
     } else {
       this.#container.registerValue(LOGGING_FILTER, loggingFilter);
     }
+    return this;
   }
 
   /**
@@ -164,6 +166,7 @@ export abstract class Platform {
     } else {
       this.#container.registerValue(LOGGING_FORMATTER, loggingFormatter);
     }
+    return this;
   }
 
   async preBootstrap(): Promise<void> {}
