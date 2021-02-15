@@ -1,7 +1,5 @@
 import { DiCache } from "../di/di-cache.ts";
 import {
-  LOGGER_NAME,
-  LOGGER_NAMESPACE,
   LOGGING_FILTER,
   LOGGING_FORMATTER,
   LOGGING_PROVIDER,
