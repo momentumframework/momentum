@@ -50,11 +50,7 @@ export class TemplateApplicatorService {
     schematicFileName: string,
   ) {
     return schematicFileName
-      .replaceAll("__name__", commandParameters.name)
-      .replaceAll(
-        ".tpl",
-        "",
-      );
+      .replaceAll("__name__", commandParameters.name);
   }
 
   async writeGeneratedFile(

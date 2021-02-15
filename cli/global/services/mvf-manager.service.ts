@@ -24,7 +24,9 @@ export class MvfManagerService {
    * @param requestedVersion The requested version in the format of #.#.# (no v prefix)
    */
   async update(requestedVersion: string | null) {
-    const installUrl = await this.getInstallUrlForRequestedVersion(requestedVersion);
+    const installUrl = await this.getInstallUrlForRequestedVersion(
+      requestedVersion,
+    );
 
     await this.runInstall(
       installUrl,
@@ -81,9 +83,11 @@ export class MvfManagerService {
     };
   }
 
-  private async getInstallUrlForRequestedVersion(requestedVersion: string | null) {
+  private async getInstallUrlForRequestedVersion(
+    requestedVersion: string | null,
+  ) {
     let installUrl = "https://deno.land/x/momentum/cli/main.ts";
-    
+
     const versionInfo = await this.getVersionInfoFromDenoLand();
 
     const version = versionInfo.latest;
@@ -164,7 +168,9 @@ export class MvfManagerService {
     if (!results.status.success) {
       console.error(`Error installing: ${results.stderror}`);
     } else {
-      console.log("Successfully installed mvf! Run `mvf --version` to validate.");   
+      console.log(
+        "Successfully installed mvf! Run `mvf --version` to validate.",
+      );
     }
   }
 

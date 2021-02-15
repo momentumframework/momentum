@@ -14,23 +14,6 @@ export class FileIOService {
     return SEP;
   }
 
-  getCliWorkingDirectoryPath(subpath?: string | string[]) {
-    let pathParts = dirname(fromFileUrl(import.meta.url))
-      .split(this.pathDelimiter);
-
-    // remove the `global/services/` part of the path
-    pathParts.pop();
-    pathParts.pop();
-
-    if (subpath?.length) {
-      pathParts = pathParts.concat(
-        Array.isArray(subpath) ? subpath : [subpath],
-      );
-    }
-
-    return join(...pathParts);
-  }
-
   getUserWorkingDirectoryPath(subpath?: string | string[]) {
     let pathParts = [Deno.cwd()];
 
