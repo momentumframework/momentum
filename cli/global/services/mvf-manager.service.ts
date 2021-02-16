@@ -18,44 +18,25 @@ export interface ToolConfig {
  */
 @Injectable()
 export class MvfManagerService {
+  private readonly versionRegex = /v[0-9]*\.[0-9]*\.[0-9]*/g;
+
   /**
    * Updates the local installation of `mvf`.
    *
    * @param requestedVersion The requested version in the format of #.#.# (no v prefix)
    */
-  async update(requestedVersion: string | null) {
+  async upgrade(requestedVersion: string | null) {
     const installUrl = await this.getInstallUrlForRequestedVersion(
       requestedVersion,
     );
 
-    await this.runInstall(
-      installUrl,
-      true,
-    );
-
-    const {
-      mvfFileAbsolutePath,
-    } = await this.getMvInstallationPaths();
-    this.writeToFile(
-      mvfFileAbsolutePath,
-      JSON.stringify({
-        version: await this.getRequestedVersion(),
-      } as MvfFile),
-    );
+    await this.runInstall(installUrl);
   }
 
-  /**
-   * Updates the local installation of `mvf`.
-   *
-   * @param version The requested version in the format of #.#.# (no v prefix)
-   */
   async install() {
     await this.initializeMvDirectory();
     const installUrl = await this.getInstallUrlForRequestedVersion(null);
-    await this.runInstall(
-      installUrl,
-      true,
-    );
+    await this.runInstall(installUrl);
   }
 
   async getMvInstallationPaths() {
@@ -65,7 +46,6 @@ export class MvfManagerService {
     const { denoDir } = JSON.parse(denoInfoJson);
 
     const mvDirAbsolutePath = this.joinPaths(denoDir, ".mv");
-    const mvfFileAbsolutePath = this.joinPaths(mvDirAbsolutePath, "mvf.json");
     const toolsFileAbsolutePath = this.joinPaths(
       mvDirAbsolutePath,
       "tools.json",
@@ -79,31 +59,26 @@ export class MvfManagerService {
       mvDirAbsolutePath,
       toolsFileAbsolutePath,
       tsConfigAbsolutePath,
-      mvfFileAbsolutePath,
     };
   }
 
   private async getInstallUrlForRequestedVersion(
     requestedVersion: string | null,
   ) {
-    let installUrl = "https://deno.land/x/momentum/cli/main.ts";
-
     const versionInfo = await this.getVersionInfoFromDenoLand();
 
-    const version = versionInfo.latest;
+    let version = versionInfo.latest;
     if (requestedVersion?.length) {
-      if (!versionInfo.versions.find((v) => v === `v${version}`)) {
+      const foundRequestedVersion = versionInfo.versions.find((v) =>
+        v === `v${version}`
+      );
+      if (!foundRequestedVersion) {
         throw new Error("Could not find specified version.");
       }
-
-      installUrl = [
-        "https://deno.land/x/momentum@v",
-        version,
-        "cli/main.ts",
-      ].join("/");
+      version = foundRequestedVersion;
     }
 
-    return installUrl;
+    return `https://deno.land/x/momentum@${version}/cli/main.ts`;
   }
 
   private async initializeMvDirectory() {
@@ -111,7 +86,6 @@ export class MvfManagerService {
       mvDirAbsolutePath,
       toolsFileAbsolutePath,
       tsConfigAbsolutePath,
-      mvfFileAbsolutePath,
     } = await this.getMvInstallationPaths();
 
     this.createDirectoryIfNotExists(mvDirAbsolutePath);
@@ -128,28 +102,9 @@ export class MvfManagerService {
         },
       }),
     );
-    this.createFileIfNotExists(
-      mvfFileAbsolutePath,
-      JSON.stringify({
-        version: await this.getRequestedVersion(),
-      } as MvfFile),
-    );
   }
 
-  private async getRequestedVersion() {
-    const version = import.meta.url
-      .split("/")
-      .find((part) => part.match(/v[0-9]*\.[0-9]*\.[0-9]*/g));
-
-    if (version) {
-      return version.replace("v", "");
-    }
-
-    const denoLandVersions = await this.getVersionInfoFromDenoLand();
-    return denoLandVersions.latest.replace("v", "");
-  }
-
-  private async runInstall(cliMainTsUrl: string, force: boolean) {
+  private async runInstall(cliMainTsUrl: string) {
     const {
       tsConfigAbsolutePath,
     } = await this.getMvInstallationPaths();
@@ -221,12 +176,17 @@ export class MvfManagerService {
 
   private createFileIfNotExists(absolutePath: string, contents: string) {
     if (!existsSync(absolutePath)) {
-      this.writeToFile(absolutePath, contents);
+      Deno.writeTextFileSync(absolutePath, contents);
     }
   }
 
-  private writeToFile(absolutePath: string, contents: string) {
-    Deno.writeFileSync(absolutePath, new TextEncoder().encode(contents));
+  /**
+   * @returns Version with a "v" prefix
+   */
+  getInstallVersion() {
+    const path = `${Deno.env.get("HOME")}/.deno/bin/mvf`;
+    const shellContents = Deno.readTextFileSync(path);
+    return shellContents.match(this.versionRegex)?.pop();
   }
 
   private joinPaths(...paths: string[]) {
