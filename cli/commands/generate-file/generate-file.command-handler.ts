@@ -1,5 +1,4 @@
 import { Injectable } from "../../deps.ts";
-import { FileIOService } from "../../global/mod.ts";
 import { GenerateFileCommandParameters } from "./generate-file.command-parameters.ts";
 import { SchematicsService } from "./schematics.service.ts";
 import { TemplateApplicatorService } from "./template-applicator.service.ts";
@@ -17,11 +16,14 @@ export class GenerateFileCommandHandler
   }
 
   async handle(commandParameters: GenerateFileCommandParameters) {
-    const { schematicFileContents, schematicFileName } = this.schematicsService
+    const schematic = this.schematicsService
       .getSchematicDetails(commandParameters.schematicType);
 
     const generatedFileName = this.templateApplicator
-      .applySchematicNameTemplating(commandParameters, schematicFileName);
+      .applySchematicNameTemplating(
+        commandParameters,
+        schematic.fileNameTemplate,
+      );
 
     commandParameters.files.destinationFile = this.fileFinderService
       .getDestinationFile(commandParameters, generatedFileName);
@@ -41,7 +43,7 @@ export class GenerateFileCommandHandler
       .getContainingModuleFile(commandParameters);
 
     const generatedFileContents = this.templateApplicator
-      .applySchematicTemplating(commandParameters, schematicFileContents);
+      .applySchematicTemplating(commandParameters, schematic.template);
 
     await this.templateApplicator.writeGeneratedFile(
       commandParameters,
