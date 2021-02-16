@@ -184,9 +184,7 @@ export class MvfManagerService {
    * @returns Version with a "v" prefix
    */
   getInstallVersion() {
-    const path = `${Deno.env.get("HOME")}/.deno/bin/mvf`;
-    const shellContents = Deno.readTextFileSync(path);
-    return shellContents.match(this.versionRegex)?.pop();
+    return "v0.7.6";
   }
 
   private joinPaths(...paths: string[]) {
