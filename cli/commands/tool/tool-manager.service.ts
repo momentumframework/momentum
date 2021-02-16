@@ -81,10 +81,10 @@ export class ToolManagerService {
     const modExports = await import(toolUrl);
 
     const exportedCommands: Tool[] = Object.keys(modExports).map((key) => {
-      const classProtoype = modExports[key].prototype;
+      const classPrototype = modExports[key].prototype;
       const hasCreateCommand =
-        typeof classProtoype.createCommand === "function";
-      const hasGetName = typeof classProtoype.getName === "function";
+        typeof classPrototype.createCommand === "function";
+      const hasGetName = typeof classPrototype.getName === "function";
       if (hasCreateCommand && hasGetName) {
         return new modExports[key]();
       }

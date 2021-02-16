@@ -117,11 +117,11 @@ export abstract class Platform {
       this.#container.createChild(moduleType.name),
       this.#diCache,
     );
+    this.#module.diContainer.preCompileDependencyGraph(true);
     this.logger = await this.resolve(Logger);
     this.logger.namespace = "Momentum";
     this.logger.loggerName = "Internal";
     this.logger.info(`Initializing platform`);
-    this.#module.diContainer.preCompileDependencyGraph(true);
     await this.postBootstrap();
     this.logger.info(`Completed initializing platform`);
     return this;

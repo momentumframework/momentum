@@ -184,7 +184,7 @@ export class MvfManagerService {
    * @returns Version with a "v" prefix
    */
   getInstallVersion() {
-    return "v0.7.6";
+    return "v0.8.0";
   }
 
   private joinPaths(...paths: string[]) {

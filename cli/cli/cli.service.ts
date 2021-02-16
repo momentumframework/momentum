@@ -1,5 +1,5 @@
 import { Command, Inject, Injectable } from "../deps.ts";
-import { FileIOService, MvfFile, MvfManagerService } from "../global/mod.ts";
+import { MvfManagerService } from "../global/mod.ts";
 import { MVF_COMMANDS } from "../tokens.ts";
 
 @Injectable({ global: false })
@@ -7,7 +7,6 @@ export class CliService {
   constructor(
     @Inject(MVF_COMMANDS) private readonly commands: Command[],
     private readonly mvfManager: MvfManagerService,
-    private readonly fileIOService: FileIOService,
   ) {
   }
 

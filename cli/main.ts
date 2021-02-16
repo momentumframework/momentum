@@ -13,7 +13,7 @@ class InternalLoggingFilter implements LoggingFilter {
     _error?: unknown,
     namespace?: string,
     loggerName?: string,
-  ): boolean {
+  ) {
     return namespace !== "Momentum" && loggerName != "Internal";
   }
 }
