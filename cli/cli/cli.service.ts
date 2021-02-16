@@ -11,10 +11,10 @@ export class CliService {
   ) {
   }
 
-  async startProgram() {
+  startProgram() {
     const program = new Command("mvf");
 
-    program.version(await this.getCurrentVersion());
+    program.version(this.mvfManager.getInstallVersion() ?? "");
 
     program
       .option("-v, --verbose", "enable verbose mode");
@@ -22,13 +22,5 @@ export class CliService {
     this.commands.forEach((c) => program.addCommand(c));
 
     program.parse(Deno.args);
-  }
-
-  private async getCurrentVersion() {
-    const { mvfFileAbsolutePath } = await this.mvfManager
-      .getMvInstallationPaths();
-    const mvfFileContents = this.fileIOService.readFile(mvfFileAbsolutePath);
-    const mvfFile: MvfFile = JSON.parse(mvfFileContents);
-    return mvfFile.version;
   }
 }

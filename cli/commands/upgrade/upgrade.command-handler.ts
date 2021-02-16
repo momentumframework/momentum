@@ -12,6 +12,6 @@ export class UpgradeCommandHandler
   }
 
   async handle(commandParameters: UpgradeCommandParameters) {
-    await this.mvfManager.update(commandParameters.version);
+    await this.mvfManager.upgrade(commandParameters.version);
   }
 }
