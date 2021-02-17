@@ -246,7 +246,6 @@ export class ServerController {
           },
           parameterMetadatas?.map((parameterMetadata) => ({
             index: parameterMetadata.index,
-            name: parameterMetadata.name,
             type: parameterMetadata.type,
           })),
         );

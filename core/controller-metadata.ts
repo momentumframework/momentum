@@ -15,6 +15,5 @@ export interface ActionMetadata {
 
 export interface ParameterMetadata {
   index: number;
-  name?: string;
   type?: Type;
 }

@@ -28,7 +28,6 @@ export function createParameterDecorator(
       propertyKey.toString(),
       {
         index: parameterIndex,
-        name: propertyKey.toString(),
         type: parameterType,
       },
     );
