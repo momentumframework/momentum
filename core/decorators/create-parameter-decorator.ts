@@ -11,6 +11,7 @@ import { ValueProvider } from "../value-provider.ts";
  */
 export function createParameterDecorator(
   valueProvider?: ValueProvider,
+  name?: string,
 ): ParameterDecorator {
   return function (
     // deno-lint-ignore ban-types
@@ -28,6 +29,7 @@ export function createParameterDecorator(
       propertyKey.toString(),
       {
         index: parameterIndex,
+        name,
         type: parameterType,
       },
     );

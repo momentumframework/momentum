@@ -15,5 +15,6 @@ export function Body(name: string): any;
 export function Body(name?: string) {
   return createParameterDecorator(
     async (contextAccessor) => await contextAccessor.getBody(name),
+    name ?? "body",
   );
 }
