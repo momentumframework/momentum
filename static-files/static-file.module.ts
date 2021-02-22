@@ -16,7 +16,7 @@ import { StaticFilesConfig } from "./static-files-config.ts";
   providers: [StaticFileMiddleware],
 })
 export class StaticFileModule {
-  static register(config: StaticFilesConfig): DynamicModule {
+  static register(config: Partial<StaticFilesConfig>): DynamicModule {
     return {
       type: StaticFileModule,
       providers: [
