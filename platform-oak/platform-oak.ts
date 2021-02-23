@@ -74,7 +74,6 @@ export class OakPlatform extends ServerPlatform {
   }
 
   async postBootstrap() {
-    this.#app.use(this.#router.routes());
     this.#app.addEventListener("listen", ({ hostname, port, secure }) => {
       this.logger.log([
         `PlatformOak listening on `,
@@ -84,6 +83,7 @@ export class OakPlatform extends ServerPlatform {
       ].join(""));
     });
     await super.postBootstrap();
+    this.#app.use(this.#router.routes());
   }
 
   addRouteHandler(
@@ -140,6 +140,7 @@ export class OakPlatform extends ServerPlatform {
       | "cookie"
       | "header"
       | "state"
+      | "requestState"
       | "request"
       | "response",
     context: RouterContext,
@@ -176,6 +177,16 @@ export class OakPlatform extends ServerPlatform {
         return context.request.headers.get(identifier);
       case "state":
         return context.state[identifier];
+      case "requestState": {
+        const request = context.request as unknown as {
+          __state: Record<string, unknown>;
+        };
+        let state = request.__state;
+        if (!state) {
+          return;
+        }
+        return state[identifier];
+      }
       case "request":
         return context.request;
       case "response":
@@ -186,7 +197,7 @@ export class OakPlatform extends ServerPlatform {
   }
 
   setContextItem(
-    kind: "body" | "status" | "cookie" | "header" | "state",
+    kind: "body" | "status" | "cookie" | "header" | "state" | "requestState",
     context: RouterContext,
     // deno-lint-ignore no-explicit-any
     value: any,
@@ -211,6 +222,17 @@ export class OakPlatform extends ServerPlatform {
       case "state":
         context.state[identifier] = value;
         break;
+      case "requestState": {
+        const request = context.request as unknown as {
+          __state: Record<string, unknown>;
+        };
+        let state = request.__state;
+        if (!state) {
+          state = {};
+          request.__state = state;
+        }
+        state[identifier] = value;
+      }
     }
   }
 

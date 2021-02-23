@@ -99,6 +99,17 @@ export class ContextAccessor {
   }
 
   /**
+   * Get a request state item from the context
+   */
+  async getRequestState(name: string) {
+    return await this.#platform.getContextItem(
+      "requestState",
+      this.#context,
+      name,
+    );
+  }
+
+  /**
    * Set a cookie on the response
    */
   async setCookie(name: string, value: string, options?: unknown) {
@@ -141,6 +152,18 @@ export class ContextAccessor {
    */
   async setState(name: string, value: unknown) {
     await this.#platform.setContextItem("state", this.#context, value, name);
+  }
+
+  /**
+   * Set a request state item on the context
+   */
+  async setRequestState(name: string, value: unknown) {
+    await this.#platform.setContextItem(
+      "requestState",
+      this.#context,
+      value,
+      name,
+    );
   }
 
   /**

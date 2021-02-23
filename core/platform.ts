@@ -221,6 +221,7 @@ export abstract class ServerPlatform extends Platform {
       | "cookie"
       | "header"
       | "state"
+      | "requestState"
       | "request"
       | "response",
     context: unknown,
@@ -228,7 +229,14 @@ export abstract class ServerPlatform extends Platform {
   ): Promise<unknown>;
 
   abstract setContextItem(
-    kind: "body" | "status" | "cookie" | "header" | "status" | "state",
+    kind:
+      | "body"
+      | "status"
+      | "cookie"
+      | "header"
+      | "status"
+      | "state"
+      | "requestState",
     context: unknown,
     value: unknown,
     identifier?: unknown,
