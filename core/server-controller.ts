@@ -256,15 +256,6 @@ export class ServerController {
 
   private async handleError(err: unknown, contextAccessor: ContextAccessor) {
     this.#logger.error(err, "An unhandled exception occurred");
-    for (const handler of this.getGlobalErrorHandlers()) {
-      try {
-        const result = await handler(err, contextAccessor);
-        if (result && result.handled) {
-          return;
-        }
-        // deno-lint-ignore no-empty
-      } catch {}
-    }
     if (err instanceof ServerException) {
       try {
         let content: string;
@@ -281,6 +272,15 @@ export class ServerController {
         contextAccessor.setHeader("Content-Type", "application/json");
         contextAccessor.setStatus(err.errorCode);
         return;
+        // deno-lint-ignore no-empty
+      } catch {}
+    }
+    for (const handler of this.getGlobalErrorHandlers()) {
+      try {
+        const result = await handler(err, contextAccessor);
+        if (result && result.handled) {
+          return;
+        }
         // deno-lint-ignore no-empty
       } catch {}
     }

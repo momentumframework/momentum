@@ -220,6 +220,8 @@ export abstract class ServerPlatform extends Platform {
       | "body"
       | "cookie"
       | "header"
+      | "state"
+      | "requestState"
       | "request"
       | "response",
     context: unknown,
@@ -227,10 +229,18 @@ export abstract class ServerPlatform extends Platform {
   ): Promise<unknown>;
 
   abstract setContextItem(
-    kind: "body" | "status" | "cookie" | "header" | "status",
+    kind:
+      | "body"
+      | "status"
+      | "cookie"
+      | "header"
+      | "status"
+      | "state"
+      | "requestState",
     context: unknown,
     value: unknown,
     identifier?: unknown,
+    options?: unknown,
   ): void | Promise<void>;
 
   abstract sendFile(context: unknown, path: string): void | Promise<void>;

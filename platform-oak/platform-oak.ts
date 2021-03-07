@@ -74,7 +74,6 @@ export class OakPlatform extends ServerPlatform {
   }
 
   async postBootstrap() {
-    this.#app.use(this.#router.routes());
     this.#app.addEventListener("listen", ({ hostname, port, secure }) => {
       this.logger.log([
         `PlatformOak listening on `,
@@ -84,6 +83,7 @@ export class OakPlatform extends ServerPlatform {
       ].join(""));
     });
     await super.postBootstrap();
+    this.#app.use(this.#router.routes());
   }
 
   addRouteHandler(
@@ -139,6 +139,8 @@ export class OakPlatform extends ServerPlatform {
       | "body"
       | "cookie"
       | "header"
+      | "state"
+      | "requestState"
       | "request"
       | "response",
     context: RouterContext,
@@ -173,6 +175,18 @@ export class OakPlatform extends ServerPlatform {
         return context.cookies.get(identifier);
       case "header":
         return context.request.headers.get(identifier);
+      case "state":
+        return context.state[identifier];
+      case "requestState": {
+        const request = context.request as unknown as {
+          __state: Record<string, unknown>;
+        };
+        let state = request.__state;
+        if (!state) {
+          return;
+        }
+        return state[identifier];
+      }
       case "request":
         return context.request;
       case "response":
@@ -183,12 +197,14 @@ export class OakPlatform extends ServerPlatform {
   }
 
   setContextItem(
-    kind: "body" | "status" | "cookie" | "header",
+    kind: "body" | "status" | "cookie" | "header" | "state" | "requestState",
     context: RouterContext,
     // deno-lint-ignore no-explicit-any
     value: any,
     // deno-lint-ignore no-explicit-any
     identifier?: any,
+    // deno-lint-ignore no-explicit-any
+    options?: any,
   ) {
     switch (kind) {
       case "body":
@@ -198,11 +214,25 @@ export class OakPlatform extends ServerPlatform {
         context.response.status = value;
         break;
       case "cookie":
-        context.cookies.set(identifier, value);
+        context.cookies.set(identifier, value, options);
         break;
       case "header":
         context.response.headers.set(identifier, value);
         break;
+      case "state":
+        context.state[identifier] = value;
+        break;
+      case "requestState": {
+        const request = context.request as unknown as {
+          __state: Record<string, unknown>;
+        };
+        let state = request.__state;
+        if (!state) {
+          state = {};
+          request.__state = state;
+        }
+        state[identifier] = value;
+      }
     }
   }
 

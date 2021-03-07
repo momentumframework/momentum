@@ -1,3 +1,5 @@
+import { ContextAccessor } from "./context-accessor.ts";
+
 export type NextMiddlewareFunction = () => Promise<void>;
 
 /**
@@ -7,5 +9,8 @@ export type NextMiddlewareFunction = () => Promise<void>;
  * Middleware will be executed immediately before a request is processed.
  */
 export interface MvMiddleware {
-  execute(context: unknown, next: NextMiddlewareFunction): Promise<void>;
+  execute(
+    context: ContextAccessor,
+    next: NextMiddlewareFunction,
+  ): Promise<void>;
 }

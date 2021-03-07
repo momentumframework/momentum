@@ -1,5 +1,6 @@
 import {
   ActionMetadata,
+  ActionResult,
   ContextAccessor,
   ControllerMetadata,
   Injectable,
@@ -20,6 +21,9 @@ export class MvcFilter implements MvFilter {
     actionMetadata?: ActionMetadata,
   ): Promise<unknown> {
     const model = await next();
+    if (model instanceof ActionResult) {
+      return model;
+    }
     if (!controllerMetadata || !actionMetadata) {
       return model;
     }
