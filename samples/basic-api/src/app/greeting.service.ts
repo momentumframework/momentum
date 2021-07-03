@@ -1,4 +1,4 @@
-import { Injectable } from "../../../di/mod.ts";
+import { Injectable } from "../../../../di/mod.ts";
 
 @Injectable()
 export class GreetingService {

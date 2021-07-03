@@ -1,4 +1,4 @@
-import { platformOak } from "../../platform-oak/mod.ts";
+import { platformOak } from "../../../platform-oak/mod.ts";
 import { AppModule } from "./app/app.module.ts";
 
 const platform = await platformOak()

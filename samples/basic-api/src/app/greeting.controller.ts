@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from "../../../core/mod.ts";
+import { Controller, Get, Query } from "../../../../core/mod.ts";
 import { GreetingService } from "./greeting.service.ts";
 
 @Controller("greet")
